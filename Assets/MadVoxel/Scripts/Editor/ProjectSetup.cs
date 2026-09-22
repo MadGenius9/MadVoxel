@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -23,14 +24,58 @@ namespace MadVoxel.EditorTools
         [MenuItem("MadVoxel/Setup/Configure Project", priority = 1)]
         public static void Configure()
         {
-            EnsureProductStrings();
-            EnsureInputHandling();
-            EnsureAlwaysIncludedShaders();
-            SceneBuilder.AddSceneToBuildSettings();
-            ReportRenderPipeline();
+            // Each step is independent and every one of them pokes at a serialized
+            // project setting whose name Unity is free to change between versions. A
+            // throw in any single step used to abort the whole menu item, which left
+            // the project half-configured and the scene missing from Build Settings -
+            // with an exception that pointed at the step, not at what to do about it.
+            // Now a failure costs you that one step and names the manual fallback.
+            int failed = 0;
 
-            AssetDatabase.SaveAssets();
-            Debug.Log("MadVoxel: project configured. Open Assets/MadVoxel/Scenes/MadVoxel.unity and press Play.");
+            failed += Step("product strings", EnsureProductStrings,
+                "Set Company Name to 'MadGenius' and Product Name to 'MadVoxel' in Project Settings > Player.");
+
+            failed += Step("input handling", EnsureInputHandling,
+                "Set Active Input Handling to 'Both' in Project Settings > Player.");
+
+            failed += Step("always-included shaders", EnsureAlwaysIncludedShaders,
+                "Only affects builds, not the editor. Add the URP Lit/Unlit shaders by hand in "
+                + "Project Settings > Graphics if you make a build.");
+
+            failed += Step("build settings", SceneBuilder.AddSceneToBuildSettings,
+                "Add Assets/MadVoxel/Scenes/MadVoxel.unity to File > Build Settings by hand.");
+
+            failed += Step("render pipeline report", ReportRenderPipeline,
+                "Cosmetic - this step only prints what the pipeline is.");
+
+            Step("saving assets", AssetDatabase.SaveAssets, "Save the project with Ctrl+S.");
+
+            if (failed == 0)
+            {
+                Debug.Log("MadVoxel: project configured. Open Assets/MadVoxel/Scenes/MadVoxel.unity and press Play.");
+                return;
+            }
+
+            Debug.LogWarningFormat(
+                "MadVoxel: {0} setup step(s) did not complete - see the warnings above for what to do by hand. "
+                + "The game itself does not depend on any of them to run in the editor, so you can still open "
+                + "Assets/MadVoxel/Scenes/MadVoxel.unity and press Play.", failed);
+        }
+
+        /// <summary>Runs one setup step. Returns 1 when it failed, 0 when it did not.</summary>
+        static int Step(string what, Action action, string fallback)
+        {
+            try
+            {
+                action();
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarningFormat("MadVoxel: could not configure {0} ({1}: {2}). {3}",
+                    what, ex.GetType().Name, ex.Message, fallback);
+                return 1;
+            }
         }
 
         /// <summary>
@@ -84,7 +129,8 @@ namespace MadVoxel.EditorTools
             var array = serialized.FindProperty("m_AlwaysIncludedShaders");
             if (array == null) return;
 
-            var existing = new HashSet<Object>();
+            // Qualified: 'using System' puts System.Object in scope too.
+            var existing = new HashSet<UnityEngine.Object>();
             for (int i = 0; i < array.arraySize; i++)
             {
                 existing.Add(array.GetArrayElementAtIndex(i).objectReferenceValue);
