@@ -1,7 +1,7 @@
 using MadVoxel.Core;
 using UnityEngine;
 
-namespace MadVoxel.World.Voxel
+namespace MadVoxel.World.Terrain
 {
     /// <summary>
     /// Deterministic, thread-safe terrain. Given a seed it produces the same world on
@@ -59,7 +59,7 @@ namespace MadVoxel.World.Voxel
                       + (hills - 0.5f) * relief
                       + (detail - 0.5f) * Mathf.Lerp(1.5f, 4f, scrub);
 
-            return Mathf.Clamp(Mathf.RoundToInt(h), 4, VoxelWorld.WorldHeight - 40);
+            return Mathf.Clamp(Mathf.RoundToInt(h), 4, TerrainWorld.WorldHeight - 40);
         }
 
         /// <summary>Fills a chunk-sized array. Safe to call from a worker thread.</summary>
@@ -176,7 +176,7 @@ namespace MadVoxel.World.Voxel
                     if (Noise.Hash01(tx, 6, tz, _seed + 6608) > density) continue;
 
                     int surface = SurfaceHeight(tx, tz);
-                    if (surface <= SeaLevel - 8 || surface > VoxelWorld.WorldHeight - 48) continue;
+                    if (surface <= SeaLevel - 8 || surface > TerrainWorld.WorldHeight - 48) continue;
 
                     // Skip trees on steep ground so they do not hang off cliffs.
                     if (Mathf.Abs(SurfaceHeight(tx + 1, tz) - surface) > 2) continue;

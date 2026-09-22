@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using MadVoxel.World.Voxel;
+using MadVoxel.World.Terrain;
 using UnityEngine;
 
 namespace MadVoxel.Save

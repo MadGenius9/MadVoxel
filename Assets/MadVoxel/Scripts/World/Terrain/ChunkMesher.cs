@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace MadVoxel.World.Voxel
+namespace MadVoxel.World.Terrain
 {
     /// <summary>
     /// Greedy mesher. Runs on a worker thread over an 18^3 padded copy of the chunk, so

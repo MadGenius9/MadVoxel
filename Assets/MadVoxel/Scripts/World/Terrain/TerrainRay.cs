@@ -1,8 +1,8 @@
 using UnityEngine;
 
-namespace MadVoxel.World.Voxel
+namespace MadVoxel.World.Terrain
 {
-    public struct VoxelHit
+    public struct TerrainHit
     {
         public bool Hit;
         public Vector3Int Block;
@@ -16,11 +16,11 @@ namespace MadVoxel.World.Voxel
     /// Amanatides &amp; Woo voxel traversal. Used by the AI for line of sight and as a
     /// fallback when a chunk collider has not been baked yet.
     /// </summary>
-    public static class VoxelRay
+    public static class TerrainRay
     {
-        public static VoxelHit Cast(VoxelWorld world, Vector3 origin, Vector3 direction, float maxDistance)
+        public static TerrainHit Cast(TerrainWorld world, Vector3 origin, Vector3 direction, float maxDistance)
         {
-            var result = new VoxelHit();
+            var result = new TerrainHit();
             if (direction.sqrMagnitude < 1e-6f) return result;
             direction.Normalize();
 
@@ -47,7 +47,7 @@ namespace MadVoxel.World.Voxel
             int guard = Mathf.CeilToInt(maxDistance * 3f) + 3;
             for (int i = 0; i < guard; i++)
             {
-                if (VoxelWorld.InVerticalRange(y) && world.Registry.IsSolid(world.GetBlock(x, y, z)))
+                if (TerrainWorld.InVerticalRange(y) && world.Registry.IsSolid(world.GetBlock(x, y, z)))
                 {
                     result.Hit = true;
                     result.Block = new Vector3Int(x, y, z);
@@ -86,7 +86,7 @@ namespace MadVoxel.World.Voxel
         }
 
         /// <summary>True when nothing solid blocks the straight line between two points.</summary>
-        public static bool HasLineOfSight(VoxelWorld world, Vector3 from, Vector3 to)
+        public static bool HasLineOfSight(TerrainWorld world, Vector3 from, Vector3 to)
         {
             Vector3 delta = to - from;
             float dist = delta.magnitude;

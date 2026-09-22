@@ -68,10 +68,16 @@ namespace UnityEngine
         public Vector2(float x, float y) { this.x = x; this.y = y; }
     }
 
-    public struct Vector2Int
+    public struct Vector2Int : IEquatable<Vector2Int>
     {
         public int x, y;
         public Vector2Int(int x, int y) { this.x = x; this.y = y; }
+        public static bool operator ==(Vector2Int a, Vector2Int b) { return a.x == b.x && a.y == b.y; }
+        public static bool operator !=(Vector2Int a, Vector2Int b) { return !(a == b); }
+        public bool Equals(Vector2Int o) { return this == o; }
+        public override bool Equals(object o) { return o is Vector2Int && Equals((Vector2Int)o); }
+        public override int GetHashCode() { return x * 73856093 ^ y * 19349663; }
+        public override string ToString() { return string.Format("({0},{1})", x, y); }
     }
 
     public struct Vector3

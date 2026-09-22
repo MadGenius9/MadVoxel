@@ -2,17 +2,24 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace MadVoxel.World.Voxel
+namespace MadVoxel.World.Terrain
 {
     /// <summary>
     /// The voxel volume: a sparse dictionary of chunks plus block get/set. It owns no
     /// streaming policy (see <see cref="ChunkStreamer"/>) and no rendering
     /// (see <see cref="ChunkView"/>) - just the data and the edit notifications.
     /// </summary>
-    public class VoxelWorld : MonoBehaviour
+    public class TerrainWorld : MonoBehaviour
     {
         public const int WorldHeightChunks = 12;
         public const int WorldHeight = WorldHeightChunks * Chunk.Size; // 0 .. 191
+
+        /// <summary>
+        /// The map is large but finite. Beyond the edge there is no terrain at all, and
+        /// the streamer stops generating, so the world has a real boundary rather than
+        /// running forever.
+        /// </summary>
+        public int RadiusChunks { get; private set; }
 
         readonly Dictionary<ChunkCoord, Chunk> _chunks = new Dictionary<ChunkCoord, Chunk>();
 
@@ -26,8 +33,9 @@ namespace MadVoxel.World.Voxel
 
         public ushort AirId { get; private set; }
 
-        public void Init(BlockRegistry registry, int seed)
+        public void Init(BlockRegistry registry, int seed, int radiusChunks)
         {
+            RadiusChunks = Mathf.Max(4, radiusChunks);
             Registry = registry;
             Registry.Build();
             Seed = seed;
@@ -43,6 +51,28 @@ namespace MadVoxel.World.Voxel
             return wy >= 0 && wy < WorldHeight;
         }
 
+        /// <summary>Is this chunk column inside the finite map?</summary>
+        public bool InBounds(int chunkX, int chunkZ)
+        {
+            return chunkX >= -RadiusChunks && chunkX < RadiusChunks
+                && chunkZ >= -RadiusChunks && chunkZ < RadiusChunks;
+        }
+
+        public bool InBounds(ChunkCoord coord)
+        {
+            return InBounds(coord.X, coord.Z);
+        }
+
+        /// <summary>World-space extent of the playable area, for the map edge and spawn placement.</summary>
+        public float WorldExtentMetres { get { return RadiusChunks * Chunk.Size; } }
+
+        public bool IsInsideWorld(Vector3 position)
+        {
+            float extent = WorldExtentMetres;
+            return position.x >= -extent && position.x < extent
+                && position.z >= -extent && position.z < extent;
+        }
+
         public bool TryGetChunk(ChunkCoord coord, out Chunk chunk)
         {
             return _chunks.TryGetValue(coord, out chunk);
@@ -50,6 +80,8 @@ namespace MadVoxel.World.Voxel
 
         public Chunk GetOrCreateChunk(ChunkCoord coord)
         {
+            if (!InBounds(coord)) return null;
+
             Chunk chunk;
             if (!_chunks.TryGetValue(coord, out chunk))
             {
@@ -145,7 +177,8 @@ namespace MadVoxel.World.Voxel
             {
                 if (dx == 0 && dy == 0 && dz == 0) continue;
                 var n = coord.Offset(dx, dy, dz);
-                if (n.Y < 0 || n.Y >= WorldHeightChunks) continue; // outside the world is fine
+                if (n.Y < 0 || n.Y >= WorldHeightChunks) continue; // above or below the world is fine
+                if (!InBounds(n)) continue;                        // past the map edge is permanently empty
                 Chunk c;
                 if (!_chunks.TryGetValue(n, out c) || !c.Generated) return false;
             }

@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace MadVoxel.World.Voxel
+namespace MadVoxel.World.Terrain
 {
     [Serializable]
     public struct ChunkCoord : IEquatable<ChunkCoord>

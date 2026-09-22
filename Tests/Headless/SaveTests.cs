@@ -1,7 +1,7 @@
 using System.IO;
 using MadVoxel.Content;
 using MadVoxel.Save;
-using MadVoxel.World.Voxel;
+using MadVoxel.World.Terrain;
 using UnityEngine;
 
 namespace MadVoxel.Headless

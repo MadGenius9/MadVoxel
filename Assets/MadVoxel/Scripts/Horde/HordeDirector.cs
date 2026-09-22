@@ -2,7 +2,7 @@ using System;
 using MadVoxel.AI;
 using MadVoxel.Building;
 using MadVoxel.Core;
-using MadVoxel.Skills;
+using MadVoxel.Perks;
 using UnityEngine;
 
 namespace MadVoxel.Horde
@@ -17,6 +17,7 @@ namespace MadVoxel.Horde
         WorldClock _clock;
         SpawnDirector _spawner;
         StructureWorld _structures;
+        BuildingWorld _buildings;
         SkyController _sky;
         PlayerProgression _progression;
         Transform _player;
@@ -32,12 +33,14 @@ namespace MadVoxel.Horde
         public event Action<bool> BloodMoonChanged;
 
         public void Init(HordeSchedule schedule, WorldClock clock, SpawnDirector spawner,
-                         StructureWorld structures, SkyController sky, PlayerProgression progression, Transform player)
+                         StructureWorld structures, BuildingWorld buildings, SkyController sky,
+                         PlayerProgression progression, Transform player)
         {
             _schedule = schedule;
             _clock = clock;
             _spawner = spawner;
             _structures = structures;
+            _buildings = buildings;
             _sky = sky;
             _progression = progression;
             _player = player;
@@ -131,14 +134,22 @@ namespace MadVoxel.Horde
             if (_spawner == null) return;
 
             Vector3 siege = SiegePoint();
-            int claimStructures = 0;
+            // Base footprint drives the budget: deployables inside the cupboard radius
+            // plus every snap piece near it. A bigger base pulls a bigger horde.
+            int baseSize = 0;
             if (_structures != null && _structures.Claims.Any)
             {
-                claimStructures = _structures.CountInClaim(_structures.Claims.Nearest(siege));
+                var claim = _structures.Claims.Nearest(siege);
+                baseSize += _structures.CountInClaim(claim);
+                if (_buildings != null) baseSize += _buildings.CountNear(claim.Centre, claim.Radius);
+            }
+            else if (_buildings != null)
+            {
+                baseSize += _buildings.CountNear(siege, 30f);
             }
 
             int level = _progression != null ? _progression.Level : 1;
-            int target = _schedule.WaveSize(level, claimStructures);
+            int target = _schedule.WaveSize(level, baseSize);
             int room = Mathf.Max(0, _schedule.maxAlive - _spawner.HordeUnitCount);
             int count = Mathf.Min(target, room);
 

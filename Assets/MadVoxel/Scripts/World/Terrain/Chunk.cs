@@ -1,4 +1,4 @@
-namespace MadVoxel.World.Voxel
+namespace MadVoxel.World.Terrain
 {
     /// <summary>
     /// A 16^3 block of voxels. Chunks that are entirely one block type (deep stone,

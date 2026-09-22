@@ -6,7 +6,7 @@ using MadVoxel.Core;
 using MadVoxel.Core.Player;
 using MadVoxel.Horde;
 using MadVoxel.Inventory;
-using MadVoxel.World.Voxel;
+using MadVoxel.World.Terrain;
 using UnityEngine;
 
 namespace MadVoxel.Save
@@ -20,6 +20,7 @@ namespace MadVoxel.Save
         ContentDatabase _content;
         ChunkStreamer _streamer;
         StructureWorld _structures;
+        BuildingWorld _buildings;
         WorldClock _clock;
         HordeDirector _horde;
         PlayerRig _player;
@@ -33,12 +34,13 @@ namespace MadVoxel.Save
         public int Seed { get { return _seed; } }
 
         public void Init(ContentDatabase content, ChunkStreamer streamer, StructureWorld structures,
-                         WorldClock clock, HordeDirector horde, PlayerRig player,
+                         BuildingWorld buildings, WorldClock clock, HordeDirector horde, PlayerRig player,
                          string worldName, int seed, float autosaveInterval)
         {
             _content = content;
             _streamer = streamer;
             _structures = structures;
+            _buildings = buildings;
             _clock = clock;
             _horde = horde;
             _player = player;
@@ -107,11 +109,11 @@ namespace MadVoxel.Save
             var progression = _player.Progression;
             data.level = progression.Level;
             data.xp = progression.Xp;
-            data.skillPoints = progression.UnspentSkillPoints;
+            data.perkPoints = progression.UnspentPerkPoints;
             foreach (var id in progression.UnlockedRecipes) data.unlockedRecipes.Add(id);
-            foreach (var kv in progression.SkillRanks)
+            foreach (var kv in progression.PerkRanks)
             {
-                data.skillRanks.Add(new SkillRankData { skillId = kv.Key, rank = kv.Value });
+                data.perkRanks.Add(new PerkRankData { perkId = kv.Key, rank = kv.Value });
             }
 
             data.hasRespawn = _player.HasRespawnPoint;
@@ -142,9 +144,6 @@ namespace MadVoxel.Save
                     health = structure.Health
                 };
 
-                var door = structure.GetComponent<DoorStructure>();
-                if (door != null) entry.doorOpen = door.IsOpen;
-
                 var storage = structure.GetComponent<StorageStructure>();
                 if (storage != null)
                 {
@@ -158,7 +157,55 @@ namespace MadVoxel.Save
                 data.structures.Add(entry);
             }
 
+            CaptureBuildPieces(data);
             return data;
+        }
+
+        void CaptureBuildPieces(StructuresSaveData data)
+        {
+            if (_buildings == null) return;
+
+            var pieces = _buildings.All;
+            for (int i = 0; i < pieces.Count; i++)
+            {
+                var piece = pieces[i];
+                if (piece == null) continue;
+
+                data.pieces.Add(new BuildPieceSaveData
+                {
+                    definitionId = piece.Definition.stringId,
+                    x = piece.Address.X,
+                    y = piece.Address.Y,
+                    z = piece.Address.Z,
+                    slot = (int)piece.Address.Slot,
+                    side = piece.Address.Side,
+                    health = piece.Health,
+                    open = piece.IsOpen
+                });
+            }
+        }
+
+        void RestoreBuildPieces(StructuresSaveData data)
+        {
+            if (_buildings == null || data.pieces == null) return;
+
+            for (int i = 0; i < data.pieces.Count; i++)
+            {
+                var entry = data.pieces[i];
+                var def = _content.BuildPiece(entry.definitionId);
+                if (def == null)
+                {
+                    Debug.LogWarningFormat("Save references unknown build piece '{0}'.", entry.definitionId);
+                    continue;
+                }
+
+                var address = new BuildAddress(entry.x, entry.y, entry.z, (BuildSlot)entry.slot, entry.side);
+                var piece = _buildings.Place(def, address, entry.health, false);
+                if (piece != null && entry.open) piece.SetOpen(true);
+            }
+
+            // Everything is back; now confirm what is actually still standing.
+            _buildings.RecomputeStability();
         }
 
         static ItemStackData ToData(ItemStack stack)
@@ -202,11 +249,11 @@ namespace MadVoxel.Save
             _player.Inventory.Select(Mathf.Clamp(data.selectedHotbar, 0, PlayerInventory.HotbarSize - 1));
 
             var ranks = new Dictionary<string, int>();
-            for (int i = 0; i < data.skillRanks.Count; i++)
+            for (int i = 0; i < data.perkRanks.Count; i++)
             {
-                ranks[data.skillRanks[i].skillId] = data.skillRanks[i].rank;
+                ranks[data.perkRanks[i].perkId] = data.perkRanks[i].rank;
             }
-            _player.Progression.LoadState(data.level, data.xp, data.skillPoints, ranks, data.unlockedRecipes);
+            _player.Progression.LoadState(data.level, data.xp, data.perkPoints, ranks, data.unlockedRecipes);
 
             _player.HasRespawnPoint = data.hasRespawn;
             _player.RespawnPoint = new Vector3(data.respawnX, data.respawnY, data.respawnZ);
@@ -230,9 +277,6 @@ namespace MadVoxel.Save
                 var placed = _structures.Place(def, cell, entry.rotation, entry.health, false);
                 if (placed == null) continue;
 
-                var door = placed.GetComponent<DoorStructure>();
-                if (door != null && entry.doorOpen) door.SetOpen(true);
-
                 var storage = placed.GetComponent<StorageStructure>();
                 if (storage != null)
                 {
@@ -249,6 +293,8 @@ namespace MadVoxel.Save
                     }
                 }
             }
+
+            RestoreBuildPieces(data);
         }
 
         void OnApplicationQuit()

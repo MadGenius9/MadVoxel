@@ -26,6 +26,7 @@ namespace MadVoxel.Content
         public const string IronAxe = "madvoxel:iron_axe";
         public const string Club = "madvoxel:club";
         public const string Wrench = "madvoxel:wrench";
+        public const string Hammer = "madvoxel:hammer";
 
         public const string BlockWoodFrame = "madvoxel:block_wood_frame";
         public const string BlockPlanks = "madvoxel:block_planks";
@@ -34,13 +35,25 @@ namespace MadVoxel.Content
         public const string BlockSteel = "madvoxel:block_steel";
         public const string BlockGlass = "madvoxel:block_glass";
 
-        public const string PieceDoor = "madvoxel:piece_door";
-        public const string PieceLadder = "madvoxel:piece_ladder";
+        // Deployables: free-placed 1 m objects, not part of the snap grid.
         public const string PieceStorageBox = "madvoxel:piece_storage_box";
         public const string PieceWorkbench = "madvoxel:piece_workbench";
         public const string PieceCampfire = "madvoxel:piece_campfire";
-        public const string PieceClaimStake = "madvoxel:piece_claim_stake";
+        public const string PieceToolCupboard = "madvoxel:piece_tool_cupboard";
         public const string PieceBedroll = "madvoxel:piece_bedroll";
+
+        // Rust-style snap pieces. Each item places the Twig tier; the hammer upgrades it.
+        public const string SnapFoundation = "madvoxel:snap_foundation";
+        public const string SnapFloor = "madvoxel:snap_floor";
+        public const string SnapWall = "madvoxel:snap_wall";
+        public const string SnapWindowWall = "madvoxel:snap_window_wall";
+        public const string SnapDoorway = "madvoxel:snap_doorway";
+        public const string SnapHalfWall = "madvoxel:snap_half_wall";
+        public const string SnapStairs = "madvoxel:snap_stairs";
+        public const string SnapRoof = "madvoxel:snap_roof";
+        public const string SnapLadder = "madvoxel:snap_ladder";
+        public const string SnapHatch = "madvoxel:snap_hatch";
+        public const string SnapDoor = "madvoxel:snap_door";
 
         // Phase 1 economy / vehicle content.
         public const string TradeToken = "madvoxel:trade_token";
@@ -52,12 +65,10 @@ namespace MadVoxel.Content
 
     public static class StructureIds
     {
-        public const string Door = "madvoxel:door";
-        public const string Ladder = "madvoxel:ladder";
         public const string StorageBox = "madvoxel:storage_box";
         public const string Workbench = "madvoxel:workbench";
         public const string Campfire = "madvoxel:campfire";
-        public const string ClaimStake = "madvoxel:claim_stake";
+        public const string ToolCupboard = "madvoxel:tool_cupboard";
         public const string Bedroll = "madvoxel:bedroll";
         public const string DeathBackpack = "madvoxel:death_backpack";
     }

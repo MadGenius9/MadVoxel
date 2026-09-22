@@ -1,6 +1,6 @@
 using MadVoxel.Building;
-using MadVoxel.Skills;
-using MadVoxel.World.Voxel;
+using MadVoxel.Perks;
+using MadVoxel.World.Terrain;
 using UnityEngine;
 
 namespace MadVoxel.Core.Player
@@ -32,7 +32,8 @@ namespace MadVoxel.Core.Player
     /// <summary>Builds the first-person rig from primitives. No prefab required.</summary>
     public static class PlayerFactory
     {
-        public static PlayerRig Create(GameConfig config, VoxelWorld voxels, StructureWorld structures, Vector3 position)
+        public static PlayerRig Create(GameConfig config, TerrainWorld voxels, StructureWorld structures,
+                                       BuildingWorld buildings, Vector3 position)
         {
             var go = new GameObject("Player");
             go.transform.position = position;
@@ -75,7 +76,7 @@ namespace MadVoxel.Core.Player
             rig.Progression = go.AddComponent<PlayerProgression>();
 
             rig.Interaction = go.AddComponent<PlayerInteraction>();
-            rig.Interaction.Init(config, voxels, structures, rig.Inventory, rig.Stats, rig.Progression, camera);
+            rig.Interaction.Init(config, voxels, structures, buildings, rig.Inventory, rig.Stats, rig.Progression, camera);
 
             // A small headlamp keeps the first metres readable on a moonless night.
             var lampGo = new GameObject("Headlamp");

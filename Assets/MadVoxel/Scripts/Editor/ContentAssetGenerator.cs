@@ -46,8 +46,8 @@ namespace MadVoxel.EditorTools
             SaveAll(db.zombies, ContentRoot + "/Zombies");
             SaveAsset(db.hordeSchedule, ContentRoot + "/HordeSchedule.asset");
 
-            SaveAll(db.skillTree.skills, ContentRoot + "/Skills");
-            SaveAsset(db.skillTree, ContentRoot + "/SkillTree.asset");
+            SaveAll(db.perkTree.perks, ContentRoot + "/Perks");
+            SaveAsset(db.perkTree, ContentRoot + "/PerkTree.asset");
 
             SaveAll(db.quests, ContentRoot + "/Quests");
             SaveAll(db.traders, ContentRoot + "/Traders");
@@ -60,7 +60,7 @@ namespace MadVoxel.EditorTools
 
             Debug.LogFormat("MadVoxel: generated {0} blocks, {1} items, {2} recipes, {3} structures, {4} skills, {5} quests.",
                 db.blocks.blocks.Count, db.items.Count, db.recipes.Count, db.structures.Count,
-                db.skillTree.skills.Count, db.quests.Count);
+                db.perkTree.perks.Count, db.quests.Count);
 
             Selection.activeObject = db;
             EditorGUIUtility.PingObject(db);

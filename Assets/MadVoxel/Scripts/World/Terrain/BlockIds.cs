@@ -1,4 +1,4 @@
-namespace MadVoxel.World.Voxel
+namespace MadVoxel.World.Terrain
 {
     /// <summary>
     /// String ids for the blocks the code needs by name. Content can add any number of

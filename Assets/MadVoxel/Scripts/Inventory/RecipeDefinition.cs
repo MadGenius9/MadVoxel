@@ -35,9 +35,9 @@ namespace MadVoxel.Inventory
         [Tooltip("Available without spending any skill points.")]
         public bool unlockedByDefault = true;
         [Tooltip("Phase 1 hook: skill string id that unlocks this recipe.")]
-        public string requiredSkillId = "";
+        public string requiredPerkId = "";
         [Tooltip("Phase 1 hook: rank of that skill needed.")]
-        public int requiredSkillRank = 1;
+        public int requiredPerkRank = 1;
 
         public string DisplayName
         {

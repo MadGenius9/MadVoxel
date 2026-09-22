@@ -155,7 +155,8 @@ namespace MadVoxel.UI
         const string Controls =
             "WASD move    Shift sprint    Ctrl crouch    Space jump\n" +
             "Mouse look    LMB mine / attack    RMB place / use    E interact\n" +
-            "R rotate piece    1-9 hotbar    Scroll change slot\n" +
+            "Hammer: RMB upgrade a piece, LMB repair it\n" +
+            "R rotate deployable    1-9 hotbar    Scroll change slot\n" +
             "Tab inventory & crafting    F3 debug    Esc pause";
 
         public void Init()

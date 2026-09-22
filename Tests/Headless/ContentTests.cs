@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using MadVoxel.Content;
 using MadVoxel.Inventory;
-using MadVoxel.World.Voxel;
+using MadVoxel.World.Terrain;
 using UnityEngine;
 
 namespace MadVoxel.Headless
@@ -30,7 +30,7 @@ namespace MadVoxel.Headless
             Harness.Check(Database.structures.Count > 0, "structures are populated");
             Harness.Check(Database.zombies.Count > 0, "zombies are populated");
             Harness.Check(Database.hordeSchedule != null, "horde schedule exists");
-            Harness.Check(Database.skillTree != null && Database.skillTree.skills.Count > 0, "skill tree is populated");
+            Harness.Check(Database.perkTree != null && Database.perkTree.perks.Count > 0, "skill tree is populated");
             Harness.Check(Database.traders.Count > 0, "traders are populated");
             Harness.Check(Database.quests.Count > 0, "quests are populated");
             Harness.Check(Database.vehicles.Count > 0, "vehicles are populated");
@@ -256,24 +256,24 @@ namespace MadVoxel.Headless
 
             // The death backpack is spawned by name from code.
             Harness.Check(Database.Structure(StructureIds.DeathBackpack) != null, "the death backpack structure exists");
-            var claim = Database.Structure(StructureIds.ClaimStake);
-            Harness.Check(claim != null && claim.claimRadius > 0f, "the claim stake defines a radius");
+            var claim = Database.Structure(StructureIds.ToolCupboard);
+            Harness.Check(claim != null && claim.claimRadius > 0f, "the tool cupboard defines a privilege radius");
         }
 
         static void ProgressionChecks()
         {
             Harness.Section("content: skills and progression");
 
-            var tree = Database.skillTree;
-            var categories = new HashSet<Skills.SkillCategory>();
-            for (int i = 0; i < tree.skills.Count; i++) categories.Add(tree.skills[i].category);
+            var tree = Database.perkTree;
+            var categories = new HashSet<Perks.PerkCategory>();
+            for (int i = 0; i < tree.perks.Count; i++) categories.Add(tree.perks[i].category);
             Harness.Equal(categories.Count, 6, "all six skill categories are represented");
 
             // A skill that unlocks a recipe id that does not exist is a dead node.
             var danglingUnlocks = new List<string>();
-            for (int i = 0; i < tree.skills.Count; i++)
+            for (int i = 0; i < tree.perks.Count; i++)
             {
-                var skill = tree.skills[i];
+                var skill = tree.perks[i];
                 for (int j = 0; j < skill.unlocksRecipeIds.Count; j++)
                 {
                     if (Database.Recipe(skill.unlocksRecipeIds[j]) == null)
@@ -290,23 +290,23 @@ namespace MadVoxel.Headless
             {
                 var recipe = Database.recipes[i];
                 if (recipe.unlockedByDefault) continue;
-                if (string.IsNullOrEmpty(recipe.requiredSkillId)) { unreachable.Add(recipe.stringId + " (locked, no skill)"); continue; }
+                if (string.IsNullOrEmpty(recipe.requiredPerkId)) { unreachable.Add(recipe.stringId + " (locked, no skill)"); continue; }
 
-                var skill = tree.Find(recipe.requiredSkillId);
-                if (skill == null) unreachable.Add(recipe.stringId + " -> unknown skill " + recipe.requiredSkillId);
-                else if (recipe.requiredSkillRank > skill.maxRank)
-                    unreachable.Add(recipe.stringId + " needs rank " + recipe.requiredSkillRank + " of max " + skill.maxRank);
+                var skill = tree.Find(recipe.requiredPerkId);
+                if (skill == null) unreachable.Add(recipe.stringId + " -> unknown skill " + recipe.requiredPerkId);
+                else if (recipe.requiredPerkRank > skill.maxRank)
+                    unreachable.Add(recipe.stringId + " needs rank " + recipe.requiredPerkRank + " of max " + skill.maxRank);
             }
             Harness.Check(unreachable.Count == 0,
                 "every locked recipe is reachable through the skill tree" + (unreachable.Count > 0 ? ": " + string.Join("; ", unreachable) : ""));
 
             var badSkills = new List<string>();
-            for (int i = 0; i < tree.skills.Count; i++)
+            for (int i = 0; i < tree.perks.Count; i++)
             {
-                var skill = tree.skills[i];
+                var skill = tree.perks[i];
                 if (skill.maxRank < 1) badSkills.Add(skill.stringId + " (max rank < 1)");
                 if (skill.pointCostPerRank < 1) badSkills.Add(skill.stringId + " (free ranks)");
-                if (!string.IsNullOrEmpty(skill.requiresSkillId) && tree.Find(skill.requiresSkillId) == null)
+                if (!string.IsNullOrEmpty(skill.requiresPerkId) && tree.Find(skill.requiresPerkId) == null)
                     badSkills.Add(skill.stringId + " -> unknown prerequisite");
             }
             Harness.Check(badSkills.Count == 0, "skill definitions are well formed" + (badSkills.Count > 0 ? ": " + string.Join("; ", badSkills) : ""));

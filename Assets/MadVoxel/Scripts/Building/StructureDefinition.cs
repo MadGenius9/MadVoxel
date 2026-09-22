@@ -4,15 +4,17 @@ using UnityEngine;
 
 namespace MadVoxel.Building
 {
+    /// <summary>
+    /// Deployables only. Doors, ladders, walls and floors are snap pieces on the build
+    /// grid (see <see cref="BuildPieceDefinition"/>), not deployables.
+    /// </summary>
     public enum StructureKind
     {
         Generic,
-        Door,
-        Ladder,
         Storage,
         CraftStation,
         Campfire,
-        ClaimStake,
+        ToolCupboard,
         Bedroll
     }
 
@@ -54,7 +56,7 @@ namespace MadVoxel.Building
         [Tooltip("Campfire only.")]
         public float lightRange = 9f;
         public Color lightColour = new Color(1f, 0.62f, 0.28f);
-        [Tooltip("Claim stake only: protected radius in metres. 0 uses the game config value.")]
+        [Tooltip("Tool cupboard only: building privilege radius in metres. 0 uses the game config value.")]
         public float claimRadius;
 
         [Header("Salvage")]

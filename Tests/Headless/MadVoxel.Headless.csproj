@@ -25,7 +25,8 @@
     <Compile Include="Harness.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ContentTests.cs" />
-    <Compile Include="VoxelTests.cs" />
+    <Compile Include="TerrainTests.cs" />
+    <Compile Include="BuildTests.cs" />
     <Compile Include="InventoryTests.cs" />
     <Compile Include="SaveTests.cs" />
   </ItemGroup>
@@ -36,16 +37,16 @@
     <Compile Include="../../Assets/MadVoxel/Scripts/Core/SurfaceFamily.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Core/GameConfig.cs" />
 
-    <Compile Include="../../Assets/MadVoxel/Scripts/World/Voxel/BlockIds.cs" />
-    <Compile Include="../../Assets/MadVoxel/Scripts/World/Voxel/BlockDefinition.cs" />
-    <Compile Include="../../Assets/MadVoxel/Scripts/World/Voxel/BlockRegistry.cs" />
-    <Compile Include="../../Assets/MadVoxel/Scripts/World/Voxel/Chunk.cs" />
-    <Compile Include="../../Assets/MadVoxel/Scripts/World/Voxel/ChunkCoord.cs" />
-    <Compile Include="../../Assets/MadVoxel/Scripts/World/Voxel/ChunkMeshData.cs" />
-    <Compile Include="../../Assets/MadVoxel/Scripts/World/Voxel/ChunkMesher.cs" />
-    <Compile Include="../../Assets/MadVoxel/Scripts/World/Voxel/TerrainGenerator.cs" />
-    <Compile Include="../../Assets/MadVoxel/Scripts/World/Voxel/VoxelWorld.cs" />
-    <Compile Include="../../Assets/MadVoxel/Scripts/World/Voxel/IChunkStore.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/BlockIds.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/BlockDefinition.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/BlockRegistry.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/Chunk.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/ChunkCoord.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/ChunkMeshData.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/ChunkMesher.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/TerrainGenerator.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/TerrainWorld.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/IChunkStore.cs" />
 
     <Compile Include="../../Assets/MadVoxel/Scripts/Inventory/ItemDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Inventory/ItemStack.cs" />
@@ -54,9 +55,11 @@
     <Compile Include="../../Assets/MadVoxel/Scripts/Inventory/CraftingService.cs" />
 
     <Compile Include="../../Assets/MadVoxel/Scripts/Building/StructureDefinition.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Building/BuildGrid.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Building/BuildPieceDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/AI/ZombieDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Horde/HordeSchedule.cs" />
-    <Compile Include="../../Assets/MadVoxel/Scripts/Skills/SkillDefinition.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Perks/PerkDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Traders/TraderDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Quests/QuestDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Vehicles/VehicleDefinition.cs" />

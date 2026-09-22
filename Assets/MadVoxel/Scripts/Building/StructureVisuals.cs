@@ -27,12 +27,6 @@ namespace MadVoxel.Building
 
             switch (def.kind)
             {
-                case StructureKind.Door:
-                    BuildDoor(body.transform, mat, def);
-                    break;
-                case StructureKind.Ladder:
-                    BuildLadder(body.transform, mat);
-                    break;
                 case StructureKind.Storage:
                     BuildCrate(body.transform, mat);
                     break;
@@ -42,7 +36,7 @@ namespace MadVoxel.Building
                 case StructureKind.Campfire:
                     BuildCampfire(body.transform, mat);
                     break;
-                case StructureKind.ClaimStake:
+                case StructureKind.ToolCupboard:
                     BuildStake(body.transform, mat);
                     break;
                 case StructureKind.Bedroll:
@@ -83,32 +77,7 @@ namespace MadVoxel.Building
             }
         }
 
-        static void BuildDoor(Transform parent, Material mat, StructureDefinition def)
-        {
-            // Frame stays put; the hinge child is what the door script swings.
-            var frameMat = MaterialLibrary.Get(def.surfaceFamily, def.tint * 0.7f);
-            PrimitiveBuilder.Box(parent, new Vector3(0.03f, 1.0f, 0.5f), new Vector3(0.06f, 2.0f, 0.12f), frameMat, "JambL");
-            PrimitiveBuilder.Box(parent, new Vector3(0.97f, 1.0f, 0.5f), new Vector3(0.06f, 2.0f, 0.12f), frameMat, "JambR");
-            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 1.97f, 0.5f), new Vector3(1.0f, 0.06f, 0.12f), frameMat, "Lintel");
 
-            var hinge = new GameObject(DoorStructure.HingeName);
-            hinge.transform.SetParent(parent, false);
-            hinge.transform.localPosition = new Vector3(0.06f, 0f, 0.5f);
-
-            PrimitiveBuilder.Box(hinge.transform, new Vector3(0.44f, 0.97f, 0f), new Vector3(0.88f, 1.9f, 0.1f), mat, "Panel");
-            PrimitiveBuilder.Box(hinge.transform, new Vector3(0.78f, 1.0f, 0.07f), new Vector3(0.08f, 0.08f, 0.08f),
-                MaterialLibrary.Get(SurfaceFamily.Metal, new Color(0.35f, 0.31f, 0.28f), 0.4f, 0.8f), "Handle");
-        }
-
-        static void BuildLadder(Transform parent, Material mat)
-        {
-            PrimitiveBuilder.Box(parent, new Vector3(0.22f, 0.5f, 0.07f), new Vector3(0.08f, 1.0f, 0.08f), mat, "RailL");
-            PrimitiveBuilder.Box(parent, new Vector3(0.78f, 0.5f, 0.07f), new Vector3(0.08f, 1.0f, 0.08f), mat, "RailR");
-            for (int i = 0; i < 3; i++)
-            {
-                PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.2f + i * 0.3f, 0.07f), new Vector3(0.5f, 0.05f, 0.05f), mat, "Rung" + i);
-            }
-        }
 
         static void BuildCrate(Transform parent, Material mat)
         {

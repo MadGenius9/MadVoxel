@@ -1,4 +1,4 @@
-namespace MadVoxel.World.Voxel
+namespace MadVoxel.World.Terrain
 {
     /// <summary>
     /// Persistence for edited chunks. Implementations must be thread-safe: the streamer

@@ -4,7 +4,7 @@ using MadVoxel.Core;
 using MadVoxel.Core.Player;
 using MadVoxel.Horde;
 using MadVoxel.Inventory;
-using MadVoxel.World.Voxel;
+using MadVoxel.World.Terrain;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -68,7 +68,7 @@ namespace MadVoxel.UI
         }
 
         public void CreateGameplayUi(PlayerRig player, WorldClock clock, HordeDirector horde,
-                                     ContentDatabase content, VoxelWorld voxels, ChunkStreamer streamer,
+                                     ContentDatabase content, TerrainWorld voxels, ChunkStreamer streamer,
                                      int seed, bool developerTools)
         {
             DestroyGameplayUi();

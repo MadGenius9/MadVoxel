@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using MadVoxel.Building;
 using MadVoxel.Core;
 using MadVoxel.Core.Player;
-using MadVoxel.World.Voxel;
+using MadVoxel.World.Terrain;
 using UnityEngine;
 
 namespace MadVoxel.AI
@@ -18,7 +18,7 @@ namespace MadVoxel.AI
 
         GameConfig _config;
         WorldClock _clock;
-        VoxelWorld _voxels;
+        TerrainWorld _voxels;
         ChunkStreamer _streamer;
         StructureWorld _structures;
         BlockDamageTracker _blockDamage;
@@ -33,7 +33,7 @@ namespace MadVoxel.AI
         public IReadOnlyList<Zombie> Alive { get { return _alive; } }
         public int WanderingCount { get { return CountAlive(false); } }
 
-        public void Init(GameConfig config, WorldClock clock, VoxelWorld voxels, ChunkStreamer streamer,
+        public void Init(GameConfig config, WorldClock clock, TerrainWorld voxels, ChunkStreamer streamer,
                          StructureWorld structures, BlockDamageTracker blockDamage,
                          Transform player, PlayerStats playerStats, ZombieDefinition wanderer)
         {
@@ -104,7 +104,7 @@ namespace MadVoxel.AI
                 int wx = Mathf.FloorToInt(candidate.x);
                 int wz = Mathf.FloorToInt(candidate.z);
                 int surface = _voxels.GetSurfaceY(wx, wz);
-                if (surface <= 0 || surface >= VoxelWorld.WorldHeight - 3) continue;
+                if (surface <= 0 || surface >= TerrainWorld.WorldHeight - 3) continue;
 
                 var spot = new Vector3(wx + 0.5f, surface + 1.05f, wz + 0.5f);
                 if (Vector3.Distance(spot, _player.position) < MinPlayerDistance) continue;

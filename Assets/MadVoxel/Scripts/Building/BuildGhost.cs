@@ -98,6 +98,16 @@ namespace MadVoxel.Building
             SetColour(_ghostMaterial, valid ? ValidColour : InvalidColour);
         }
 
+        /// <summary>Arbitrary world-space box, used by the snap-piece preview.</summary>
+        public void ShowBox(Vector3 centre, Vector3 size, bool valid)
+        {
+            if (_ghost == null) return;
+            _ghost.SetActive(true);
+            _ghost.transform.position = centre;
+            _ghost.transform.localScale = size * 0.98f;
+            SetColour(_ghostMaterial, valid ? ValidColour : InvalidColour);
+        }
+
         public void HidePlacement()
         {
             if (_ghost != null) _ghost.SetActive(false);

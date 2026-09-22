@@ -2,7 +2,7 @@ using MadVoxel.Core;
 using MadVoxel.Inventory;
 using UnityEngine;
 
-namespace MadVoxel.World.Voxel
+namespace MadVoxel.World.Terrain
 {
     /// <summary>
     /// One voxel type. Everything the mesher, the mining code, the loot roll and the

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace MadVoxel.World.Voxel
+namespace MadVoxel.World.Terrain
 {
     /// <summary>
     /// Accumulated damage on individual voxels. Several zombies chewing the same wall
@@ -22,10 +22,10 @@ namespace MadVoxel.World.Voxel
         readonly Dictionary<Vector3Int, Entry> _damage = new Dictionary<Vector3Int, Entry>();
         readonly List<Vector3Int> _scratch = new List<Vector3Int>();
 
-        VoxelWorld _world;
+        TerrainWorld _world;
         float _sweepTimer;
 
-        public void Init(VoxelWorld world)
+        public void Init(TerrainWorld world)
         {
             _world = world;
             _world.BlockChanged += (cell, oldId, newId) => _damage.Remove(cell);

@@ -6,7 +6,7 @@ using MadVoxel.Core.Player;
 using MadVoxel.Horde;
 using MadVoxel.Save;
 using MadVoxel.UI;
-using MadVoxel.World.Voxel;
+using MadVoxel.World.Terrain;
 using UnityEngine;
 
 namespace MadVoxel.Core
@@ -22,9 +22,10 @@ namespace MadVoxel.Core
         UiRoot _ui;
 
         GameObject _worldRoot;
-        VoxelWorld _voxels;
+        TerrainWorld _voxels;
         ChunkStreamer _streamer;
         StructureWorld _structures;
+        BuildingWorld _buildings;
         BlockDamageTracker _blockDamage;
         WorldClock _clock;
         SkyController _sky;
@@ -38,6 +39,7 @@ namespace MadVoxel.Core
         string _worldName;
         int _seed;
         Vector3 _worldSpawn;
+        float _lastEdgeWarning = -99f;
 
         /// <summary>Set by GameBootstrap; off means no test hotkeys are registered at all.</summary>
         public bool DeveloperToolsEnabled { get; set; }
@@ -99,13 +101,16 @@ namespace MadVoxel.Core
         {
             _worldRoot = new GameObject("World");
 
-            _voxels = _worldRoot.AddComponent<VoxelWorld>();
-            _voxels.Init(_content.blocks, _seed);
+            _voxels = _worldRoot.AddComponent<TerrainWorld>();
+            _voxels.Init(_content.blocks, _seed, _content.config.worldRadiusChunks);
 
             _store = new ChunkFileStore(_worldName, _content.blocks);
 
             _structures = _worldRoot.AddComponent<StructureWorld>();
             _structures.Init(_voxels);
+
+            _buildings = _worldRoot.AddComponent<BuildingWorld>();
+            _buildings.Init(_voxels);
 
             _blockDamage = _worldRoot.AddComponent<BlockDamageTracker>();
             _blockDamage.Init(_voxels);
@@ -117,7 +122,7 @@ namespace MadVoxel.Core
             _sky.Init(_clock);
 
             _worldSpawn = FindSurfaceSpawn(0, 0);
-            _player = PlayerFactory.Create(_content.config, _voxels, _structures, _worldSpawn);
+            _player = PlayerFactory.Create(_content.config, _voxels, _structures, _buildings, _worldSpawn);
             _player.transform.SetParent(_worldRoot.transform, true);
 
             _streamer = _worldRoot.AddComponent<ChunkStreamer>();
@@ -128,11 +133,11 @@ namespace MadVoxel.Core
                           _player.transform, _player.Stats, _content.Zombie(ZombieIds.Shambler));
 
             _horde = _worldRoot.AddComponent<HordeDirector>();
-            _horde.Init(_content.hordeSchedule, _clock, _spawner, _structures, _sky, _player.Progression, _player.transform);
+            _horde.Init(_content.hordeSchedule, _clock, _spawner, _structures, _buildings, _sky, _player.Progression, _player.transform);
             _horde.LoadState(hordeNumber);
 
             _save = _worldRoot.AddComponent<SaveService>();
-            _save.Init(_content, _streamer, _structures, _clock, _horde, _player,
+            _save.Init(_content, _streamer, _structures, _buildings, _clock, _horde, _player,
                        _worldName, _seed, _content.config.autosaveIntervalSeconds);
 
             if (DeveloperToolsEnabled)
@@ -157,7 +162,7 @@ namespace MadVoxel.Core
                 int x = wx + (attempt % 8) * 7;
                 int z = wz + (attempt / 8) * 7;
                 int height = _voxels.Terrain.SurfaceHeight(x, z);
-                if (height > TerrainGenerator.SeaLevel - 6 && height < VoxelWorld.WorldHeight - 40)
+                if (height > TerrainGenerator.SeaLevel - 6 && height < TerrainWorld.WorldHeight - 40)
                 {
                     return new Vector3(x + 0.5f, height + 2.2f, z + 0.5f);
                 }
@@ -199,6 +204,30 @@ namespace MadVoxel.Core
             Notifications.Post("Wake up. Find wood, find stone, get inside before dark.");
         }
 
+        /// <summary>
+        /// The map is finite, so the edge has to push back. A soft clamp reads better
+        /// than an invisible wall you can get stuck against.
+        /// </summary>
+        void KeepInsideWorld()
+        {
+            var position = _player.transform.position;
+            if (_voxels.IsInsideWorld(position)) return;
+
+            float extent = _voxels.WorldExtentMetres - 1.5f;
+            var clamped = new Vector3(
+                Mathf.Clamp(position.x, -extent, extent),
+                position.y,
+                Mathf.Clamp(position.z, -extent, extent));
+
+            _player.Motor.Teleport(clamped);
+
+            if (Time.time - _lastEdgeWarning > 8f)
+            {
+                _lastEdgeWarning = Time.time;
+                Notifications.Post("The land runs out here.");
+            }
+        }
+
         static bool HasGroundBelow(Vector3 position)
         {
             RaycastHit hit;
@@ -222,6 +251,8 @@ namespace MadVoxel.Core
         {
             if (_player == null || _voxels == null) return;
 
+            KeepInsideWorld();
+
             // Streaming can lag behind a sprinting player; catch anyone who drops out
             // of the bottom of the world rather than letting them fall forever.
             if (_player.transform.position.y >= -6f) return;
@@ -240,7 +271,7 @@ namespace MadVoxel.Core
             if (zombie == null || zombie.Definition == null) return;
             if (killer == null || _player == null || killer != _player.gameObject) return;
 
-            _player.Progression.AddXp(zombie.Definition.xpReward, Skills.XpSource.Kill);
+            _player.Progression.AddXp(zombie.Definition.xpReward, Perks.XpSource.Kill);
 
             var def = zombie.Definition;
             if (def.dropItem != null && def.dropMax > 0)
@@ -298,7 +329,7 @@ namespace MadVoxel.Core
             if (def == null) return null;
 
             var cell = Vector3Int.FloorToInt(_player.transform.position);
-            cell.y = Mathf.Clamp(cell.y, 1, VoxelWorld.WorldHeight - 2);
+            cell.y = Mathf.Clamp(cell.y, 1, TerrainWorld.WorldHeight - 2);
 
             // Find the first free cell at or just above where the player fell.
             for (int i = 0; i < 4; i++)
@@ -358,6 +389,7 @@ namespace MadVoxel.Core
             _voxels = null;
             _streamer = null;
             _structures = null;
+            _buildings = null;
             _blockDamage = null;
             _clock = null;
             _sky = null;

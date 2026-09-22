@@ -60,12 +60,10 @@ namespace MadVoxel.Building
         {
             switch (Definition.kind)
             {
-                case StructureKind.Door: gameObject.AddComponent<DoorStructure>().Bind(this); break;
                 case StructureKind.Storage: gameObject.AddComponent<StorageStructure>().Bind(this); break;
                 case StructureKind.CraftStation: gameObject.AddComponent<CraftStationStructure>().Bind(this); break;
                 case StructureKind.Campfire: gameObject.AddComponent<CampfireStructure>().Bind(this); break;
-                case StructureKind.ClaimStake: gameObject.AddComponent<ClaimStakeStructure>().Bind(this); break;
-                case StructureKind.Ladder: gameObject.AddComponent<LadderStructure>().Bind(this); break;
+                case StructureKind.ToolCupboard: gameObject.AddComponent<ToolCupboardStructure>().Bind(this); break;
                 case StructureKind.Bedroll: gameObject.AddComponent<BedrollStructure>().Bind(this); break;
             }
         }

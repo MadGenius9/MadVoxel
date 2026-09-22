@@ -21,6 +21,8 @@ namespace MadVoxel.Core.Player
         PlayerStats _stats;
         StructureWorld _structures;
 
+        readonly Collider[] _ladderProbe = new Collider[8];
+
         Vector3 _velocity;
         bool _crouching;
         float _lowestSpeedThisFall;
@@ -140,25 +142,27 @@ namespace MadVoxel.Core.Player
             _controller.Move(motion * dt);
         }
 
+        /// <summary>
+        /// Ladders are snap pieces spanning a 3 m cell edge, so an overlap probe around
+        /// the chest is both simpler and more accurate than a grid lookup.
+        /// </summary>
         void UpdateLadderState()
         {
             IsOnLadder = false;
-            if (_structures == null) return;
 
-            Vector3 p = transform.position;
-            var feet = new Vector3Int(Mathf.FloorToInt(p.x), Mathf.FloorToInt(p.y + 0.2f), Mathf.FloorToInt(p.z));
-            var chest = new Vector3Int(feet.x, Mathf.FloorToInt(p.y + 1.2f), feet.z);
+            Vector3 chest = transform.position + Vector3.up * 1.1f;
+            int count = Physics.OverlapSphereNonAlloc(chest, 0.6f, _ladderProbe, ~0, QueryTriggerInteraction.Collide);
 
-            if (_structures.IsLadder(feet) || _structures.IsLadder(chest))
+            for (int i = 0; i < count; i++)
             {
-                IsOnLadder = true;
-                return;
+                if (_ladderProbe[i] == null) continue;
+                var piece = _ladderProbe[i].GetComponentInParent<BuildPiece>();
+                if (piece != null && piece.Definition.kind == BuildPieceKind.Ladder)
+                {
+                    IsOnLadder = true;
+                    return;
+                }
             }
-
-            // Also count a ladder in the cell we are pressed against.
-            Vector3 ahead = p + transform.forward * 0.45f + Vector3.up * 1.0f;
-            var aheadCell = new Vector3Int(Mathf.FloorToInt(ahead.x), Mathf.FloorToInt(ahead.y), Mathf.FloorToInt(ahead.z));
-            if (_structures.IsLadder(aheadCell)) IsOnLadder = true;
         }
 
         void ResolveFallDamage()

@@ -1,7 +1,7 @@
 using System;
 using MadVoxel.Building;
 using MadVoxel.Core;
-using MadVoxel.World.Voxel;
+using MadVoxel.World.Terrain;
 using UnityEngine;
 
 namespace MadVoxel.AI
@@ -29,7 +29,7 @@ namespace MadVoxel.AI
         public static event Action<Zombie, GameObject> Died;
 
         CharacterController _controller;
-        VoxelWorld _voxels;
+        TerrainWorld _voxels;
         StructureWorld _structures;
         BlockDamageTracker _blockDamage;
         LandClaimRegistry _claims;
@@ -51,7 +51,7 @@ namespace MadVoxel.AI
         public bool IsAlive { get { return _health > 0f; } }
         public float Health { get { return _health; } }
 
-        public void Init(ZombieDefinition def, VoxelWorld voxels, StructureWorld structures,
+        public void Init(ZombieDefinition def, TerrainWorld voxels, StructureWorld structures,
                          BlockDamageTracker blockDamage, LandClaimRegistry claims,
                          Transform player, Core.Player.PlayerStats playerStats)
         {
@@ -140,7 +140,7 @@ namespace MadVoxel.AI
             float distance = Vector3.Distance(eye, playerCentre);
 
             float range = Definition.sightRange * (IsHordeUnit ? 1.8f : 1f);
-            if (distance <= range && VoxelRay.HasLineOfSight(_voxels, eye, playerCentre))
+            if (distance <= range && TerrainRay.HasLineOfSight(_voxels, eye, playerCentre))
             {
                 _lastSeenTime = Time.time;
                 _lastKnownPlayerPos = _player.position;
@@ -225,9 +225,29 @@ namespace MadVoxel.AI
             for (int i = 0; i < 2; i++)
             {
                 float heightOffset = i == 0 ? 0.45f : 1.25f;
-                Vector3 probe = transform.position + Vector3.up * heightOffset + forward * 0.75f;
+                Vector3 origin = transform.position + Vector3.up * heightOffset;
+                Vector3 probe = origin + forward * 0.75f;
 
                 if (!MayBreakAt(probe)) continue;
+
+                // A raycast catches snap pieces, deployables and terrain colliders alike,
+                // so walls, doors and foundations are all chewable.
+                RaycastHit hit;
+                if (Physics.Raycast(origin, forward, out hit, 1.1f, ~0, QueryTriggerInteraction.Ignore))
+                {
+                    var damageable = hit.collider.GetComponentInParent<IDamageable>();
+                    if (damageable != null && !ReferenceEquals(damageable, this))
+                    {
+                        damageable.ApplyDamage(new DamageInfo
+                        {
+                            Amount = damage,
+                            Kind = DamageKind.Zombie,
+                            Point = hit.point,
+                            Source = gameObject
+                        });
+                        return;
+                    }
+                }
 
                 var structure = FindStructureAt(probe);
                 if (structure != null)

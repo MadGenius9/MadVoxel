@@ -10,6 +10,7 @@ namespace MadVoxel.Inventory
         Axe,
         Shovel,
         Wrench,
+        Hammer,
         Melee
     }
 
@@ -56,8 +57,10 @@ namespace MadVoxel.Inventory
         public int maxDurability;
 
         [Header("Placement")]
-        public World.Voxel.BlockDefinition placeableBlock;
+        public World.Terrain.BlockDefinition placeableBlock;
         public Building.StructureDefinition placeableStructure;
+        [Tooltip("Rust-style snap piece. Always the Twig tier; the hammer upgrades from there.")]
+        public Building.BuildPieceDefinition placeableBuildPiece;
 
         [Header("Consumable")]
         public float foodRestore;
@@ -72,7 +75,7 @@ namespace MadVoxel.Inventory
 
         public bool IsPlaceable
         {
-            get { return placeableBlock != null || placeableStructure != null; }
+            get { return placeableBlock != null || placeableStructure != null || placeableBuildPiece != null; }
         }
 
         public bool HasDurability

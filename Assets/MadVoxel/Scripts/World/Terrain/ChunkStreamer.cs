@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using MadVoxel.Core;
 using UnityEngine;
 
-namespace MadVoxel.World.Voxel
+namespace MadVoxel.World.Terrain
 {
     /// <summary>
     /// Loads, generates, meshes and unloads chunks around a tracked transform. Terrain
@@ -30,7 +30,7 @@ namespace MadVoxel.World.Voxel
         const int MaxConcurrentMeshJobs = 8;
         const int ScanIntervalFrames = 10;
 
-        VoxelWorld _world;
+        TerrainWorld _world;
         GameConfig _config;
         IChunkStore _store;
         Transform _tracked;
@@ -59,7 +59,7 @@ namespace MadVoxel.World.Voxel
         public int PendingJobs { get { return _pendingGen.Count + _pendingMesh.Count + _meshRequests.Count; } }
         public int VisibleChunks { get { return _views.Count; } }
 
-        public void Init(VoxelWorld world, GameConfig config, IChunkStore store, Transform tracked)
+        public void Init(TerrainWorld world, GameConfig config, IChunkStore store, Transform tracked)
         {
             _world = world;
             _config = config;
@@ -146,10 +146,13 @@ namespace MadVoxel.World.Voxel
                 int dist2 = offset.x * offset.x + offset.y * offset.y;
                 if (dist2 > genRadius * genRadius) continue;
 
-                for (int cy = 0; cy < VoxelWorld.WorldHeightChunks; cy++)
+                if (!_world.InBounds(centre.X + offset.x, centre.Z + offset.y)) continue;
+
+                for (int cy = 0; cy < TerrainWorld.WorldHeightChunks; cy++)
                 {
                     var coord = new ChunkCoord(centre.X + offset.x, cy, centre.Z + offset.y);
                     var chunk = _world.GetOrCreateChunk(coord);
+                    if (chunk == null) break;
                     if (!chunk.Generated && !_pendingGen.Contains(coord))
                     {
                         DispatchGeneration(coord);
@@ -165,7 +168,7 @@ namespace MadVoxel.World.Voxel
                 int dist2 = offset.x * offset.x + offset.y * offset.y;
                 if (dist2 > meshRadius * meshRadius) continue;
 
-                for (int cy = 0; cy < VoxelWorld.WorldHeightChunks; cy++)
+                for (int cy = 0; cy < TerrainWorld.WorldHeightChunks; cy++)
                 {
                     var coord = new ChunkCoord(centre.X + offset.x, cy, centre.Z + offset.y);
                     Chunk chunk;
@@ -288,7 +291,7 @@ namespace MadVoxel.World.Voxel
                 for (int sign = -1; sign <= 1; sign += 2)
                 {
                     var n = chunk.Coord.Offset(axis == 0 ? sign : 0, axis == 1 ? sign : 0, axis == 2 ? sign : 0);
-                    if (n.Y < 0 || n.Y >= VoxelWorld.WorldHeightChunks)
+                    if (n.Y < 0 || n.Y >= TerrainWorld.WorldHeightChunks)
                     {
                         // Outside the vertical world counts as air.
                         if (centreOpaque) return false;
@@ -439,7 +442,7 @@ namespace MadVoxel.World.Voxel
         public bool IsColumnReady(Vector3 worldPos)
         {
             var centre = ChunkCoord.FromWorld(worldPos);
-            for (int cy = 0; cy < VoxelWorld.WorldHeightChunks; cy++)
+            for (int cy = 0; cy < TerrainWorld.WorldHeightChunks; cy++)
             {
                 Chunk chunk;
                 if (!_world.TryGetChunk(new ChunkCoord(centre.X, cy, centre.Z), out chunk)) return false;

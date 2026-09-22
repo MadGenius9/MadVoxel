@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using MadVoxel.Core;
 using UnityEngine;
 
-namespace MadVoxel.Skills
+namespace MadVoxel.Perks
 {
     public enum XpSource
     {
@@ -17,7 +17,7 @@ namespace MadVoxel.Skills
 
     /// <summary>
     /// XP, level and skill points. Phase 0 uses the level to scale horde pressure;
-    /// Phase 1 spends the points in <see cref="SkillTreeDefinition"/>.
+    /// Phase 1 spends the points in <see cref="PerkTreeDefinition"/>.
     /// Creative-only actions (placing a block you just mined back down) award nothing:
     /// XP for building is granted per crafted piece, not per placement.
     /// </summary>
@@ -25,7 +25,7 @@ namespace MadVoxel.Skills
     {
         public int Level { get; private set; } = 1;
         public float Xp { get; private set; }
-        public int UnspentSkillPoints { get; private set; }
+        public int UnspentPerkPoints { get; private set; }
 
         readonly Dictionary<string, int> _skillRanks = new Dictionary<string, int>();
         readonly HashSet<string> _unlockedRecipes = new HashSet<string>();
@@ -34,9 +34,9 @@ namespace MadVoxel.Skills
         public event Action Changed;
 
         public ISet<string> UnlockedRecipes { get { return _unlockedRecipes; } }
-        public IReadOnlyDictionary<string, int> SkillRanks { get { return _skillRanks; } }
+        public IReadOnlyDictionary<string, int> PerkRanks { get { return _skillRanks; } }
 
-        [Tooltip("Skill points granted per level.")]
+        [Tooltip("Perk points granted per level.")]
         public int pointsPerLevel = 1;
 
         /// <summary>XP needed to go from the given level to the next.</summary>
@@ -58,36 +58,36 @@ namespace MadVoxel.Skills
             {
                 Xp -= XpToNext;
                 Level++;
-                UnspentSkillPoints += pointsPerLevel;
+                UnspentPerkPoints += pointsPerLevel;
                 levelled = true;
                 if (LevelledUp != null) LevelledUp(Level);
             }
 
             if (levelled)
             {
-                Notifications.PostFormat("Level {0}  -  {1} skill point(s) to spend", Level, UnspentSkillPoints);
+                Notifications.PostFormat("Level {0}  -  {1} skill point(s) to spend", Level, UnspentPerkPoints);
             }
             if (Changed != null) Changed();
         }
 
-        public int GetRank(string skillId)
+        public int GetRank(string perkId)
         {
             int rank;
-            return _skillRanks.TryGetValue(skillId, out rank) ? rank : 0;
+            return _skillRanks.TryGetValue(perkId, out rank) ? rank : 0;
         }
 
-        public void SetRank(string skillId, int rank)
+        public void SetRank(string perkId, int rank)
         {
-            if (string.IsNullOrEmpty(skillId)) return;
-            _skillRanks[skillId] = rank;
+            if (string.IsNullOrEmpty(perkId)) return;
+            _skillRanks[perkId] = rank;
             if (Changed != null) Changed();
         }
 
-        public void SpendPoint(string skillId, int newRank)
+        public void SpendPoint(string perkId, int newRank)
         {
-            if (UnspentSkillPoints <= 0) return;
-            UnspentSkillPoints--;
-            SetRank(skillId, newRank);
+            if (UnspentPerkPoints <= 0) return;
+            UnspentPerkPoints--;
+            SetRank(perkId, newRank);
         }
 
         public void UnlockRecipe(string recipeId)
@@ -100,7 +100,7 @@ namespace MadVoxel.Skills
         {
             Level = Mathf.Max(1, level);
             Xp = Mathf.Max(0f, xp);
-            UnspentSkillPoints = Mathf.Max(0, points);
+            UnspentPerkPoints = Mathf.Max(0, points);
 
             _skillRanks.Clear();
             if (ranks != null)
@@ -121,7 +121,7 @@ namespace MadVoxel.Skills
         {
             Level = 1;
             Xp = 0f;
-            UnspentSkillPoints = 0;
+            UnspentPerkPoints = 0;
             _skillRanks.Clear();
             _unlockedRecipes.Clear();
             if (Changed != null) Changed();

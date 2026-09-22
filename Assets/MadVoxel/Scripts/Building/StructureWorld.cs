@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using MadVoxel.Core;
-using MadVoxel.World.Voxel;
+using MadVoxel.World.Terrain;
 using UnityEngine;
 
 namespace MadVoxel.Building
@@ -16,7 +16,7 @@ namespace MadVoxel.Building
         readonly Dictionary<Vector3Int, PlacedStructure> _byCell = new Dictionary<Vector3Int, PlacedStructure>();
         readonly List<PlacedStructure> _all = new List<PlacedStructure>();
 
-        VoxelWorld _voxels;
+        TerrainWorld _voxels;
         Transform _root;
 
         public LandClaimRegistry Claims { get; private set; }
@@ -26,7 +26,7 @@ namespace MadVoxel.Building
 
         public IReadOnlyList<PlacedStructure> All { get { return _all; } }
 
-        public void Init(VoxelWorld voxels)
+        public void Init(TerrainWorld voxels)
         {
             _voxels = voxels;
             Claims = new LandClaimRegistry();
@@ -70,12 +70,6 @@ namespace MadVoxel.Building
             return _byCell.ContainsKey(cell);
         }
 
-        public bool IsLadder(Vector3Int cell)
-        {
-            PlacedStructure s;
-            return _byCell.TryGetValue(cell, out s) && s.Definition.kind == StructureKind.Ladder;
-        }
-
         public bool BlocksMovement(Vector3Int cell)
         {
             PlacedStructure s;
@@ -92,7 +86,7 @@ namespace MadVoxel.Building
             for (int x = 0; x < Mathf.Max(1, size.x); x++)
             {
                 var c = new Vector3Int(cell.x + x, cell.y + y, cell.z + z);
-                if (!VoxelWorld.InVerticalRange(c.y)) return false;
+                if (!TerrainWorld.InVerticalRange(c.y)) return false;
                 if (_voxels.IsSolid(c.x, c.y, c.z)) return false;
                 if (_byCell.ContainsKey(c)) return false;
             }

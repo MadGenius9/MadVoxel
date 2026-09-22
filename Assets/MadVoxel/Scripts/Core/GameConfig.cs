@@ -9,6 +9,10 @@ namespace MadVoxel.Core
     [CreateAssetMenu(menuName = "MadVoxel/Game Config", fileName = "GameConfig")]
     public class GameConfig : ScriptableObject
     {
+        [Header("World size")]
+        [Tooltip("Half-width of the playable map in chunks. 96 gives a 3072 m square - large, but finite and walkable in a session.")]
+        public int worldRadiusChunks = 96;
+
         [Header("World streaming")]
         [Tooltip("Chunks of mesh built around the player in each horizontal direction.")]
         public int viewDistanceChunks = 6;

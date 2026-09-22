@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using MadVoxel.Core;
 using UnityEngine;
 
-namespace MadVoxel.World.Voxel
+namespace MadVoxel.World.Terrain
 {
     /// <summary>Block runtime id to material, built once from the registry.</summary>
     public class BlockMaterialCache

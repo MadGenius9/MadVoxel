@@ -28,9 +28,9 @@ namespace MadVoxel.Save
     }
 
     [Serializable]
-    public class SkillRankData
+    public class PerkRankData
     {
-        public string skillId = "";
+        public string perkId = "";
         public int rank;
     }
 
@@ -45,9 +45,9 @@ namespace MadVoxel.Save
 
         public int level = 1;
         public float xp;
-        public int skillPoints;
+        public int perkPoints;
         public List<string> unlockedRecipes = new List<string>();
-        public List<SkillRankData> skillRanks = new List<SkillRankData>();
+        public List<PerkRankData> perkRanks = new List<PerkRankData>();
 
         public bool hasRespawn;
         public float respawnX, respawnY, respawnZ;
@@ -66,8 +66,20 @@ namespace MadVoxel.Save
     }
 
     [Serializable]
+    public class BuildPieceSaveData
+    {
+        public string definitionId = "";
+        public int x, y, z;
+        public int slot;
+        public int side;
+        public float health;
+        public bool open;
+    }
+
+    [Serializable]
     public class StructuresSaveData
     {
         public List<StructureSaveData> structures = new List<StructureSaveData>();
+        public List<BuildPieceSaveData> pieces = new List<BuildPieceSaveData>();
     }
 }

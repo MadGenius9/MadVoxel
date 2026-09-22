@@ -1,6 +1,6 @@
 using MadVoxel.Core;
 using MadVoxel.Core.Player;
-using MadVoxel.World.Voxel;
+using MadVoxel.World.Terrain;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,7 +12,7 @@ namespace MadVoxel.UI
         Canvas _canvas;
         Text _text;
         PlayerRig _player;
-        VoxelWorld _voxels;
+        TerrainWorld _voxels;
         ChunkStreamer _streamer;
         int _seed;
         bool _developerTools;
@@ -21,7 +21,7 @@ namespace MadVoxel.UI
         int _fpsFrames;
         float _fps;
 
-        public void Init(PlayerRig player, VoxelWorld voxels, ChunkStreamer streamer, int seed, bool developerTools)
+        public void Init(PlayerRig player, TerrainWorld voxels, ChunkStreamer streamer, int seed, bool developerTools)
         {
             _developerTools = developerTools;
             _player = player;

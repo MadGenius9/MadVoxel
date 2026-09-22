@@ -355,7 +355,7 @@ namespace MadVoxel.UI
             }
 
             // Crafting is real work, unlike putting a block back down.
-            _player.Progression.AddXp(Mathf.Max(1f, recipe.craftSeconds * 2f), MadVoxel.Skills.XpSource.Craft);
+            _player.Progression.AddXp(Mathf.Max(1f, recipe.craftSeconds * 2f), MadVoxel.Perks.XpSource.Craft);
             Notifications.PostFormat("Crafted {0} x{1}", recipe.output.displayName, recipe.outputCount);
             Refresh();
         }

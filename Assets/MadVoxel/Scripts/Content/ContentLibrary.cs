@@ -5,10 +5,10 @@ using MadVoxel.Core;
 using MadVoxel.Horde;
 using MadVoxel.Inventory;
 using MadVoxel.Quests;
-using MadVoxel.Skills;
+using MadVoxel.Perks;
 using MadVoxel.Traders;
 using MadVoxel.Vehicles;
-using MadVoxel.World.Voxel;
+using MadVoxel.World.Terrain;
 using UnityEngine;
 
 namespace MadVoxel.Content
@@ -54,14 +54,20 @@ namespace MadVoxel.Content
             LinkPlacement(itemMap, blockMap, structureMap);
             LinkBlockDrops(blockMap, itemMap);
 
+            // Snap pieces need the item table (for upgrade costs) and then add items of
+            // their own, so they slot in between the two.
+            var twigByKind = new Dictionary<BuildPieceKind, BuildPieceDefinition>();
+            db.buildPieces = BuildSnapPieces(itemMap, twigByKind);
+
             db.blocks = BuildRegistry(blockMap);
-            db.items = new List<ItemDefinition>(itemMap.Values);
             db.structures = new List<StructureDefinition>(structureMap.Values);
             db.recipes = BuildRecipes(itemMap);
+            AddSnapItems(itemMap, twigByKind, db.recipes);
+            db.items = new List<ItemDefinition>(itemMap.Values);
             db.zombies = BuildZombies(itemMap);
             db.hordeSchedule = BuildHordeSchedule(db.zombies);
 
-            db.skillTree = BuildSkillTree();
+            db.perkTree = BuildPerkTree();
             db.quests = BuildQuests(itemMap);
             db.traders = BuildTraders(itemMap, db.quests);
             db.vehicles = BuildVehicles(itemMap);
@@ -279,6 +285,7 @@ namespace MadVoxel.Content
             Add(Tool(ItemIds.IronAxe, "Iron Axe", ToolType.Axe, 2, 4.2f, 14f, 400, ColIronPlate, 65));
             Add(Tool(ItemIds.Club, "Reinforced Club", ToolType.Melee, 1, 1.0f, 15f, 220, ColWood, 24));
             Add(Tool(ItemIds.Wrench, "Wrench", ToolType.Wrench, 1, 1.2f, 6f, 300, ColIronPlate, 40));
+            Add(Tool(ItemIds.Hammer, "Building Hammer", ToolType.Hammer, 1, 1.0f, 8f, 600, ColWood, 30));
 
             // Block items. Each carries the block it places.
             AddBlockItem(map, blocks, ItemIds.BlockWoodFrame, BlockIds.WoodFrame, "Wood Frame", SurfaceFamily.Plank, ColPlank * 0.9f, 2);
@@ -289,12 +296,10 @@ namespace MadVoxel.Content
             AddBlockItem(map, blocks, ItemIds.BlockGlass, BlockIds.Glass, "Scrap Glass Block", SurfaceFamily.Stone, ColGlass, 6);
 
             // Snap piece items; the structure reference is linked after structures exist.
-            Add(Item(ItemIds.PieceDoor, "Wooden Door", ItemCategory.Structure, 8, SurfaceFamily.Plank, ColPlank, 20));
-            Add(Item(ItemIds.PieceLadder, "Ladder", ItemCategory.Structure, 16, SurfaceFamily.Wood, ColWood, 8));
             Add(Item(ItemIds.PieceStorageBox, "Storage Box", ItemCategory.Structure, 8, SurfaceFamily.Plank, ColPlank * 1.05f, 26));
             Add(Item(ItemIds.PieceWorkbench, "Workbench", ItemCategory.Structure, 4, SurfaceFamily.Plank, ColPlank, 40));
             Add(Item(ItemIds.PieceCampfire, "Campfire", ItemCategory.Structure, 4, SurfaceFamily.Stone, ColStone, 14));
-            Add(Item(ItemIds.PieceClaimStake, "Land Claim Stake", ItemCategory.Structure, 2, SurfaceFamily.Wood, ColWood, 120));
+            Add(Item(ItemIds.PieceToolCupboard, "Land Claim Stake", ItemCategory.Structure, 2, SurfaceFamily.Wood, ColWood, 120));
             Add(Item(ItemIds.PieceBedroll, "Bedroll", ItemCategory.Structure, 2, SurfaceFamily.Cloth, new Color(0.45f, 0.42f, 0.36f), 30));
 
             // Phase 1 economy and vehicle parts.
@@ -323,12 +328,10 @@ namespace MadVoxel.Content
                                   Dictionary<string, BlockDefinition> blocks,
                                   Dictionary<string, StructureDefinition> structures)
         {
-            items[ItemIds.PieceDoor].placeableStructure = structures[StructureIds.Door];
-            items[ItemIds.PieceLadder].placeableStructure = structures[StructureIds.Ladder];
             items[ItemIds.PieceStorageBox].placeableStructure = structures[StructureIds.StorageBox];
             items[ItemIds.PieceWorkbench].placeableStructure = structures[StructureIds.Workbench];
             items[ItemIds.PieceCampfire].placeableStructure = structures[StructureIds.Campfire];
-            items[ItemIds.PieceClaimStake].placeableStructure = structures[StructureIds.ClaimStake];
+            items[ItemIds.PieceToolCupboard].placeableStructure = structures[StructureIds.ToolCupboard];
             items[ItemIds.PieceBedroll].placeableStructure = structures[StructureIds.Bedroll];
         }
 
@@ -383,16 +386,6 @@ namespace MadVoxel.Content
         {
             var map = new Dictionary<string, StructureDefinition>();
 
-            var door = Structure(StructureIds.Door, "Wooden Door", StructureKind.Door, new Vector3Int(1, 2, 1), SurfaceFamily.Plank, ColPlank, 260f);
-            door.salvageItem = items[ItemIds.PieceDoor];
-            map[door.stringId] = door;
-
-            var ladder = Structure(StructureIds.Ladder, "Ladder", StructureKind.Ladder, Vector3Int.one, SurfaceFamily.Wood, ColWood, 70f);
-            ladder.requiresSupport = false;
-            ladder.blocksMovement = false;
-            ladder.salvageItem = items[ItemIds.PieceLadder];
-            map[ladder.stringId] = ladder;
-
             var box = Structure(StructureIds.StorageBox, "Storage Box", StructureKind.Storage, Vector3Int.one, SurfaceFamily.Plank, ColPlank * 1.05f, 180f);
             box.storageSlots = 24;
             box.salvageItem = items[ItemIds.PieceStorageBox];
@@ -409,10 +402,10 @@ namespace MadVoxel.Content
             fire.salvageItem = items[ItemIds.PieceCampfire];
             map[fire.stringId] = fire;
 
-            var stake = Structure(StructureIds.ClaimStake, "Land Claim Stake", StructureKind.ClaimStake, new Vector3Int(1, 2, 1), SurfaceFamily.Wood, ColWood, 900f);
-            stake.claimRadius = 24f;
-            stake.salvageItem = items[ItemIds.PieceClaimStake];
-            map[stake.stringId] = stake;
+            var cupboard = Structure(StructureIds.ToolCupboard, "Tool Cupboard", StructureKind.ToolCupboard, new Vector3Int(1, 2, 1), SurfaceFamily.Plank, ColPlank, 900f);
+            cupboard.claimRadius = 24f;
+            cupboard.salvageItem = items[ItemIds.PieceToolCupboard];
+            map[cupboard.stringId] = cupboard;
 
             var bedroll = Structure(StructureIds.Bedroll, "Bedroll", StructureKind.Bedroll, Vector3Int.one, SurfaceFamily.Cloth, new Color(0.45f, 0.42f, 0.36f), 60f);
             bedroll.blocksMovement = false;
@@ -469,12 +462,13 @@ namespace MadVoxel.Content
             list.Add(Recipe("madvoxel:craft_club", it[ItemIds.Club], 1, CraftStation.Hand, 2.0f,
                 Ing(it[ItemIds.WoodLog], 2), Ing(it[ItemIds.ScrapMetal], 2), Ing(it[ItemIds.PlantFibre], 2)));
 
+            list.Add(Recipe("madvoxel:craft_hammer", it[ItemIds.Hammer], 1, CraftStation.Hand, 2.5f,
+                Ing(it[ItemIds.WoodLog], 2), Ing(it[ItemIds.Stone], 2), Ing(it[ItemIds.PlantFibre], 2)));
+
             list.Add(Recipe("madvoxel:craft_campfire", it[ItemIds.PieceCampfire], 1, CraftStation.Hand, 3f,
                 Ing(it[ItemIds.Stone], 8), Ing(it[ItemIds.WoodLog], 3)));
             list.Add(Recipe("madvoxel:craft_workbench", it[ItemIds.PieceWorkbench], 1, CraftStation.Hand, 4f,
                 Ing(it[ItemIds.Plank], 10), Ing(it[ItemIds.Stone], 4)));
-            list.Add(Recipe("madvoxel:craft_ladder", it[ItemIds.PieceLadder], 2, CraftStation.Hand, 1.2f,
-                Ing(it[ItemIds.Plank], 4)));
             list.Add(Recipe("madvoxel:craft_bedroll", it[ItemIds.PieceBedroll], 1, CraftStation.Hand, 3f,
                 Ing(it[ItemIds.Cloth], 6), Ing(it[ItemIds.PlantFibre], 6)));
 
@@ -493,11 +487,9 @@ namespace MadVoxel.Content
             list.Add(Recipe("madvoxel:smelt_glass", it[ItemIds.BlockGlass], 2, CraftStation.Campfire, 4f,
                 Ing(it[ItemIds.Sand], 3), Ing(it[ItemIds.Coal], 1)));
 
-            list.Add(Recipe("madvoxel:craft_door", it[ItemIds.PieceDoor], 1, CraftStation.Workbench, 4f,
-                Ing(it[ItemIds.Plank], 8), Ing(it[ItemIds.IronIngot], 1)));
             list.Add(Recipe("madvoxel:craft_storage_box", it[ItemIds.PieceStorageBox], 1, CraftStation.Workbench, 4f,
                 Ing(it[ItemIds.Plank], 12), Ing(it[ItemIds.IronIngot], 1)));
-            list.Add(Recipe("madvoxel:craft_claim_stake", it[ItemIds.PieceClaimStake], 1, CraftStation.Workbench, 6f,
+            list.Add(Recipe("madvoxel:craft_claim_stake", it[ItemIds.PieceToolCupboard], 1, CraftStation.Workbench, 6f,
                 Ing(it[ItemIds.WoodLog], 6), Ing(it[ItemIds.IronIngot], 2), Ing(it[ItemIds.Cloth], 2)));
             list.Add(Recipe("madvoxel:craft_wrench", it[ItemIds.Wrench], 1, CraftStation.Workbench, 4f,
                 Ing(it[ItemIds.IronIngot], 3), Ing(it[ItemIds.Plank], 1)));
@@ -512,16 +504,16 @@ namespace MadVoxel.Content
             var steel = Recipe("madvoxel:craft_block_steel", it[ItemIds.BlockSteel], 1, CraftStation.Workbench, 6f,
                 Ing(it[ItemIds.BlockIron], 1), Ing(it[ItemIds.Coal], 4));
             steel.unlockedByDefault = false;
-            steel.requiredSkillId = "madvoxel:skill_carpenter";
-            steel.requiredSkillRank = 3;
+            steel.requiredPerkId = "madvoxel:perk_carpenter";
+            steel.requiredPerkRank = 3;
             list.Add(steel);
 
             var buggy = Recipe("madvoxel:craft_buggy_kit", it[ItemIds.BuggyKit], 1, CraftStation.Workbench, 12f,
                 Ing(it[ItemIds.EngineBlock], 1), Ing(it[ItemIds.Wheel], 4),
                 Ing(it[ItemIds.IronIngot], 20), Ing(it[ItemIds.ScrapMetal], 40));
             buggy.unlockedByDefault = false;
-            buggy.requiredSkillId = "madvoxel:skill_grease_monkey";
-            buggy.requiredSkillRank = 1;
+            buggy.requiredPerkId = "madvoxel:perk_grease_monkey";
+            buggy.requiredPerkRank = 1;
             list.Add(buggy);
 
             return list;
@@ -578,11 +570,11 @@ namespace MadVoxel.Content
 
         // ------------------------------------------------------------------ skills
 
-        static SkillDefinition Skill(string id, string name, SkillCategory category, string description,
-                                     int maxRank, int requiredLevel, params SkillEffect[] effects)
+        static PerkDefinition Perk(string id, string name, PerkCategory category, string description,
+                                     int maxRank, int requiredLevel, params PerkEffect[] effects)
         {
-            var def = ScriptableObject.CreateInstance<SkillDefinition>();
-            def.name = "Skill_" + ShortName(id);
+            var def = ScriptableObject.CreateInstance<PerkDefinition>();
+            def.name = "Perk_" + ShortName(id);
             def.stringId = id;
             def.displayName = name;
             def.category = category;
@@ -593,72 +585,72 @@ namespace MadVoxel.Content
             return def;
         }
 
-        static SkillEffect Effect(SkillEffectType type, float perRank)
+        static PerkEffect Effect(PerkEffectType type, float perRank)
         {
-            return new SkillEffect { type = type, valuePerRank = perRank };
+            return new PerkEffect { type = type, valuePerRank = perRank };
         }
 
-        static SkillTreeDefinition BuildSkillTree()
+        static PerkTreeDefinition BuildPerkTree()
         {
-            var tree = ScriptableObject.CreateInstance<SkillTreeDefinition>();
-            tree.name = "SkillTree";
+            var tree = ScriptableObject.CreateInstance<PerkTreeDefinition>();
+            tree.name = "PerkTree";
 
-            tree.skills.Add(Skill("madvoxel:skill_miner", "Miner 69er", SkillCategory.Mining,
+            tree.perks.Add(Perk("madvoxel:perk_miner", "Miner 69er", PerkCategory.Mining,
                 "Swing faster on stone, ore and scrap.", 5, 1,
-                Effect(SkillEffectType.MiningSpeedMultiplier, 0.12f)));
+                Effect(PerkEffectType.MiningSpeedMultiplier, 0.12f)));
 
-            tree.skills.Add(Skill("madvoxel:skill_motherlode", "Motherlode", SkillCategory.Mining,
+            tree.perks.Add(Perk("madvoxel:perk_motherlode", "Motherlode", PerkCategory.Mining,
                 "Ore and scrap yield more per block.", 5, 4,
-                Effect(SkillEffectType.HarvestYieldMultiplier, 0.15f)));
+                Effect(PerkEffectType.HarvestYieldMultiplier, 0.15f)));
 
-            var carpenter = Skill("madvoxel:skill_carpenter", "Carpenter", SkillCategory.Construction,
+            var carpenter = Perk("madvoxel:perk_carpenter", "Carpenter", PerkCategory.Construction,
                 "Unlocks sturdier building blocks, ending in steel.", 4, 1,
-                Effect(SkillEffectType.BlockTierUnlock, 1f));
+                Effect(PerkEffectType.BlockTierUnlock, 1f));
             carpenter.unlocksRecipeIds.Add("madvoxel:craft_block_cobble");
             carpenter.unlocksRecipeIds.Add("madvoxel:craft_block_iron");
             carpenter.unlocksRecipeIds.Add("madvoxel:craft_block_steel");
-            tree.skills.Add(carpenter);
+            tree.perks.Add(carpenter);
 
-            tree.skills.Add(Skill("madvoxel:skill_handyman", "Handyman", SkillCategory.Construction,
+            tree.perks.Add(Perk("madvoxel:perk_handyman", "Handyman", PerkCategory.Construction,
                 "Repair and upgrade structures faster.", 3, 3,
-                Effect(SkillEffectType.RepairSpeedMultiplier, 0.2f)));
+                Effect(PerkEffectType.RepairSpeedMultiplier, 0.2f)));
 
-            tree.skills.Add(Skill("madvoxel:skill_heavy_hitter", "Heavy Hitter", SkillCategory.Combat,
+            tree.perks.Add(Perk("madvoxel:perk_heavy_hitter", "Heavy Hitter", PerkCategory.Combat,
                 "More damage with clubs, axes and anything heavy.", 5, 1,
-                Effect(SkillEffectType.MeleeDamageMultiplier, 0.1f)));
+                Effect(PerkEffectType.MeleeDamageMultiplier, 0.1f)));
 
-            tree.skills.Add(Skill("madvoxel:skill_iron_lungs", "Iron Lungs", SkillCategory.Combat,
+            tree.perks.Add(Perk("madvoxel:perk_iron_lungs", "Iron Lungs", PerkCategory.Combat,
                 "Sprint and swing longer before your stamina gives out.", 4, 2,
-                Effect(SkillEffectType.MaxStaminaBonus, 12f),
-                Effect(SkillEffectType.StaminaDrainMultiplier, -0.08f)));
+                Effect(PerkEffectType.MaxStaminaBonus, 12f),
+                Effect(PerkEffectType.StaminaDrainMultiplier, -0.08f)));
 
-            tree.skills.Add(Skill("madvoxel:skill_scrapper", "Scrapper", SkillCategory.Scavenging,
+            tree.perks.Add(Perk("madvoxel:perk_scrapper", "Scrapper", PerkCategory.Scavenging,
                 "Pull more out of wrecks, heaps and containers.", 5, 1,
-                Effect(SkillEffectType.LootQuantityMultiplier, 0.14f)));
+                Effect(PerkEffectType.LootQuantityMultiplier, 0.14f)));
 
-            tree.skills.Add(Skill("madvoxel:skill_pack_mule", "Pack Mule", SkillCategory.Scavenging,
+            tree.perks.Add(Perk("madvoxel:perk_pack_mule", "Pack Mule", PerkCategory.Scavenging,
                 "Carry heavier loads without slowing down.", 3, 5,
-                Effect(SkillEffectType.StaminaDrainMultiplier, -0.06f)));
+                Effect(PerkEffectType.StaminaDrainMultiplier, -0.06f)));
 
-            tree.skills.Add(Skill("madvoxel:skill_field_medic", "Field Medic", SkillCategory.Medicine,
+            tree.perks.Add(Perk("madvoxel:perk_field_medic", "Field Medic", PerkCategory.Medicine,
                 "Bandages and food do more for you.", 4, 1,
-                Effect(SkillEffectType.HealingMultiplier, 0.2f)));
+                Effect(PerkEffectType.HealingMultiplier, 0.2f)));
 
-            var physician = Skill("madvoxel:skill_physician", "Physician", SkillCategory.Medicine,
+            var physician = Perk("madvoxel:perk_physician", "Physician", PerkCategory.Medicine,
                 "Craft better medical supplies.", 3, 6,
-                Effect(SkillEffectType.HealingMultiplier, 0.1f));
+                Effect(PerkEffectType.HealingMultiplier, 0.1f));
             physician.unlocksRecipeIds.Add("madvoxel:craft_bandage");
-            tree.skills.Add(physician);
+            tree.perks.Add(physician);
 
-            var grease = Skill("madvoxel:skill_grease_monkey", "Grease Monkey", SkillCategory.Vehicles,
+            var grease = Perk("madvoxel:perk_grease_monkey", "Grease Monkey", PerkCategory.Vehicles,
                 "Build and maintain vehicles.", 3, 5,
-                Effect(SkillEffectType.RepairSpeedMultiplier, 0.15f));
+                Effect(PerkEffectType.RepairSpeedMultiplier, 0.15f));
             grease.unlocksRecipeIds.Add("madvoxel:craft_buggy_kit");
-            tree.skills.Add(grease);
+            tree.perks.Add(grease);
 
-            tree.skills.Add(Skill("madvoxel:skill_economiser", "Economiser", SkillCategory.Vehicles,
+            tree.perks.Add(Perk("madvoxel:perk_economiser", "Economiser", PerkCategory.Vehicles,
                 "Squeeze more distance out of every gas can.", 3, 7,
-                Effect(SkillEffectType.VehicleFuelEfficiency, 0.15f)));
+                Effect(PerkEffectType.VehicleFuelEfficiency, 0.15f)));
 
             return tree;
         }
@@ -761,7 +753,7 @@ namespace MadVoxel.Content
             mara.stock.Add(Stock(it[ItemIds.StoneAxe], 2, 1.4f, 0));
             mara.stock.Add(Stock(it[ItemIds.Wrench], 1, 1.8f, 1));
             mara.stock.Add(Stock(it[ItemIds.PieceStorageBox], 3, 1.6f, 1));
-            mara.stock.Add(Stock(it[ItemIds.PieceClaimStake], 1, 2.0f, 2));
+            mara.stock.Add(Stock(it[ItemIds.PieceToolCupboard], 1, 2.0f, 2));
 
             return new List<TraderDefinition> { vance, mara };
         }
@@ -787,6 +779,173 @@ namespace MadVoxel.Content
             buggy.tint = new Color(0.44f, 0.31f, 0.22f);
 
             return new List<VehicleDefinition> { buggy };
+        }
+
+
+        // ------------------------------------------------------------ snap pieces
+
+        struct SnapSpec
+        {
+            public BuildPieceKind Kind;
+            public string Name;
+            public BuildSlot Slot;
+            public bool RestsOnTerrain;
+            public bool Blocks;
+            public bool RequiresHost;
+            public BuildPieceKind HostKind;
+            public float WoodHealth;
+            public string ItemId;
+            public int PlankCost;
+        }
+
+        static readonly SnapSpec[] SnapSet =
+        {
+            new SnapSpec { Kind = BuildPieceKind.Foundation, Name = "Foundation", Slot = BuildSlot.Floor,
+                           RestsOnTerrain = true, Blocks = true, WoodHealth = 280f, ItemId = ItemIds.SnapFoundation, PlankCost = 10 },
+            new SnapSpec { Kind = BuildPieceKind.Floor, Name = "Floor", Slot = BuildSlot.Floor,
+                           Blocks = true, WoodHealth = 220f, ItemId = ItemIds.SnapFloor, PlankCost = 8 },
+            new SnapSpec { Kind = BuildPieceKind.Wall, Name = "Wall", Slot = BuildSlot.Wall,
+                           Blocks = true, WoodHealth = 240f, ItemId = ItemIds.SnapWall, PlankCost = 7 },
+            new SnapSpec { Kind = BuildPieceKind.WindowWall, Name = "Window Wall", Slot = BuildSlot.Wall,
+                           Blocks = true, WoodHealth = 200f, ItemId = ItemIds.SnapWindowWall, PlankCost = 8 },
+            new SnapSpec { Kind = BuildPieceKind.Doorway, Name = "Doorway", Slot = BuildSlot.Wall,
+                           Blocks = false, WoodHealth = 200f, ItemId = ItemIds.SnapDoorway, PlankCost = 8 },
+            new SnapSpec { Kind = BuildPieceKind.HalfWall, Name = "Half Wall", Slot = BuildSlot.Wall,
+                           Blocks = true, WoodHealth = 130f, ItemId = ItemIds.SnapHalfWall, PlankCost = 4 },
+            new SnapSpec { Kind = BuildPieceKind.Stairs, Name = "Stairs", Slot = BuildSlot.Interior,
+                           Blocks = true, WoodHealth = 200f, ItemId = ItemIds.SnapStairs, PlankCost = 10 },
+            new SnapSpec { Kind = BuildPieceKind.Roof, Name = "Roof", Slot = BuildSlot.Ceiling,
+                           Blocks = true, WoodHealth = 200f, ItemId = ItemIds.SnapRoof, PlankCost = 8 },
+            new SnapSpec { Kind = BuildPieceKind.Hatch, Name = "Hatch", Slot = BuildSlot.Floor,
+                           Blocks = true, WoodHealth = 180f, ItemId = ItemIds.SnapHatch, PlankCost = 8 },
+            new SnapSpec { Kind = BuildPieceKind.Ladder, Name = "Ladder", Slot = BuildSlot.Attachment,
+                           Blocks = false, RequiresHost = true, HostKind = BuildPieceKind.Wall,
+                           WoodHealth = 80f, ItemId = ItemIds.SnapLadder, PlankCost = 5 },
+            new SnapSpec { Kind = BuildPieceKind.Door, Name = "Door", Slot = BuildSlot.Attachment,
+                           Blocks = true, RequiresHost = true, HostKind = BuildPieceKind.Doorway,
+                           WoodHealth = 260f, ItemId = ItemIds.SnapDoor, PlankCost = 9 },
+        };
+
+        static readonly BuildTier[] Tiers =
+        {
+            BuildTier.Twig, BuildTier.Wood, BuildTier.Stone, BuildTier.Metal, BuildTier.Armored
+        };
+
+        // Twig is deliberately flimsy: it exists to lay out the shape, not to survive a horde.
+        static readonly float[] TierHealth = { 0.22f, 1f, 2.2f, 4.4f, 8f };
+        static readonly float[] TierResist = { 0.45f, 1f, 1.9f, 3.3f, 5.5f };
+        static readonly float[] TierMetallic = { 0f, 0f, 0f, 0.75f, 0.9f };
+        static readonly float[] TierSmooth = { 0.05f, 0.1f, 0.12f, 0.3f, 0.42f };
+
+        static readonly SurfaceFamily[] TierFamily =
+        {
+            SurfaceFamily.Wood, SurfaceFamily.Plank, SurfaceFamily.Stone, SurfaceFamily.Metal, SurfaceFamily.Metal
+        };
+
+        static readonly Color[] TierTint =
+        {
+            new Color(0.52f, 0.46f, 0.32f),   // twig: pale lashed sticks
+            new Color(0.45f, 0.33f, 0.20f),   // wood: dark planks
+            new Color(0.44f, 0.43f, 0.41f),   // stone
+            new Color(0.44f, 0.39f, 0.34f),   // sheet metal, rust streaked
+            new Color(0.30f, 0.31f, 0.33f)    // armored plate
+        };
+
+        /// <summary>
+        /// Builds the Twig..Armored chain for every snap piece. Only Twig is craftable;
+        /// the rest are reached with the hammer, so the player lays out a shape cheaply
+        /// and then pays to armour the parts that matter.
+        /// </summary>
+        static List<BuildPieceDefinition> BuildSnapPieces(Dictionary<string, ItemDefinition> items,
+                                                          Dictionary<BuildPieceKind, BuildPieceDefinition> twigByKind)
+        {
+            var all = new List<BuildPieceDefinition>();
+
+            for (int i = 0; i < SnapSet.Length; i++)
+            {
+                var spec = SnapSet[i];
+                var chain = new BuildPieceDefinition[Tiers.Length];
+
+                for (int t = 0; t < Tiers.Length; t++)
+                {
+                    var def = ScriptableObject.CreateInstance<BuildPieceDefinition>();
+                    var tier = Tiers[t];
+
+                    def.stringId = string.Format("madvoxel:piece_{0}_{1}",
+                        spec.Kind.ToString().ToLowerInvariant(), tier.ToString().ToLowerInvariant());
+                    def.name = "Piece_" + spec.Kind + "_" + tier;
+                    def.displayName = tier + " " + spec.Name;
+                    def.kind = spec.Kind;
+                    def.tier = tier;
+                    def.slot = spec.Slot;
+                    def.restsOnTerrain = spec.RestsOnTerrain;
+                    def.blocksMovement = spec.Blocks;
+                    def.requiresHost = spec.RequiresHost;
+                    def.hostKind = spec.HostKind;
+
+                    def.maxHealth = spec.WoodHealth * TierHealth[t];
+                    def.damageResistance = TierResist[t];
+                    def.surfaceFamily = TierFamily[t];
+                    def.tint = TierTint[t];
+                    def.metallic = TierMetallic[t];
+                    def.smoothness = TierSmooth[t];
+
+                    def.salvageItem = items[ItemIds.Plank];
+                    def.salvageCount = Mathf.Max(1, spec.PlankCost / 3);
+
+                    chain[t] = def;
+                    all.Add(def);
+                }
+
+                // Link the upgrade chain and price each step.
+                for (int t = 0; t < Tiers.Length - 1; t++) chain[t].upgradesTo = chain[t + 1];
+
+                SetUpgradeCost(chain[1], items, Ing(items[ItemIds.Plank], Mathf.Max(4, spec.PlankCost)));
+                SetUpgradeCost(chain[2], items, Ing(items[ItemIds.Stone], Mathf.Max(8, spec.PlankCost * 2)));
+
+                // Metal and armoured are the Construction perk's payoff.
+                SetUpgradeCost(chain[3], items, Ing(items[ItemIds.IronIngot], Mathf.Max(4, spec.PlankCost)));
+                chain[3].requiredPerkId = "madvoxel:perk_carpenter";
+                chain[3].requiredPerkRank = 2;
+
+                SetUpgradeCost(chain[4], items,
+                    Ing(items[ItemIds.IronIngot], Mathf.Max(8, spec.PlankCost * 2)),
+                    Ing(items[ItemIds.Coal], 8));
+                chain[4].requiredPerkId = "madvoxel:perk_carpenter";
+                chain[4].requiredPerkRank = 3;
+
+                twigByKind[spec.Kind] = chain[0];
+            }
+
+            return all;
+        }
+
+        static void SetUpgradeCost(BuildPieceDefinition def, Dictionary<string, ItemDefinition> items,
+                                   params RecipeIngredient[] cost)
+        {
+            def.upgradeCost.Clear();
+            def.upgradeCost.AddRange(cost);
+        }
+
+        /// <summary>One placeable item per piece kind, always placing the Twig tier.</summary>
+        static void AddSnapItems(Dictionary<string, ItemDefinition> items,
+                                 Dictionary<BuildPieceKind, BuildPieceDefinition> twigByKind,
+                                 List<RecipeDefinition> recipes)
+        {
+            for (int i = 0; i < SnapSet.Length; i++)
+            {
+                var spec = SnapSet[i];
+                var twig = twigByKind[spec.Kind];
+
+                var item = Item(spec.ItemId, spec.Name, ItemCategory.Structure, 32,
+                    SurfaceFamily.Wood, TierTint[0], Mathf.Max(2, spec.PlankCost / 2));
+                item.description = "Places a twig " + spec.Name.ToLowerInvariant() + ". Upgrade it with the hammer.";
+                item.placeableBuildPiece = twig;
+                items[spec.ItemId] = item;
+
+                recipes.Add(Recipe("madvoxel:craft_" + spec.Kind.ToString().ToLowerInvariant(),
+                    item, 1, CraftStation.Hand, 1.0f, Ing(items[ItemIds.Plank], spec.PlankCost)));
+            }
         }
 
         // ------------------------------------------------------------------ helper

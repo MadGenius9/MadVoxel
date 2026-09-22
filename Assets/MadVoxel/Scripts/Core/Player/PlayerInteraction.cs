@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using MadVoxel.Building;
 using MadVoxel.Inventory;
-using MadVoxel.Skills;
-using MadVoxel.World.Voxel;
+using MadVoxel.Perks;
+using MadVoxel.World.Terrain;
 using UnityEngine;
 
 namespace MadVoxel.Core.Player
@@ -13,6 +13,7 @@ namespace MadVoxel.Core.Player
         None,
         Block,
         Structure,
+        BuildPiece,
         Entity
     }
 
@@ -22,9 +23,12 @@ namespace MadVoxel.Core.Player
         public Vector3Int BlockCell;
         public Vector3Int PlaceCell;
         public PlacedStructure Structure;
+        public BuildPiece Piece;
         public IDamageable Damageable;
         public IInteractable Interactable;
         public float Distance;
+        public Vector3 HitPoint;
+        public Vector3 HitNormal;
     }
 
     /// <summary>
@@ -38,8 +42,9 @@ namespace MadVoxel.Core.Player
         const float StructureSalvageSeconds = 1.6f;
 
         GameConfig _config;
-        VoxelWorld _voxels;
+        TerrainWorld _voxels;
         StructureWorld _structures;
+        BuildingWorld _buildings;
         PlayerInventory _inventory;
         PlayerStats _stats;
         PlayerProgression _progression;
@@ -64,12 +69,13 @@ namespace MadVoxel.Core.Player
 
         public event Action<Vector3Int, BlockDefinition> BlockMined;
 
-        public void Init(GameConfig config, VoxelWorld voxels, StructureWorld structures,
+        public void Init(GameConfig config, TerrainWorld voxels, StructureWorld structures, BuildingWorld buildings,
                          PlayerInventory inventory, PlayerStats stats, PlayerProgression progression, Camera camera)
         {
             _config = config;
             _voxels = voxels;
             _structures = structures;
+            _buildings = buildings;
             _inventory = inventory;
             _stats = stats;
             _progression = progression;
@@ -116,6 +122,20 @@ namespace MadVoxel.Core.Player
             if (!TryRaycastPastSelf(ray, out hit)) return result;
 
             result.Distance = hit.distance;
+            result.HitPoint = hit.point;
+            result.HitNormal = hit.normal;
+
+            var piece = hit.collider.GetComponentInParent<BuildPiece>();
+            if (piece != null)
+            {
+                result.Kind = TargetKind.BuildPiece;
+                result.Piece = piece;
+                result.Damageable = piece;
+                result.Interactable = piece.IsOpenable ? piece : null;
+                result.HitPoint = hit.point;
+                result.HitNormal = hit.normal;
+                return result;
+            }
 
             var structure = hit.collider.GetComponentInParent<PlacedStructure>();
             if (structure != null)
@@ -177,7 +197,22 @@ namespace MadVoxel.Core.Player
         {
             var held = _inventory.SelectedItem;
 
-            if (held != null && held.IsPlaceable && Target.Kind != TargetKind.None && Target.Kind != TargetKind.Entity)
+            if (held != null && held.placeableBuildPiece != null)
+            {
+                BuildAddress address;
+                if (TryResolvePiece(held.placeableBuildPiece, out address))
+                {
+                    Vector3 centre, size;
+                    BuildPlacementSolver.GhostBounds(held.placeableBuildPiece, address, out centre, out size);
+                    bool valid = _buildings.CanPlace(held.placeableBuildPiece, address) == BuildingWorld.PlacementResult.Ok;
+                    _ghost.ShowBox(centre, size, valid);
+                }
+                else
+                {
+                    _ghost.HidePlacement();
+                }
+            }
+            else if (held != null && held.IsPlaceable && Target.Kind != TargetKind.None && Target.Kind != TargetKind.Entity)
             {
                 Vector3Int cell = Target.PlaceCell;
                 bool valid;
@@ -205,6 +240,15 @@ namespace MadVoxel.Core.Player
             else _ghost.HideHighlight();
         }
 
+        bool TryResolvePiece(BuildPieceDefinition def, out BuildAddress address)
+        {
+            address = default(BuildAddress);
+            if (Target.Kind == TargetKind.None) return false;
+
+            return BuildPlacementSolver.TryResolve(_buildings, _voxels, def,
+                Target.HitPoint, Target.HitNormal, Target.Piece, out address);
+        }
+
         // ------------------------------------------------------------------- mining
 
         void HandlePrimary()
@@ -216,6 +260,9 @@ namespace MadVoxel.Core.Player
                     break;
                 case TargetKind.Structure:
                     HandleStructurePrimary();
+                    break;
+                case TargetKind.BuildPiece:
+                    HandleBuildPiecePrimary();
                     break;
                 case TargetKind.Entity:
                     Attack(Target.Damageable);
@@ -331,6 +378,33 @@ namespace MadVoxel.Core.Player
             Attack(structure);
         }
 
+        /// <summary>Hammer repairs a snap piece; anything else just hits it.</summary>
+        void HandleBuildPiecePrimary()
+        {
+            var held = _inventory.SelectedItem;
+            var piece = Target.Piece;
+            if (piece == null) return;
+
+            if (held != null && held.toolType == ToolType.Hammer)
+            {
+                if (Time.time < _nextAttackTime) return;
+                _nextAttackTime = Time.time + 0.35f;
+
+                if (piece.HealthFraction >= 1f)
+                {
+                    Notifications.PostFormat("{0} is undamaged", piece.Definition.displayName);
+                    return;
+                }
+                piece.Repair(piece.Definition.maxHealth * 0.2f);
+                Notifications.PostFormat("Repaired {0} ({1}%)", piece.Definition.displayName,
+                    Mathf.RoundToInt(piece.HealthFraction * 100f));
+                return;
+            }
+
+            Attack(piece);
+            ResetMining();
+        }
+
         void Attack(IDamageable damageable)
         {
             if (damageable == null || Time.time < _nextAttackTime) return;
@@ -373,10 +447,55 @@ namespace MadVoxel.Core.Player
                 return;
             }
 
+            if (held.Item.toolType == ToolType.Hammer && Target.Kind == TargetKind.BuildPiece)
+            {
+                UpgradePiece(Target.Piece);
+                return;
+            }
+
             if (Target.Kind == TargetKind.None) return;
 
-            if (held.Item.placeableStructure != null) PlaceStructure(held.Item);
+            if (held.Item.placeableBuildPiece != null) PlaceBuildPiece(held.Item);
+            else if (held.Item.placeableStructure != null) PlaceStructure(held.Item);
             else if (held.Item.placeableBlock != null) PlaceBlock(held.Item);
+        }
+
+        void PlaceBuildPiece(ItemDefinition item)
+        {
+            var def = item.placeableBuildPiece;
+
+            BuildAddress address;
+            if (!TryResolvePiece(def, out address))
+            {
+                Notifications.Post("No surface to snap to");
+                return;
+            }
+
+            var check = _buildings.CanPlace(def, address);
+            if (check != BuildingWorld.PlacementResult.Ok)
+            {
+                Notifications.Post(BuildingWorld.Describe(check));
+                return;
+            }
+
+            if (_buildings.Place(def, address) == null) return;
+            _inventory.ConsumeSelected(1);
+        }
+
+        void UpgradePiece(BuildPiece piece)
+        {
+            if (piece == null) return;
+
+            var result = _buildings.Upgrade(piece, _inventory.Bag, _progression.GetRank);
+            if (result != BuildingWorld.UpgradeResult.Ok)
+            {
+                Notifications.Post(BuildingWorld.Describe(result, piece));
+                return;
+            }
+
+            // Upgrading is real work on your own base, so it pays.
+            _progression.AddXp(12f, XpSource.Build);
+            Notifications.PostFormat("Upgraded to {0}", piece.Definition.displayName);
         }
 
         void PlaceBlock(ItemDefinition item)
@@ -395,7 +514,7 @@ namespace MadVoxel.Core.Player
 
         bool CanPlaceBlockAt(Vector3Int cell)
         {
-            if (!VoxelWorld.InVerticalRange(cell.y)) return false;
+            if (!TerrainWorld.InVerticalRange(cell.y)) return false;
             if (!_voxels.Registry.IsAir(_voxels.GetBlock(cell.x, cell.y, cell.z))) return false;
             if (_structures.IsOccupied(cell)) return false;
             return !IntersectsPlayer(cell, Vector3Int.one, 0);
@@ -420,7 +539,7 @@ namespace MadVoxel.Core.Player
             }
 
             _inventory.ConsumeSelected(1);
-            if (def.kind == StructureKind.ClaimStake)
+            if (def.kind == StructureKind.ToolCupboard)
             {
                 Notifications.PostFormat("Land claimed - {0}m protected", Mathf.RoundToInt(placed.Definition.claimRadius > 0f ? placed.Definition.claimRadius : _config.claimRadius));
             }
@@ -462,7 +581,21 @@ namespace MadVoxel.Core.Player
         {
             get
             {
-                if (Target.Interactable != null) return "[E] " + Target.Interactable.InteractPrompt;
+                if (Target.Interactable != null && !string.IsNullOrEmpty(Target.Interactable.InteractPrompt))
+                    return "[E] " + Target.Interactable.InteractPrompt;
+
+                if (Target.Kind == TargetKind.BuildPiece && Target.Piece != null)
+                {
+                    var held = _inventory.SelectedItem;
+                    string name = string.Format("{0} ({1})", Target.Piece.Definition.displayName, Target.Piece.Tier);
+                    if (held != null && held.toolType == ToolType.Hammer)
+                    {
+                        return Target.Piece.Definition.IsTopTier
+                            ? name + "  -  LMB repair"
+                            : name + "  -  RMB upgrade, LMB repair";
+                    }
+                    return name;
+                }
                 if (Target.Kind == TargetKind.Block)
                 {
                     var def = _voxels.GetBlockDef(Target.BlockCell.x, Target.BlockCell.y, Target.BlockCell.z);

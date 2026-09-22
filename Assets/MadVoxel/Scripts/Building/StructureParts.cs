@@ -5,58 +5,6 @@ using UnityEngine;
 
 namespace MadVoxel.Building
 {
-    /// <summary>A hinged door. Swings a child pivot; the collider follows it.</summary>
-    public class DoorStructure : MonoBehaviour, IInteractable
-    {
-        public const string HingeName = "Hinge";
-
-        PlacedStructure _structure;
-        Transform _hinge;
-        BoxCollider _panelCollider;
-        bool _open;
-
-        public bool IsOpen { get { return _open; } }
-
-        public void Bind(PlacedStructure structure)
-        {
-            _structure = structure;
-            _hinge = FindHinge(structure.transform);
-
-            if (_hinge != null)
-            {
-                _panelCollider = _hinge.gameObject.AddComponent<BoxCollider>();
-                _panelCollider.center = new Vector3(0.44f, 0.97f, 0f);
-                _panelCollider.size = new Vector3(0.88f, 1.9f, 0.12f);
-            }
-
-            // The root collider covers the frame opening; the panel does the blocking.
-            var rootCollider = structure.GetComponent<BoxCollider>();
-            if (rootCollider != null) rootCollider.isTrigger = true;
-        }
-
-        static Transform FindHinge(Transform root)
-        {
-            var all = root.GetComponentsInChildren<Transform>(true);
-            for (int i = 0; i < all.Length; i++)
-            {
-                if (all[i].name == HingeName) return all[i];
-            }
-            return null;
-        }
-
-        public string InteractPrompt { get { return _open ? "Close door" : "Open door"; } }
-
-        public void Interact(GameObject interactor)
-        {
-            SetOpen(!_open);
-        }
-
-        public void SetOpen(bool open)
-        {
-            _open = open;
-            if (_hinge != null) _hinge.localRotation = Quaternion.Euler(0f, open ? -92f : 0f, 0f);
-        }
-    }
 
     /// <summary>A lootable crate. The UI listens for the open request rather than being called directly.</summary>
     public class StorageStructure : MonoBehaviour, IInteractable
@@ -151,7 +99,7 @@ namespace MadVoxel.Building
     }
 
     /// <summary>Claims a radius around itself. Registers with the structure world on place.</summary>
-    public class ClaimStakeStructure : MonoBehaviour
+    public class ToolCupboardStructure : MonoBehaviour
     {
         public PlacedStructure Structure { get; private set; }
         public LandClaim Claim { get; private set; }
@@ -175,18 +123,6 @@ namespace MadVoxel.Building
         }
     }
 
-    /// <summary>Marker so the player motor knows this cell is climbable.</summary>
-    public class LadderStructure : MonoBehaviour
-    {
-        public PlacedStructure Structure { get; private set; }
-
-        public void Bind(PlacedStructure structure)
-        {
-            Structure = structure;
-            var box = structure.GetComponent<BoxCollider>();
-            if (box != null) box.isTrigger = true; // walk into it, then climb
-        }
-    }
 
     /// <summary>Sets the respawn point and lets the player sleep through to dawn.</summary>
     public class BedrollStructure : MonoBehaviour, IInteractable

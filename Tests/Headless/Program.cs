@@ -23,7 +23,8 @@ namespace MadVoxel.Headless
                 return Harness.Report();
             }
 
-            VoxelTests.Run(db);
+            TerrainTests.Run(db);
+            BuildTests.Run(db);
             InventoryTests.Run(db);
             SaveTests.Run(db);
 

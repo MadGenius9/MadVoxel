@@ -1,12 +1,12 @@
 using System.Collections.Generic;
 using MadVoxel.Content;
-using MadVoxel.World.Voxel;
+using MadVoxel.World.Terrain;
 using UnityEngine;
 
 namespace MadVoxel.Headless
 {
     /// <summary>Chunk storage, coordinate maths, greedy meshing and terrain generation.</summary>
-    public static class VoxelTests
+    public static class TerrainTests
     {
         const int S = Chunk.Size;
         const int P = Chunk.Size + 2;
@@ -215,7 +215,7 @@ namespace MadVoxel.Headless
                 if (h < min) min = h;
                 if (h > max) max = h;
             }
-            Harness.Check(min >= 4 && max < VoxelWorld.WorldHeight - 39, string.Format("surface stays in range: {0}..{1}", min, max));
+            Harness.Check(min >= 4 && max < TerrainWorld.WorldHeight - 39, string.Format("surface stays in range: {0}..{1}", min, max));
             Harness.Check(max - min >= 12, string.Format("terrain has relief: spread {0}", max - min));
 
             // Determinism: the same seed must rebuild the same chunk exactly.
@@ -250,7 +250,7 @@ namespace MadVoxel.Headless
 
             for (int cz = 0; cz < 10; cz++)
             for (int cx = 0; cx < 10; cx++)
-            for (int cy = 0; cy < VoxelWorld.WorldHeightChunks; cy++)
+            for (int cy = 0; cy < TerrainWorld.WorldHeightChunks; cy++)
             {
                 var blocks = new ushort[Chunk.Volume];
                 gen.Generate(new ChunkCoord(cx, cy, cz), blocks);
@@ -283,7 +283,7 @@ namespace MadVoxel.Headless
 
             // Ore must not be so common that mining is trivial, nor caves so common that
             // the ground is swiss cheese.
-            const int sampled = 10 * 10 * VoxelWorld.WorldHeightChunks * Chunk.Volume;
+            const int sampled = 10 * 10 * TerrainWorld.WorldHeightChunks * Chunk.Volume;
             float coalShare = 100f * coal / sampled;
             float caveShare = 100f * caves / sampled;
             Harness.Check(coalShare < 3f, string.Format("coal is not everywhere: {0:0.00}% of sampled voxels", coalShare));

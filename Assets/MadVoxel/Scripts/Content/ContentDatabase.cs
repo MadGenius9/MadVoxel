@@ -5,10 +5,10 @@ using MadVoxel.Core;
 using MadVoxel.Horde;
 using MadVoxel.Inventory;
 using MadVoxel.Quests;
-using MadVoxel.Skills;
+using MadVoxel.Perks;
 using MadVoxel.Traders;
 using MadVoxel.Vehicles;
-using MadVoxel.World.Voxel;
+using MadVoxel.World.Terrain;
 using UnityEngine;
 
 namespace MadVoxel.Content
@@ -27,11 +27,12 @@ namespace MadVoxel.Content
         public List<ItemDefinition> items = new List<ItemDefinition>();
         public List<RecipeDefinition> recipes = new List<RecipeDefinition>();
         public List<StructureDefinition> structures = new List<StructureDefinition>();
+        public List<BuildPieceDefinition> buildPieces = new List<BuildPieceDefinition>();
         public List<ZombieDefinition> zombies = new List<ZombieDefinition>();
         public HordeSchedule hordeSchedule;
 
         [Header("Phase 1 content")]
-        public SkillTreeDefinition skillTree;
+        public PerkTreeDefinition perkTree;
         public List<TraderDefinition> traders = new List<TraderDefinition>();
         public List<QuestDefinition> quests = new List<QuestDefinition>();
         public List<VehicleDefinition> vehicles = new List<VehicleDefinition>();
@@ -48,6 +49,7 @@ namespace MadVoxel.Content
 
         readonly Dictionary<string, ItemDefinition> _itemsById = new Dictionary<string, ItemDefinition>();
         readonly Dictionary<string, StructureDefinition> _structuresById = new Dictionary<string, StructureDefinition>();
+        readonly Dictionary<string, BuildPieceDefinition> _piecesById = new Dictionary<string, BuildPieceDefinition>();
         readonly Dictionary<string, ZombieDefinition> _zombiesById = new Dictionary<string, ZombieDefinition>();
         readonly Dictionary<string, RecipeDefinition> _recipesById = new Dictionary<string, RecipeDefinition>();
         bool _built;
@@ -56,11 +58,13 @@ namespace MadVoxel.Content
         {
             _itemsById.Clear();
             _structuresById.Clear();
+            _piecesById.Clear();
             _zombiesById.Clear();
             _recipesById.Clear();
 
             for (int i = 0; i < items.Count; i++) if (items[i] != null) _itemsById[items[i].stringId] = items[i];
             for (int i = 0; i < structures.Count; i++) if (structures[i] != null) _structuresById[structures[i].stringId] = structures[i];
+            for (int i = 0; i < buildPieces.Count; i++) if (buildPieces[i] != null) _piecesById[buildPieces[i].stringId] = buildPieces[i];
             for (int i = 0; i < zombies.Count; i++) if (zombies[i] != null) _zombiesById[zombies[i].stringId] = zombies[i];
             for (int i = 0; i < recipes.Count; i++) if (recipes[i] != null) _recipesById[recipes[i].stringId] = recipes[i];
 
@@ -85,6 +89,13 @@ namespace MadVoxel.Content
             EnsureBuilt();
             StructureDefinition def;
             return _structuresById.TryGetValue(stringId, out def) ? def : null;
+        }
+
+        public BuildPieceDefinition BuildPiece(string stringId)
+        {
+            EnsureBuilt();
+            BuildPieceDefinition def;
+            return _piecesById.TryGetValue(stringId, out def) ? def : null;
         }
 
         public ZombieDefinition Zombie(string stringId)

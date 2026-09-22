@@ -2,7 +2,7 @@ using MadVoxel.AI;
 using MadVoxel.Content;
 using MadVoxel.Core.Player;
 using MadVoxel.Horde;
-using MadVoxel.World.Voxel;
+using MadVoxel.World.Terrain;
 using UnityEngine;
 
 namespace MadVoxel.Core
@@ -26,11 +26,11 @@ namespace MadVoxel.Core
         HordeSchedule _schedule;
         HordeDirector _horde;
         SpawnDirector _spawner;
-        VoxelWorld _voxels;
+        TerrainWorld _voxels;
         PlayerRig _player;
 
         public void Init(ContentDatabase content, WorldClock clock, HordeDirector horde, HordeSchedule schedule,
-                         SpawnDirector spawner, VoxelWorld voxels, PlayerRig player)
+                         SpawnDirector spawner, TerrainWorld voxels, PlayerRig player)
         {
             _content = content;
             _clock = clock;
@@ -137,12 +137,24 @@ namespace MadVoxel.Core
             Give(ItemIds.BlockCobblestone, 128);
             Give(ItemIds.BlockIron, 64);
 
-            Give(ItemIds.PieceDoor, 4);
-            Give(ItemIds.PieceLadder, 8);
+            // The full snap set, so the whole shack can go up without grinding planks.
+            Give(ItemIds.SnapFoundation, 24);
+            Give(ItemIds.SnapFloor, 24);
+            Give(ItemIds.SnapWall, 32);
+            Give(ItemIds.SnapDoorway, 6);
+            Give(ItemIds.SnapDoor, 6);
+            Give(ItemIds.SnapWindowWall, 8);
+            Give(ItemIds.SnapHalfWall, 8);
+            Give(ItemIds.SnapStairs, 6);
+            Give(ItemIds.SnapRoof, 16);
+            Give(ItemIds.SnapLadder, 6);
+            Give(ItemIds.SnapHatch, 4);
+
+            Give(ItemIds.Hammer, 1);
             Give(ItemIds.PieceStorageBox, 4);
             Give(ItemIds.PieceWorkbench, 2);
             Give(ItemIds.PieceCampfire, 2);
-            Give(ItemIds.PieceClaimStake, 1);
+            Give(ItemIds.PieceToolCupboard, 1);
             Give(ItemIds.PieceBedroll, 1);
 
             Give(ItemIds.CannedFood, 10);
