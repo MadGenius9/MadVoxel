@@ -6,6 +6,7 @@ using MadVoxel.Core.Player;
 using MadVoxel.Horde;
 using MadVoxel.Modding;
 using MadVoxel.Claim;
+using MadVoxel.Colony;
 using MadVoxel.Fluid;
 using MadVoxel.Inventory.Spoil;
 using MadVoxel.Power;
@@ -43,6 +44,7 @@ namespace MadVoxel.Core
         FluidWorld _fluid;
         ClaimHeatTracker _heat;
         SpoilService _spoil;
+        ColonyWorld _colony;
         WeatherEffects _weatherEffects;
         SpawnDirector _spawner;
         HordeDirector _horde;
@@ -106,6 +108,13 @@ namespace MadVoxel.Core
 
             WarnAboutMissingMods(meta);
             BuildWorld(meta.totalHours, meta.hordeNumber);
+
+            // The sky and the claim's noise go back before the structures do, so a
+            // solar bank restored during a storm is dark on its very first solve
+            // rather than briefly lit and then wrong.
+            _weather.Force((World.Weather.WeatherKind)meta.weatherKind,
+                Mathf.Max(0.5f, meta.weatherHoursRemaining));
+            _heat.LoadState(meta.claimHeat);
 
             var playerData = WorldSaveIO.ReadPlayer(_worldName);
             var structureData = WorldSaveIO.ReadStructures(_worldName);
@@ -192,8 +201,6 @@ namespace MadVoxel.Core
 
             _heat = _worldRoot.AddComponent<ClaimHeatTracker>();
             _heat.Init(_structures, _power, _fields, _clock, _voxels, _content, _player.Progression);
-            _horde.Heat = _heat;
-            _spawner.Heat = _heat;
 
             _spoil = _worldRoot.AddComponent<SpoilService>();
             _spoil.Init(_structures, _player, _clock, _content);
@@ -212,19 +219,43 @@ namespace MadVoxel.Core
             _horde.Init(_content.hordeSchedule, _clock, _spawner, _structures, _buildings, _sky, _player.Progression, _player.transform);
             _horde.LoadState(hordeNumber);
 
+            // Heat is read by the horde and the wanderer cap, so it is handed over once
+            // both of them exist rather than before they do.
+            _horde.Heat = _heat;
+            _spawner.Heat = _heat;
+
+            // The colony last: it asks every other system questions and answers none,
+            // so everything it talks to has to be standing before it is.
+            _colony = _worldRoot.AddComponent<ColonyWorld>();
+            _colony.Init(_structures, _buildings, _spawner, _fluid, _power, _clock, _weather, _content, _heat);
+
+            // A board planted before the colony existed still needs pointing at it.
+            _structures.Placed += OnStructurePlacedForColony;
+            _structures.Removed += OnStructureLostForColony;
+            _buildings.Removed += OnPieceLostForColony;
+
             _save = _worldRoot.AddComponent<SaveService>();
             _save.Init(_content, _streamer, _structures, _buildings, _fields, _clock, _horde, _player,
                        _worldName, _seed, _content.config.autosaveIntervalSeconds);
             _save.ActiveMods = ActiveMods;
+            _save.Power = _power;
+            _save.Fluid = _fluid;
+            _save.Colony = _colony;
+            _save.Weather = _weather;
+            _save.Heat = _heat;
 
             if (DeveloperToolsEnabled)
             {
                 _devTools = _worldRoot.AddComponent<DeveloperTools>();
                 _devTools.Init(_content, _clock, _horde, _content.hordeSchedule, _spawner, _structures, _voxels, _player);
+                _devTools.Weather = _weather;
+                _devTools.Colony = _colony;
+                _devTools.Heat = _heat;
             }
 
             _ui.CreateGameplayUi(_player, _clock, _horde, _content, _voxels, _streamer,
-                                 _structures, _spawner, _weather, _seed, DeveloperToolsEnabled);
+                                 _structures, _spawner, _weather, _colony, _heat,
+                                 _seed, DeveloperToolsEnabled);
 
             // The claim ring lives in the world, not on the visor, so it hangs off the
             // world root and dies with it.
@@ -236,6 +267,36 @@ namespace MadVoxel.Core
             Zombie.Died += OnZombieKilled;
             BedrollStructure.UseRequested += OnBedrollUsed;
         }
+
+        void OnStructurePlacedForColony(Building.PlacedStructure structure)
+        {
+            var board = structure.GetComponent<ColonyBoardStructure>();
+            if (board != null) board.Colony = _colony;
+        }
+
+        /// <summary>
+        /// Losing something inside the claim is what the colony means by a breach. It
+        /// is deliberately generous - a chewed crate counts - because the morale hit is
+        /// about the horde getting in at all, not about what it ate.
+        /// </summary>
+        void OnStructureLostForColony(Building.PlacedStructure structure)
+        {
+            if (_colony == null || !_colony.Founded) return;
+
+            var claim = _colony.Claim();
+            if (claim != null && claim.Contains(structure.transform.position)) _colony.ReportBreach();
+        }
+
+        void OnPieceLostForColony(Building.BuildPiece piece)
+        {
+            if (_colony == null || !_colony.Founded) return;
+
+            var claim = _colony.Claim();
+            if (claim != null && claim.Contains(piece.transform.position)) _colony.ReportBreach();
+        }
+
+        /// <summary>The colony, for the board screen and the save writer.</summary>
+        public ColonyWorld Colony { get { return _colony; } }
 
         Vector3 FindSurfaceSpawn(int wx, int wz)
         {

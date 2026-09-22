@@ -8,7 +8,10 @@ using MadVoxel.Farming.Plots;
 using MadVoxel.World.Fields;
 using MadVoxel.Horde;
 using MadVoxel.Modding;
+using MadVoxel.Colony;
+using MadVoxel.Fluid;
 using MadVoxel.Inventory;
+using MadVoxel.Power;
 using MadVoxel.World.Terrain;
 using UnityEngine;
 
@@ -39,6 +42,13 @@ namespace MadVoxel.Save
 
         /// <summary>Stamped into world.json so a later load can warn about missing mods.</summary>
         public System.Collections.Generic.IReadOnlyList<ModManifest> ActiveMods { get; set; }
+
+        /// <summary>The grid, the plumbing and the colony. Set by the session.</summary>
+        public PowerWorld Power { get; set; }
+        public FluidWorld Fluid { get; set; }
+        public ColonyWorld Colony { get; set; }
+        public MadVoxel.World.Weather.WeatherDirector Weather { get; set; }
+        public MadVoxel.Claim.ClaimHeatTracker Heat { get; set; }
 
         public void Init(ContentDatabase content, ChunkStreamer streamer, StructureWorld structures,
                          BuildingWorld buildings, FieldWorld fields, WorldClock clock, HordeDirector horde, PlayerRig player,
@@ -80,6 +90,12 @@ namespace MadVoxel.Save
             world.seed = _seed;
             world.totalHours = _clock != null ? _clock.TotalHours : 0.0;
             world.hordeNumber = _horde != null ? _horde.HordeNumber : 0;
+
+            // The sky and the claim's noise are world state, not structure state: a
+            // reload must not hand you a different afternoon or a silent farm.
+            world.weatherKind = Weather != null ? (int)Weather.Kind : 0;
+            world.weatherHoursRemaining = Weather != null ? Weather.HoursRemaining : 0f;
+            world.claimHeat = Heat != null ? Heat.Heat : 0f;
             if (string.IsNullOrEmpty(world.createdUtc)) world.createdUtc = DateTime.UtcNow.ToString("o");
             world.lastPlayedUtc = DateTime.UtcNow.ToString("o");
 
@@ -184,12 +200,90 @@ namespace MadVoxel.Save
                     }
                 }
 
+                // Utilities: the node's own state, plus the id it had, so the wires can
+                // be matched back up after the graphs re-number everything on load.
+                var electrical = structure.GetComponent<PowerDeviceStructure>();
+                if (electrical != null && electrical.Node != null)
+                {
+                    entry.powerNodeId = electrical.NodeId;
+                    entry.powerSwitchedOn = electrical.Node.SwitchedOn;
+                    entry.fuelLitres = electrical.Node.FuelLitres;
+                    entry.storedWattHours = electrical.Node.StoredWattHours;
+                }
+
+                var fitting = structure.GetComponent<FluidDeviceStructure>();
+                if (fitting != null && fitting.Node != null)
+                {
+                    entry.fluidNodeId = fitting.NodeId;
+                    entry.fluidSwitchedOn = fitting.Node.SwitchedOn;
+                    entry.litres = fitting.Node.Litres;
+                    entry.fluidBroken = fitting.Node.IsBroken;
+                }
+
                 data.structures.Add(entry);
             }
 
             CaptureBuildPieces(data);
             CaptureFields(data);
+            CaptureLinks(data);
+            CaptureColony(data);
             return data;
+        }
+
+        /// <summary>
+        /// Every wire and hose, as the pair of node ids the save just recorded. The
+        /// graphs are directed and acyclic, so one entry per edge is the whole story.
+        /// </summary>
+        void CaptureLinks(StructuresSaveData data)
+        {
+            if (Power != null && Power.Graph != null)
+            {
+                var nodes = Power.Graph.Nodes;
+                for (int i = 0; i < nodes.Count; i++)
+                {
+                    for (int j = 0; j < nodes[i].Outputs.Count; j++)
+                    {
+                        data.wires.Add(new LinkSaveData { fromId = nodes[i].Id, toId = nodes[i].Outputs[j] });
+                    }
+                }
+            }
+
+            if (Fluid != null && Fluid.Graph != null)
+            {
+                var nodes = Fluid.Graph.Nodes;
+                for (int i = 0; i < nodes.Count; i++)
+                {
+                    for (int j = 0; j < nodes[i].Outputs.Count; j++)
+                    {
+                        data.hoses.Add(new LinkSaveData { fromId = nodes[i].Id, toId = nodes[i].Outputs[j] });
+                    }
+                }
+            }
+        }
+
+        void CaptureColony(StructuresSaveData data)
+        {
+            if (Colony == null) return;
+
+            data.colony.founded = Colony.Founded;
+            data.colony.colonyName = Colony.ColonyName;
+            data.colony.sheltering = Colony.Sheltering;
+
+            var people = Colony.Colonists;
+            for (int i = 0; i < people.Count; i++)
+            {
+                var person = people[i];
+                if (person == null || !person.IsAlive) continue;
+
+                data.colony.colonists.Add(new ColonistSaveData
+                {
+                    name = person.Name,
+                    job = (int)person.Job,
+                    food = person.Food,
+                    water = person.Water,
+                    morale = person.Morale
+                });
+            }
         }
 
         void CaptureBuildPieces(StructuresSaveData data)
@@ -288,7 +382,8 @@ namespace MadVoxel.Save
             {
                 itemId = stack.IsEmpty ? "" : stack.Item.stringId,
                 count = stack.IsEmpty ? 0 : stack.Count,
-                durability = stack.Durability
+                durability = stack.Durability,
+                spoilRemaining = stack.SpoilRemaining
             };
         }
 
@@ -331,7 +426,9 @@ namespace MadVoxel.Save
                     Debug.LogWarningFormat("Save references unknown item '{0}'; slot dropped.", slot.itemId);
                     continue;
                 }
-                bag.SetSlot(i, new ItemStack(item, slot.count, slot.durability));
+                var restored = new ItemStack(item, slot.count, slot.durability);
+                restored.SpoilRemaining = MadVoxel.Inventory.Spoil.SpoilRules.Normalise(item, slot.spoilRemaining);
+                bag.SetSlot(i, restored);
             }
             _player.Inventory.Select(Mathf.Clamp(data.selectedHotbar, 0, PlayerInventory.HotbarSize - 1));
 
@@ -342,6 +439,11 @@ namespace MadVoxel.Save
         public void RestoreStructures(StructuresSaveData data)
         {
             if (data == null || _structures == null) return;
+
+            // Old node id -> the id the graph has just handed this piece. Wires are
+            // stored against the saved ids, so this is what puts them back.
+            var powerRemap = new Dictionary<int, int>();
+            var fluidRemap = new Dictionary<int, int>();
 
             for (int i = 0; i < data.structures.Count; i++)
             {
@@ -386,13 +488,125 @@ namespace MadVoxel.Save
 
                         var item = _content.Item(slot.itemId);
                         if (item == null) continue;
-                        storage.Contents.SetSlot(s, new ItemStack(item, slot.count, slot.durability));
+
+                        var stack = new ItemStack(item, slot.count, slot.durability);
+                        stack.SpoilRemaining = MadVoxel.Inventory.Spoil.SpoilRules.Normalise(item, slot.spoilRemaining);
+                        storage.Contents.SetSlot(s, stack);
                     }
                 }
+
+                RestoreUtilities(placed, entry, powerRemap, fluidRemap);
             }
 
             RestoreBuildPieces(data);
             RestoreFields(data);
+            RestoreLinks(data, powerRemap, fluidRemap);
+            RestoreColony(data);
+        }
+
+        /// <summary>Puts a device's own state back, and records its new node id.</summary>
+        void RestoreUtilities(PlacedStructure placed, StructureSaveData entry,
+                              Dictionary<int, int> powerRemap, Dictionary<int, int> fluidRemap)
+        {
+            var electrical = placed.GetComponent<PowerDeviceStructure>();
+            if (electrical != null && electrical.Node != null && entry.powerNodeId != 0)
+            {
+                electrical.Node.SwitchedOn = entry.powerSwitchedOn;
+                electrical.Node.FuelLitres = entry.fuelLitres;
+                electrical.Node.StoredWattHours = entry.storedWattHours;
+                powerRemap[entry.powerNodeId] = electrical.NodeId;
+            }
+
+            var fitting = placed.GetComponent<FluidDeviceStructure>();
+            if (fitting != null && fitting.Node != null && entry.fluidNodeId != 0)
+            {
+                fitting.Node.SwitchedOn = entry.fluidSwitchedOn;
+                fitting.Node.Litres = entry.litres;
+                fitting.Node.IsBroken = entry.fluidBroken;
+                fluidRemap[entry.fluidNodeId] = fitting.NodeId;
+            }
+        }
+
+        /// <summary>
+        /// Reconnects the grid and the plumbing. A link whose ends did not both come
+        /// back - a device removed by a mod, say - is dropped with a warning rather
+        /// than wired to whatever now holds that id.
+        /// </summary>
+        void RestoreLinks(StructuresSaveData data, Dictionary<int, int> powerRemap, Dictionary<int, int> fluidRemap)
+        {
+            int droppedWires = 0, droppedHoses = 0;
+
+            if (Power != null && Power.Graph != null)
+            {
+                for (int i = 0; i < data.wires.Count; i++)
+                {
+                    int from, to;
+                    if (!powerRemap.TryGetValue(data.wires[i].fromId, out from)
+                        || !powerRemap.TryGetValue(data.wires[i].toId, out to))
+                    {
+                        droppedWires++;
+                        continue;
+                    }
+
+                    // Rules are skipped on restore: a wire that was legal when it was
+                    // run stays legal, even if a mod has since shortened the reach.
+                    var fromNode = Power.Graph.Get(from);
+                    var toNode = Power.Graph.Get(to);
+                    if (fromNode == null || toNode == null || fromNode.Outputs.Contains(to)) continue;
+
+                    fromNode.Outputs.Add(to);
+                    toNode.Inputs.Add(from);
+                }
+            }
+
+            if (Fluid != null && Fluid.Graph != null)
+            {
+                for (int i = 0; i < data.hoses.Count; i++)
+                {
+                    int from, to;
+                    if (!fluidRemap.TryGetValue(data.hoses[i].fromId, out from)
+                        || !fluidRemap.TryGetValue(data.hoses[i].toId, out to))
+                    {
+                        droppedHoses++;
+                        continue;
+                    }
+
+                    var fromNode = Fluid.Graph.Get(from);
+                    var toNode = Fluid.Graph.Get(to);
+                    if (fromNode == null || toNode == null || fromNode.Outputs.Contains(to)) continue;
+
+                    fromNode.Outputs.Add(to);
+                    toNode.Inputs.Add(from);
+                }
+            }
+
+            if (droppedWires > 0 || droppedHoses > 0)
+            {
+                Debug.LogWarningFormat("Save dropped {0} wire(s) and {1} hose(s) whose devices are gone.",
+                    droppedWires, droppedHoses);
+            }
+        }
+
+        void RestoreColony(StructuresSaveData data)
+        {
+            if (Colony == null || data.colony == null || !data.colony.founded) return;
+
+            var people = new List<ColonistState>();
+            for (int i = 0; i < data.colony.colonists.Count; i++)
+            {
+                var entry = data.colony.colonists[i];
+                people.Add(new ColonistState
+                {
+                    Name = entry.name,
+                    Job = (ColonyJob)entry.job,
+                    Food = entry.food,
+                    Water = entry.water,
+                    Morale = entry.morale
+                });
+            }
+
+            Colony.LoadState(data.colony.colonyName, true, people);
+            if (data.colony.sheltering) Colony.OrderShelter(true);
         }
 
         void OnApplicationQuit()

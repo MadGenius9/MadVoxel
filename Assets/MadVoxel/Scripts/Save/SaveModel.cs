@@ -17,6 +17,13 @@ namespace MadVoxel.Save
         public int hordeNumber;
         public string createdUtc = "";
         public string lastPlayedUtc = "";
+
+        /// <summary>The sky, so a reload does not hand you a different afternoon.</summary>
+        public int weatherKind;
+        public float weatherHoursRemaining;
+
+        /// <summary>How loud the claim was. The floor is recomputed, the level is not.</summary>
+        public float claimHeat;
         /// <summary>Mod ids active when this world was last played, so a missing one can be reported.</summary>
         public List<string> mods = new List<string>();
     }
@@ -27,6 +34,8 @@ namespace MadVoxel.Save
         public string itemId = "";
         public int count;
         public int durability;
+        /// <summary>Game hours of shelf life left. -1 means "unset", which reads as fresh.</summary>
+        public float spoilRemaining = -1f;
     }
 
     [Serializable]
@@ -73,6 +82,47 @@ namespace MadVoxel.Save
 
         // Grain bin contents, in litres.
         public List<SiloEntryData> silo = new List<SiloEntryData>();
+
+        // --- utilities. Node ids are saved so the wires can be put back; they are
+        // remapped on load, because the graphs hand out fresh ids as pieces are placed.
+        public int powerNodeId;
+        public bool powerSwitchedOn = true;
+        public float fuelLitres;
+        public float storedWattHours;
+
+        public int fluidNodeId;
+        public bool fluidSwitchedOn = true;
+        public float litres;
+        public bool fluidBroken;
+    }
+
+    /// <summary>One wire or one hose, by the node ids the save recorded.</summary>
+    [Serializable]
+    public class LinkSaveData
+    {
+        public int fromId;
+        public int toId;
+    }
+
+    /// <summary>A colonist, flattened.</summary>
+    [Serializable]
+    public class ColonistSaveData
+    {
+        public string name = "";
+        public int job;
+        public float food = 80f;
+        public float water = 80f;
+        public float morale = 65f;
+    }
+
+    /// <summary>The colony charter and everyone on it.</summary>
+    [Serializable]
+    public class ColonySaveData
+    {
+        public bool founded;
+        public string colonyName = "Mad Colony";
+        public bool sheltering;
+        public List<ColonistSaveData> colonists = new List<ColonistSaveData>();
     }
 
     [Serializable]
@@ -111,5 +161,11 @@ namespace MadVoxel.Save
         public List<StructureSaveData> structures = new List<StructureSaveData>();
         public List<BuildPieceSaveData> pieces = new List<BuildPieceSaveData>();
         public List<FieldCellSaveData> fieldCells = new List<FieldCellSaveData>();
+
+        /// <summary>The grid and the plumbing, as pairs of saved node ids.</summary>
+        public List<LinkSaveData> wires = new List<LinkSaveData>();
+        public List<LinkSaveData> hoses = new List<LinkSaveData>();
+
+        public ColonySaveData colony = new ColonySaveData();
     }
 }

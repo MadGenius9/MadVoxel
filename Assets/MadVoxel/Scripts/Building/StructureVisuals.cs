@@ -48,6 +48,13 @@ namespace MadVoxel.Building
                 case StructureKind.Silo:
                     BuildSilo(body.transform, mat);
                     break;
+                case StructureKind.ColonyBoard:
+                    BuildBoard(body.transform, mat);
+                    break;
+                case StructureKind.PowerDevice:
+                case StructureKind.FluidDevice:
+                    BuildUtility(body.transform, def);
+                    break;
                 default:
                     PrimitiveBuilder.Box(body.transform, new Vector3(0.5f, 0.5f, 0.5f), Vector3.one * 0.98f, mat, "Block");
                     break;
@@ -171,6 +178,187 @@ namespace MadVoxel.Building
             {
                 PrimitiveBuilder.Box(parent, new Vector3(1.45f, 0.4f + i * 0.35f, 0.5f), new Vector3(0.3f, 0.05f, 0.05f), roof, "Rung" + i);
             }
+        }
+
+        /// <summary>
+        /// The utilities. Each one is built from its device rather than its kind, so a
+        /// deployable that is two things - the pump, the fridge - gets the silhouette of
+        /// whichever one you actually look at it for.
+        ///
+        /// They read as farm-industrial salvage: a bolted frame, a vent, a gauge face.
+        /// Nothing here is a toy cube with a label on it.
+        /// </summary>
+        static void BuildUtility(Transform parent, StructureDefinition def)
+        {
+            var frame = MaterialLibrary.Get(SurfaceFamily.Metal, new Color(0.33f, 0.32f, 0.30f), 0.25f, 0.8f);
+            var panel = MaterialLibrary.Get(SurfaceFamily.Metal, def.tint, 0.3f, 0.6f);
+            var dark = MaterialLibrary.Get(SurfaceFamily.Metal, new Color(0.16f, 0.15f, 0.14f), 0.2f, 0.5f);
+            var brass = MaterialLibrary.Get(SurfaceFamily.Metal, new Color(0.62f, 0.50f, 0.26f), 0.5f, 0.9f);
+
+            if (def.powerDevice != null)
+            {
+                switch (def.powerDevice.kind)
+                {
+                    case Power.PowerDeviceKind.Generator: BuildGeneratorBank(parent, frame, panel, dark, brass); return;
+                    case Power.PowerDeviceKind.BatteryBank: BuildBatteryBank(parent, frame, panel, dark); return;
+                    case Power.PowerDeviceKind.SolarBank: BuildSolarBank(parent, frame, panel); return;
+                    case Power.PowerDeviceKind.Relay: BuildRelay(parent, frame, brass); return;
+                    case Power.PowerDeviceKind.Switch:
+                    case Power.PowerDeviceKind.Splitter: BuildBox(parent, frame, brass); return;
+                }
+
+                if (def.powerDevice.lightRange > 0f) { BuildLamp(parent, frame, brass); return; }
+                if (def.powerDevice.trapDamage > 0f) { BuildTrap(parent, frame, dark, brass); return; }
+            }
+
+            if (def.fluidDevice != null)
+            {
+                switch (def.fluidDevice.kind)
+                {
+                    case Fluid.FluidDeviceKind.Tank: BuildTank(parent, frame, panel, def); return;
+                    case Fluid.FluidDeviceKind.Tap: BuildTap(parent, brass); return;
+                    case Fluid.FluidDeviceKind.Sprinkler: BuildSprinkler(parent, frame, brass); return;
+                    case Fluid.FluidDeviceKind.Pump: BuildPump(parent, frame, panel, brass); return;
+                    default: BuildPipe(parent, frame); return;
+                }
+            }
+
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.5f, 0.5f), Vector3.one * 0.9f, panel, "Body");
+        }
+
+        /// <summary>A small engine on a skid, with a tank and an exhaust.</summary>
+        static void BuildGeneratorBank(Transform parent, Material frame, Material panel, Material dark, Material brass)
+        {
+            PrimitiveBuilder.Box(parent, new Vector3(1f, 0.12f, 1f), new Vector3(2.0f, 0.24f, 2.0f), frame, "Skid");
+            PrimitiveBuilder.Box(parent, new Vector3(1f, 0.85f, 1f), new Vector3(1.7f, 1.2f, 1.5f), panel, "Housing");
+
+            // Louvres down one flank: the detail that makes it read as an engine.
+            for (int i = 0; i < 5; i++)
+            {
+                PrimitiveBuilder.Box(parent, new Vector3(0.14f, 0.62f + i * 0.14f, 1f),
+                    new Vector3(0.05f, 0.07f, 1.2f), dark, "Louvre" + i);
+            }
+
+            PrimitiveBuilder.Cylinder(parent, new Vector3(1.55f, 1.05f, 0.5f), new Vector3(0.5f, 0.55f, 0.5f), dark, "Tank");
+            PrimitiveBuilder.Cylinder(parent, new Vector3(0.45f, 1.85f, 1.5f), new Vector3(0.18f, 0.45f, 0.18f), dark, "Exhaust");
+            PrimitiveBuilder.Box(parent, new Vector3(1f, 1.52f, 0.22f), new Vector3(0.5f, 0.3f, 0.06f), brass, "Panel");
+        }
+
+        static void BuildBatteryBank(Transform parent, Material frame, Material panel, Material dark)
+        {
+            PrimitiveBuilder.Box(parent, new Vector3(1f, 0.1f, 1f), new Vector3(2.0f, 0.2f, 1.6f), frame, "Skid");
+
+            // A rack of cells rather than one lump.
+            for (int i = 0; i < 4; i++)
+            {
+                PrimitiveBuilder.Box(parent, new Vector3(0.38f + i * 0.42f, 0.78f, 1f),
+                    new Vector3(0.34f, 1.0f, 1.2f), panel, "Cell" + i);
+                PrimitiveBuilder.Box(parent, new Vector3(0.38f + i * 0.42f, 1.32f, 1f),
+                    new Vector3(0.36f, 0.08f, 1.24f), dark, "Cap" + i);
+            }
+        }
+
+        static void BuildSolarBank(Transform parent, Material frame, Material panel)
+        {
+            PrimitiveBuilder.Box(parent, new Vector3(1f, 0.08f, 1f), new Vector3(1.6f, 0.16f, 1.6f), frame, "Foot");
+            PrimitiveBuilder.Box(parent, new Vector3(1f, 0.5f, 1f), new Vector3(0.16f, 0.7f, 0.16f), frame, "Post");
+
+            var tilted = new GameObject("Panel");
+            tilted.transform.SetParent(parent, false);
+            tilted.transform.localPosition = new Vector3(1f, 0.95f, 1f);
+            tilted.transform.localRotation = Quaternion.Euler(-28f, 0f, 0f);
+            PrimitiveBuilder.Box(tilted.transform, Vector3.zero, new Vector3(2.0f, 0.08f, 1.4f), panel, "Face");
+        }
+
+        static void BuildRelay(Transform parent, Material frame, Material brass)
+        {
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.06f, 0.5f), new Vector3(0.5f, 0.12f, 0.5f), frame, "Foot");
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.85f, 0.5f), new Vector3(0.12f, 1.6f, 0.12f), frame, "Mast");
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 1.45f, 0.5f), new Vector3(0.42f, 0.3f, 0.3f), brass, "Head");
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 1.72f, 0.5f), new Vector3(0.7f, 0.05f, 0.05f), frame, "Crossarm");
+        }
+
+        static void BuildBox(Transform parent, Material frame, Material brass)
+        {
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.45f, 0.5f), new Vector3(0.44f, 0.6f, 0.28f), frame, "Case");
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.52f, 0.34f), new Vector3(0.16f, 0.2f, 0.06f), brass, "Lever");
+        }
+
+        static void BuildLamp(Transform parent, Material frame, Material brass)
+        {
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.9f, 0.5f), new Vector3(0.08f, 0.5f, 0.08f), frame, "Stem");
+            PrimitiveBuilder.Cylinder(parent, new Vector3(0.5f, 0.62f, 0.5f), new Vector3(0.44f, 0.2f, 0.44f), frame, "Shade");
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.52f, 0.5f), new Vector3(0.22f, 0.08f, 0.22f), brass, "Bulb");
+        }
+
+        static void BuildTrap(Transform parent, Material frame, Material dark, Material brass)
+        {
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.1f, 0.5f), new Vector3(0.8f, 0.2f, 0.8f), frame, "Base");
+            PrimitiveBuilder.Cylinder(parent, new Vector3(0.5f, 0.34f, 0.5f), new Vector3(0.3f, 0.3f, 0.3f), dark, "Motor");
+
+            // Four blades on a hub, so it reads as something that turns.
+            for (int i = 0; i < 4; i++)
+            {
+                float angle = i * 90f * Mathf.Deg2Rad;
+                PrimitiveBuilder.Box(parent,
+                    new Vector3(0.5f + Mathf.Cos(angle) * 0.3f, 0.5f, 0.5f + Mathf.Sin(angle) * 0.3f),
+                    new Vector3(0.5f, 0.05f, 0.12f), brass, "Blade" + i);
+            }
+        }
+
+        static void BuildTank(Transform parent, Material frame, Material panel, StructureDefinition def)
+        {
+            float height = Mathf.Max(1.2f, def.footprint.y * 0.9f);
+
+            PrimitiveBuilder.Box(parent, new Vector3(1f, 0.1f, 1f), new Vector3(2.0f, 0.2f, 2.0f), frame, "Base");
+            PrimitiveBuilder.Cylinder(parent, new Vector3(1f, 0.2f + height * 0.5f, 1f),
+                new Vector3(1.7f, height * 0.5f, 1.7f), panel, "Drum");
+
+            // Bands, so a big drum does not read as a smooth plastic toy.
+            for (int i = 0; i < 2; i++)
+            {
+                PrimitiveBuilder.Cylinder(parent, new Vector3(1f, 0.5f + i * height * 0.5f, 1f),
+                    new Vector3(1.78f, 0.05f, 1.78f), frame, "Band" + i);
+            }
+        }
+
+        static void BuildPump(Transform parent, Material frame, Material panel, Material brass)
+        {
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.12f, 0.5f), new Vector3(0.9f, 0.24f, 0.9f), frame, "Pad");
+            PrimitiveBuilder.Cylinder(parent, new Vector3(0.5f, 0.5f, 0.5f), new Vector3(0.6f, 0.3f, 0.6f), panel, "Casing");
+            PrimitiveBuilder.Cylinder(parent, new Vector3(0.5f, 0.85f, 0.5f), new Vector3(0.26f, 0.22f, 0.26f), frame, "Motor");
+            PrimitiveBuilder.Box(parent, new Vector3(0.84f, 0.45f, 0.5f), new Vector3(0.24f, 0.16f, 0.16f), brass, "Outlet");
+        }
+
+        static void BuildPipe(Transform parent, Material frame)
+        {
+            PrimitiveBuilder.Cylinder(parent, new Vector3(0.5f, 0.3f, 0.5f), new Vector3(0.22f, 0.3f, 0.22f), frame, "Riser");
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.58f, 0.5f), new Vector3(0.3f, 0.1f, 0.3f), frame, "Flange");
+        }
+
+        static void BuildTap(Transform parent, Material brass)
+        {
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.45f, 0.5f), new Vector3(0.12f, 0.9f, 0.12f), brass, "Stand");
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.85f, 0.66f), new Vector3(0.08f, 0.08f, 0.32f), brass, "Spout");
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.95f, 0.5f), new Vector3(0.22f, 0.05f, 0.05f), brass, "Handle");
+        }
+
+        static void BuildSprinkler(Transform parent, Material frame, Material brass)
+        {
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.08f, 0.5f), new Vector3(0.36f, 0.16f, 0.36f), frame, "Foot");
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.5f, 0.5f), new Vector3(0.1f, 0.8f, 0.1f), frame, "Riser");
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.92f, 0.5f), new Vector3(0.52f, 0.05f, 0.08f), brass, "ArmA");
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.92f, 0.5f), new Vector3(0.08f, 0.05f, 0.52f), brass, "ArmB");
+        }
+
+        /// <summary>A plank plaque with a paper on it. It is a charter, not a terminal.</summary>
+        static void BuildBoard(Transform parent, Material mat)
+        {
+            var paper = MaterialLibrary.Get(SurfaceFamily.Cloth, new Color(0.78f, 0.74f, 0.64f), 0.05f, 0f);
+
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.9f, 0.14f), new Vector3(0.9f, 1.1f, 0.08f), mat, "Board");
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.95f, 0.2f), new Vector3(0.66f, 0.82f, 0.02f), paper, "Charter");
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 1.44f, 0.16f), new Vector3(0.96f, 0.08f, 0.12f), mat, "Lintel");
         }
 
         /// <summary>Darkens the piece as it takes damage so players can read base integrity.</summary>

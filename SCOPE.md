@@ -107,7 +107,13 @@ resolver and nine call sites — and changes nothing about the Phase 0 loop.
 | **Traders** | 2 outposts standing in the world, with stock lists, price multipliers, reputation gates, restock interval and currency. | Trader NPC, shop UI, buy/sell, restock, reputation. |
 | **Quests** | 3 contracts (fetch 20 scrap, clear 12 shamblers, survive 2 nights) with XP, reputation and item rewards. | Accept/track/turn-in, the journal, and a mining contract. |
 | **Vehicles** | Scrap Buggy: speed, acceleration, climb height, fuel economy, seats, storage, health, parts and a perk-gated recipe. | Driving, fuel burn, seats and storage, collision against edited terrain and foundations. |
-| **Field machines** | The whole grid, state machine, growth timing, litre yield and the grain bin. | Tractor, plow, seeder and harvester; working width and a hopper; sowing and harvesting a swath. |
+| **Field machines** | The whole grid, state machine, growth timing, litre yield and the grain bin. A sprinkler already wets field cells. | Tractor, plow, seeder and harvester; working width and a hopper; sowing and harvesting a swath. |
+| **Electricity** | **Live.** Generator, battery and solar banks, relays, switches and splitters, lights, a fridge, a blade trap and a fence post, all on one graph with a wire tool, a predictable brown-out and a real fuel economy. | A dart trap, a turret, and the timer-relay puzzles this pass deliberately skipped. |
+| **Water** | **Live.** A dug well on a water-table block, electric pump, pipes, tanks, barrels, taps and plot sprinklers on one fluid graph, with breaks, freezes and drought. | A field irrigator on the FS-style cells, and surface ponds as a source. |
+| **Weather** | **Live.** Six states rolled per region, turning dials on the pump, the panels, the soil, barrels, morale and crops. | Seasons with their own economies. |
+| **Spoilage** | **Live.** Shelf life on the stack, rot, and a fridge that earns its watts. | Compost as a fertiliser input. |
+| **Claim heat** | **Live.** One number fed by lights, the generator, population, acreage and traps, read by the wanderer cap and the horde budget. | — |
+| **Mad Colony** | **Live.** A charter on a board, up to three people with four jobs, needs, morale and a walk-out, fed and watered from the base you built. | The recruit event and trader quest that should bring the first person; pathfinding; The Marker. |
 | **Furnace** | Smelting exists as campfire recipes (ore → ingot, sand → glass). | A dedicated furnace deployable and its throughput. |
 | **Horde** | Live, and already budgets on base footprint. | Waves that actively exploit an open dig rather than pathing at the cupboard. |
 
@@ -181,6 +187,17 @@ executed. Worlds record which mods built them and warn on load if one is missing
 - **Developer hotkeys ship enabled.** Untick *Developer Tools* on the `MadVoxel` object
   before a release build.
 - **Audio.** There is none.
+- **The colony's only recruit path is a developer hotkey.** The trader quest and the
+  wanderer-at-the-fence event that should bring the first person are Phase 1; today
+  `Shift+F6` stands in for both.
+- **Colonists do not path around obstacles.** They walk towards a target and let the
+  character controller handle the ground, which works on dug terrain and ramps but
+  will wedge them on a wall corner.
+- **The Marker is not built**, as asked. `ColonyWorld.ForbiddenActions` is the hook.
+- **Field irrigation is still Phase 1.** A sprinkler wets field cells, but no
+  implement sows or harvests them.
+- **Surface ponds are not a pump source.** A well is dug to the water table; standing
+  water has no fluid rendering and is not modelled.
 - **The Claim Slate trader and silo screens are unbuilt.** Both are specified in
   `UI.md`, and both wait on a runtime to sit behind them. The tractor cluster is
   built but permanently switched off until something drives.

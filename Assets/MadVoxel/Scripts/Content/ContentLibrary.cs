@@ -53,6 +53,7 @@ namespace MadVoxel.Content
             var itemMap = BuildItems(blockMap);
             var structureMap = BuildStructures(itemMap);
             AddUtilityContent(itemMap, structureMap);
+            var colonyRules = BuildColony(itemMap, structureMap);
 
             LinkPlacement(itemMap, blockMap, structureMap);
             LinkBlockDrops(blockMap, itemMap);
@@ -66,11 +67,13 @@ namespace MadVoxel.Content
             db.structures = new List<StructureDefinition>(structureMap.Values);
             db.recipes = BuildRecipes(itemMap);
             AddUtilityRecipes(itemMap, db.recipes);
+            AddColonyRecipes(itemMap, db.recipes);
             AddSnapItems(itemMap, twigByKind, db.recipes);
             db.items = new List<ItemDefinition>(itemMap.Values);
             db.zombies = BuildZombies(itemMap);
             db.hordeSchedule = BuildHordeSchedule(db.zombies);
 
+            db.colonyRules = colonyRules;
             db.biomes = BuildBiomes();
             db.weather = BuildWeather();
 

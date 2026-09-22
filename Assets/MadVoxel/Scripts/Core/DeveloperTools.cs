@@ -2,7 +2,10 @@ using MadVoxel.AI;
 using MadVoxel.Content;
 using MadVoxel.Core.Player;
 using MadVoxel.Horde;
+using MadVoxel.Claim;
+using MadVoxel.Colony;
 using MadVoxel.Perks;
+using MadVoxel.World.Weather;
 using MadVoxel.World.Terrain;
 using UnityEngine;
 
@@ -19,8 +22,9 @@ namespace MadVoxel.Core
     public class DeveloperTools : MonoBehaviour
     {
         public const string KeyHelp =
-            "F2 +1 level   F4 fly   F5 +1h   F6 dawn   F7 blood moon   F8 spawn zombie\n" +
-            "F9 refill   F10 test kit   F11 invulnerable   F12 ripen crops";
+            "F1 utility kit   F2 +1 level   F4 fly   F5 +1h   F6 dawn   F7 blood moon\n" +
+            "F8 spawn zombie   F9 refill   F10 test kit   F11 invulnerable   F12 ripen crops\n" +
+            "Shift+F5 cycle weather   Shift+F6 found colony + recruit   Shift+F7 heat +25";
 
         ContentDatabase _content;
         WorldClock _clock;
@@ -49,7 +53,13 @@ namespace MadVoxel.Core
         {
             if (_player == null) return;
 
+            bool shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+
+            if (Input.GetKeyDown(KeyCode.F1)) GiveUtilityKit();
             if (Input.GetKeyDown(KeyCode.F2)) GrantLevel();
+            if (shift && Input.GetKeyDown(KeyCode.F5)) { CycleWeather(); return; }
+            if (shift && Input.GetKeyDown(KeyCode.F6)) { FoundAndRecruit(); return; }
+            if (shift && Input.GetKeyDown(KeyCode.F7)) { StokeHeat(); return; }
             if (Input.GetKeyDown(KeyCode.F4)) ToggleFly();
             if (Input.GetKeyDown(KeyCode.F5)) SkipHours(1f);
             if (Input.GetKeyDown(KeyCode.F6)) SkipToDawn();
@@ -149,6 +159,92 @@ namespace MadVoxel.Core
             var stats = _player.Stats;
             stats.Invulnerable = !stats.Invulnerable;
             Notifications.Post(stats.Invulnerable ? "Invulnerable ON" : "Invulnerable OFF");
+        }
+
+        /// <summary>The grid, the plumbing and the colony. Set by the session.</summary>
+        public WeatherDirector Weather { get; set; }
+        public ColonyWorld Colony { get; set; }
+        public ClaimHeatTracker Heat { get; set; }
+
+        /// <summary>
+        /// Everything needed to wire a shack and plumb a well without first grinding
+        /// thirty scrap. This is the kit the power and water success tests want.
+        /// </summary>
+        void GiveUtilityKit()
+        {
+            Give(ItemIds.WireTool, 1);
+            Give(ItemIds.CopperWire, 40);
+
+            Give(ItemIds.PieceGeneratorBank, 1);
+            Give(ItemIds.PieceBatteryBank, 1);
+            Give(ItemIds.PieceSolarBank, 2);
+            Give(ItemIds.PieceRelay, 4);
+            Give(ItemIds.PieceSwitch, 2);
+            Give(ItemIds.PieceSplitter, 2);
+            Give(ItemIds.PieceLight, 6);
+            Give(ItemIds.PieceFridge, 1);
+            Give(ItemIds.PieceBladeTrap, 2);
+            Give(ItemIds.PieceFencePost, 4);
+
+            Give(ItemIds.PieceWaterPump, 1);
+            Give(ItemIds.PiecePipe, 16);
+            Give(ItemIds.PieceWaterTank, 1);
+            Give(ItemIds.PieceWaterBarrel, 2);
+            Give(ItemIds.PieceTap, 2);
+            Give(ItemIds.PieceSprinkler, 3);
+
+            Give(ItemIds.PieceColonyBoard, 1);
+            Give(ItemIds.GasCan, 8);
+
+            Notifications.Post("Utility kit granted - dig to the water table for a well");
+        }
+
+        /// <summary>Steps the sky on, so a drought or a storm can be seen on demand.</summary>
+        void CycleWeather()
+        {
+            if (Weather == null || _content == null || _content.weather == null) return;
+
+            var states = _content.weather.states;
+            int index = 0;
+            for (int i = 0; i < states.Count; i++)
+            {
+                if (states[i] != null && states[i].kind == Weather.Kind) { index = i; break; }
+            }
+
+            var next = states[(index + 1) % states.Count];
+            Weather.Force(next.kind, Mathf.Max(3f, next.minHours));
+
+            Notifications.PostFormat("Weather: {0}",
+                string.IsNullOrEmpty(next.clockWord) ? next.kind.ToString().ToUpperInvariant() : next.clockWord);
+        }
+
+        /// <summary>
+        /// Founds the colony and takes in one person, so the board can be exercised
+        /// without first waiting on a trader quest that does not exist yet.
+        /// </summary>
+        void FoundAndRecruit()
+        {
+            if (Colony == null) return;
+
+            if (!Colony.Founded)
+            {
+                var result = Colony.TryFound("Mad Colony");
+                if (result != FoundResult.Ok)
+                {
+                    Notifications.Post(ColonyCharter.Describe(result));
+                    return;
+                }
+            }
+
+            if (Colony.TryRecruit() == null) Notifications.Post("No room for another colonist");
+        }
+
+        void StokeHeat()
+        {
+            if (Heat == null) return;
+
+            Heat.AddBurst(25f);
+            Notifications.Post(Heat.Readout());
         }
 
         /// <summary>One level's worth of XP, so the skills screen can be exercised at once.</summary>

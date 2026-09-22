@@ -35,6 +35,9 @@ namespace MadVoxel.Content
         public List<ZombieDefinition> zombies = new List<ZombieDefinition>();
         public HordeSchedule hordeSchedule;
 
+        [Header("The colony")]
+        public Colony.ColonyRules colonyRules;
+
         [Header("World")]
         public BiomeTable biomes;
         public WeatherTable weather;

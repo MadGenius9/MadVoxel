@@ -3,7 +3,10 @@ using MadVoxel.AI;
 using MadVoxel.Building;
 using MadVoxel.Core;
 using MadVoxel.Core.Player;
+using MadVoxel.Colony;
 using MadVoxel.Farming.Plots;
+using MadVoxel.Fluid;
+using MadVoxel.Power;
 using MadVoxel.Farming.Crops;
 using MadVoxel.Horde;
 using MadVoxel.Inventory;
@@ -450,6 +453,8 @@ namespace MadVoxel.UI
                 _compass.AddPip(CompassStrip.PipKind.Bed, CompassStrip.BearingTo(eye, _player.RespawnPoint));
             }
 
+            AddBoardPips(eye);
+
             // Threat ticks are a horde-night layer. On a quiet night the compass stays
             // a compass.
             if (_horde != null && _horde.IsBloodMoonActive) AddThreatPips(eye);
@@ -498,6 +503,21 @@ namespace MadVoxel.UI
                 if ((centre - eye).sqrMagnitude > PoiRange * PoiRange) continue;
 
                 _compass.AddPip(CompassStrip.PipKind.Claim, CompassStrip.BearingTo(eye, centre));
+            }
+        }
+
+        /// <summary>The colony board gets a pip, because it is the only colony screen.</summary>
+        void AddBoardPips(Vector3 eye)
+        {
+            if (_structures == null) return;
+
+            var all = _structures.All;
+            for (int i = 0; i < all.Count; i++)
+            {
+                if (all[i].GetComponent<ColonyBoardStructure>() == null) continue;
+                if ((all[i].transform.position - eye).sqrMagnitude > PoiRange * PoiRange) continue;
+
+                _compass.AddPip(CompassStrip.PipKind.Board, CompassStrip.BearingTo(eye, all[i].transform.position));
             }
         }
 
@@ -579,6 +599,57 @@ namespace MadVoxel.UI
             colour = ClaimSlate.Bone;
 
             var target = interaction.Target;
+
+            // Running a line takes the line, because while a wire is in the air that is
+            // the only thing the player is thinking about.
+            if (interaction.Wiring != null && interaction.Wiring.HasPending)
+            {
+                title = interaction.Wiring.Readout();
+                colour = ClaimSlate.OxideRust;
+            }
+
+            // Utilities answer for themselves: a device knows its own watts, litres and
+            // reasons better than the HUD ever could.
+            var electrical = target.Structure != null
+                ? target.Structure.GetComponentInChildren<PowerDeviceStructure>() : null;
+            var fitting = target.Structure != null
+                ? target.Structure.GetComponentInChildren<FluidDeviceStructure>() : null;
+
+            if (electrical != null || fitting != null)
+            {
+                string power = electrical != null ? electrical.Readout() : "";
+                string water = fitting != null ? fitting.Readout() : "";
+
+                if (string.IsNullOrEmpty(title)) title = !string.IsNullOrEmpty(water) ? water : power;
+                detail = !string.IsNullOrEmpty(water) && !string.IsNullOrEmpty(power) ? power : detail;
+
+                colour = ClaimSlate.Bone;
+                if (fitting != null && fitting.Node != null && (fitting.Node.IsBroken || fitting.Node.IsFrozen))
+                    colour = ClaimSlate.OxideRust;
+                else if (electrical != null && electrical.Node != null && !electrical.Node.IsPowered
+                         && electrical.Device.wattsConsumed > 0f)
+                    colour = ClaimSlate.OxideRust;
+
+                return;
+            }
+
+            // A person, not a health bar: "JULES  FARM  HUNGRY".
+            var colonist = target.Damageable as Colonist;
+            if (colonist != null && colonist.IsAlive)
+            {
+                title = colonist.Readout();
+                colour = colonist.IsHungry || colonist.IsThirsty ? ClaimSlate.OxideRust : ClaimSlate.Bone;
+                detail = colonist.Bed == null ? "NO BED ASSIGNED" : "";
+                return;
+            }
+
+            var board = target.Structure != null ? target.Structure.GetComponent<ColonyBoardStructure>() : null;
+            if (board != null)
+            {
+                title = board.Readout();
+                colour = ClaimSlate.Bone;
+                return;
+            }
 
             // A garden plot is the one look-at that gets its own grammar, because the
             // number a farmer wants is hours, not a health bar.

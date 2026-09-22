@@ -1,4 +1,5 @@
 using MadVoxel.Building;
+using MadVoxel.Colony;
 using MadVoxel.Content;
 using MadVoxel.Core;
 using MadVoxel.Core.Player;
@@ -19,6 +20,8 @@ namespace MadVoxel.UI
         Playing,
         Inventory,
         Perks,
+        /// <summary>The colony board. The only colony screen there is.</summary>
+        Board,
         Paused,
         Dead
     }
@@ -35,6 +38,7 @@ namespace MadVoxel.UI
         public HudView Hud { get; private set; }
         public InventoryScreen Inventory { get; private set; }
         public PerkScreen Perks { get; private set; }
+        public ColonyBoardScreen Board { get; private set; }
         public DebugOverlay Debug { get; private set; }
 
         public UiState State { get; private set; }
@@ -104,7 +108,9 @@ namespace MadVoxel.UI
         public void CreateGameplayUi(PlayerRig player, WorldClock clock, HordeDirector horde,
                                      ContentDatabase content, TerrainWorld voxels, ChunkStreamer streamer,
                                      StructureWorld structures, SpawnDirector spawner,
-                                     WeatherDirector weather, int seed, bool developerTools)
+                                     WeatherDirector weather, ColonyWorld colony,
+                                     MadVoxel.Claim.ClaimHeatTracker heat,
+                                     int seed, bool developerTools)
         {
             DestroyGameplayUi();
 
@@ -120,12 +126,17 @@ namespace MadVoxel.UI
             Perks = _gameplayUi.AddComponent<PerkScreen>();
             Perks.Init(player, content);
 
+            Board = _gameplayUi.AddComponent<ColonyBoardScreen>();
+            Board.Init(colony);
+            Board.Heat = heat;
+
             Debug = _gameplayUi.AddComponent<DebugOverlay>();
             Debug.Init(player, voxels, streamer, seed, developerTools);
 
             StorageStructure.OpenRequested += OnStorageOpen;
             CraftStationStructure.OpenRequested += OnStationOpen;
             CampfireStructure.OpenRequested += OnStationOpen;
+            ColonyBoardStructure.OpenRequested += OnBoardOpen;
         }
 
         public void DestroyGameplayUi()
@@ -133,12 +144,14 @@ namespace MadVoxel.UI
             StorageStructure.OpenRequested -= OnStorageOpen;
             CraftStationStructure.OpenRequested -= OnStationOpen;
             CampfireStructure.OpenRequested -= OnStationOpen;
+            ColonyBoardStructure.OpenRequested -= OnBoardOpen;
 
             if (_gameplayUi != null) Destroy(_gameplayUi);
             _gameplayUi = null;
             Hud = null;
             Inventory = null;
             Perks = null;
+            Board = null;
             Debug = null;
         }
 
@@ -147,6 +160,14 @@ namespace MadVoxel.UI
             if (Inventory == null || State == UiState.Dead) return;
             Inventory.OpenContainer(storage);
             SetState(UiState.Inventory);
+        }
+
+        void OnBoardOpen(ColonyBoardStructure board)
+        {
+            if (Board == null || State == UiState.Dead) return;
+
+            Board.Open();
+            SetState(UiState.Board);
         }
 
         void OnStationOpen(CraftStation station)
@@ -164,7 +185,8 @@ namespace MadVoxel.UI
 
             if (InputBridge.PauseDown)
             {
-                if (State == UiState.Inventory || State == UiState.Perks) SetState(UiState.Playing);
+                if (State == UiState.Inventory || State == UiState.Perks || State == UiState.Board)
+                    SetState(UiState.Playing);
                 else if (State == UiState.Playing) SetState(UiState.Paused);
                 else if (State == UiState.Paused) SetState(UiState.Playing);
                 return;
@@ -198,6 +220,7 @@ namespace MadVoxel.UI
 
             if (state != UiState.Inventory && Inventory != null) Inventory.Close();
             if (state != UiState.Perks && Perks != null) Perks.Close();
+            if (state != UiState.Board && Board != null) Board.Close();
             if (state != UiState.Paused && Pause != null) Pause.Close();
             if (state != UiState.Dead && Death != null) Death.Close();
             if (state != UiState.MainMenu && MainMenu != null) MainMenu.Close();
@@ -209,6 +232,9 @@ namespace MadVoxel.UI
                     break;
                 case UiState.Perks:
                     if (Perks != null) Perks.Open();
+                    break;
+                case UiState.Board:
+                    if (Board != null) Board.Open();
                     break;
                 case UiState.Paused:
                     Pause.Open();

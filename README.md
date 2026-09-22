@@ -77,6 +77,7 @@ resolve. **MadVoxel → Setup → Rebuild Scene** regenerates the scene if it is
 | `1`–`9` / scroll | Select hotbar slot |
 | `Tab` / `I` | Inventory, container and the work-order strip |
 | `P` | Skills — spend perk points |
+| Wire tool + LMB | Start or finish a wire or a hose; RMB drops the line or cuts a socket |
 | `Esc` | Pause (this is the only thing that stops the world) |
 | `F3` | Debug overlay — FPS, position, chunk, streaming state, seed |
 
@@ -158,6 +159,27 @@ tested today. What Phase 1 adds is the tractor and implements that work a swath 
 time. You can already break ground by hand: hold the **hoe** and right-click open
 ground to plow one cell — the block turns to tilled soil and stays that way.
 
+## Power, water, weather and people
+
+The farm runs on a grid now. A generator bank burns gasoline for watts, relays carry the
+reach, and lights, a fridge, traps and the water pump draw it down. A pump set over
+saturated ground fills a tank, a tank feeds a tap and a sprinkler, and the sprinkler pays
+for itself in the harvest.
+
+Six weather states turn dials on all of it: a drought cuts the pump and costs an
+unwatered plot half its yield, a storm takes the panels to zero and can break an exposed
+fitting, a frost night freezes the tap. Food spoils, and a fridge with watts in it is the
+only thing that slows that down.
+
+Once there is a cupboard, a bed, a fire, water and food, a **Colony Board** lets you
+charter **Mad Colony** — up to three people who farm, guard, repair and cook, eat from
+your crates and drink from your tap, and leave if you neglect them.
+
+All of it is painted across five biomes, and all of it makes noise: a bright, busy,
+populous claim is a **beacon**, and the blood moon reads that number.
+
+See [`SYSTEMS.md`](SYSTEMS.md) for how each layer works and why.
+
 ## Skills
 
 Everything you do pays XP — digging a block you did not place yourself, crafting,
@@ -215,7 +237,11 @@ sitting. They are live whenever **Developer Tools** is ticked on the `MadVoxel` 
 
 | Key | Action |
 | --- | --- |
+| `F1` | Utility kit: wire tool, the whole grid, the whole plumbing, a colony board, gas |
 | `F2` | Grant one level, so the skills screen can be exercised straight away |
+| `Shift`+`F5` | Step the weather on — clear, overcast, rain, drought, storm, frost |
+| `Shift`+`F6` | Found the colony and take in a colonist |
+| `Shift`+`F7` | Add 25 claim heat |
 | `F4` | Toggle fly mode — `Space` up, `Ctrl` down, no gravity |
 | `F5` | Skip one hour |
 | `F6` | Skip to dawn |
@@ -344,6 +370,12 @@ Assets/MadVoxel/
     Inventory/       items, stacks, containers, recipes, crafting
     Perks/           XP and levelling, perk tree definitions, effect resolution and buy rules
     UI/              Claim Slate: palette, compass, visor, inventory, perk diagram, menus
+    Power/           the grid: devices, the graph, the wire tool, traps
+    Fluid/           the water: pump, pipe, tank, tap, sprinkler
+    Colony/          Mad Colony: the charter, morale, people and their jobs
+    Claim/           claim heat
+    World/Biomes/    the five regions and what they change
+    World/Weather/   six states and the dials they turn
     Traders/         trader definitions and stock
     Quests/          quest definitions
     Vehicles/        vehicle definitions
@@ -388,13 +420,14 @@ cd Tests/Headless
 dotnet run
 ```
 
-**468 checks, all passing.** They compile the real gameplay sources against a small
+**731 checks, all passing.** They compile the real gameplay sources against a small
 executable `UnityEngine` shim and actually run them, covering content wiring, the build
 grid and its connection graph, chunk storage and coordinates, the greedy mesher,
 terrain generation, POI layout, crop growth timing, the field tillage state machine and
 its yield, inventory, crafting, the perk buy rules and effect maths, the Claim Slate
-palette, compass bearings and the blood-moon schedule, the chunk-file save round-trip,
-and the whole mod pipeline — including loading the example mod that ships in
+palette, compass bearings and the blood-moon schedule, the biome paint, the weather
+table, the power and fluid graphs, spoilage, claim heat, the colony's founding and
+morale rules, the chunk-file save round-trip, and the whole mod pipeline — including loading the example mod that ships in
 this repository.
 See [`Tests/Headless/README.md`](Tests/Headless/README.md) for the full list and for
 what is deliberately out of reach.

@@ -32,6 +32,7 @@ namespace MadVoxel.Headless
             PerkTests.Run(db);
             UiTests.Run();
             WorldTests.Run(db);
+            ColonyTests.Run(db);
             PowerTests.Run();
             FluidTests.Run();
 

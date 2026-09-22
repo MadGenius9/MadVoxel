@@ -13,7 +13,7 @@ namespace MadVoxel.UI
     /// </summary>
     public class CompassStrip : MonoBehaviour
     {
-        public enum PipKind { Trader, Claim, Bed, Threat }
+        public enum PipKind { Trader, Claim, Bed, Threat, Board }
 
         const float Width = 760f;
         const float Height = 62f;
@@ -145,6 +145,15 @@ namespace MadVoxel.UI
                     var pip = ClaimSlate.Fill(_tape, name, ClaimSlate.CropSage);
                     ClaimSlate.Place(pip.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
                         new Vector2(0f, 5f), new Vector2(14f, 4f));
+                    return pip.rectTransform;
+                }
+                case PipKind.Board:
+                {
+                    // Bone, and an upright: the only pip that is taller than it is wide
+                    // and not blood-coloured, so the colony never reads as a threat.
+                    var pip = ClaimSlate.Fill(_tape, name, ClaimSlate.Bone);
+                    ClaimSlate.Place(pip.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                        new Vector2(0f, 3f), new Vector2(4f, 13f));
                     return pip.rectTransform;
                 }
                 default:

@@ -45,8 +45,10 @@ reads `POTATO   STAGE 3/4   6H`. A snap piece reads `WALL   STONE   84%` and `ST
 **Colour is never the only signal.** Every gauge carries a shape tick — a `+` for health,
 stacked bars for stamina, a drop for water, a grain for food. The compass pips are a gold
 diamond (trader), a rust square (claim), a sage bar (bed) and a blood tick (threat):
-four shapes, not four hues. Perk ranks are filled or empty boxes. A work order that
-cannot be crafted says `SHORT`, not just a dimmer colour.
+four shapes, not four hues, plus a bone upright for the colony board — the only pip taller than it is
+wide and not blood-coloured, so the colony never reads as a threat. Perk ranks are
+filled or empty boxes. A work order that cannot be crafted says `SHORT`, not just a
+dimmer colour. The board's founding checklist uses `[X]` and `[ ]`, not green and red.
 
 ---
 
@@ -74,6 +76,9 @@ cannot be crafted says `SHORT`, not just a dimmer colour.
 | **Build look-at** | Crosshair on a snap piece | `WALL   STONE   84%`, then `STABLE` or `UNSUPPORTED`, then the upgrade cost against what you carry. |
 | **Fields on foot** | — | Nothing. The field grid gets no overlay until there is a machine on it. |
 | **Horde** | Blood moon active | Four oxidised edges (never a full-screen wash), blood threat ticks on the compass, and **one line**: `BLOOD MOON  00:18`. No title card, no skull. |
+| **Utilities look-at** | Crosshair on a device or fitting | The device answers for itself: `GEN BANK  31/100 W  FUEL 7L`, `RELAY  30M`, `PUMP  NEEDS 18 W`, `TANK  412 / 800 L`, `TAP  FROZEN`. Rust when it is broken, frozen or unpowered. |
+| **Wiring** | Wire tool in hand with a line started | `RUNNING A LINE   REACH 30M   RMB TO DROP`, which takes the look-at line because it is the only thing you are thinking about. |
+| **Colonist look-at** | Crosshair on a person | `JULES  FARM  HUNGRY`, and `NO BED ASSIGNED` under it when that is why. |
 | **Tractor** | Phase 1 | Speed, fuel in litres, hopper in litres, implement lamp. Built and wired; `IsDriving` is never true yet. |
 
 ## Menus
@@ -88,13 +93,17 @@ cannot be crafted says `SHORT`, not just a dimmer colour.
   perk hangs off it on a lead, and the junction is **welded** (filled) once you own a
   rank or **penciled** (an empty outline) until then. Ranks repeat the reading as filled
   or empty boxes. The buy button reads `WELD RANK 3  (1 PT)`, or says why not.
+- **Colony Board** — the only colony screen there is. Name the colony, read the two
+  numbers that decide whether anyone stays (`FOOD 4.2d   WATER 1.8d`, rust when short),
+  the claim's noise (`HEAT 37 - LOUD`), and a roster row per person with a job button
+  that cycles. Unfounded, it shows the checklist — `[X] CUPBOARD  [ ] BED  [X] WATER` —
+  so a refusal tells you what to go and build.
 - **Title, pause, death** — riveted slate plates, stencil type, a rust rule under each
   heading. Death is one of the two places blood is allowed.
 
 ## Not built yet
 
-**Trader (ticket + price board)** and **silo (vertical tank + litres)** are specified but
-not built. Neither system has a runtime behind it — there is no trader NPC to talk to and
+**Trader (ticket + price board)** is specified but not built. Neither system has a runtime behind it — there is no trader NPC to talk to and
 no silo to fill — and a screen with nothing behind it is dead UI that rots before its
 system arrives. They land with their systems in Phase 1. The tractor cluster is the
 exception, and only because it was asked for explicitly: it exists, disabled, so the
