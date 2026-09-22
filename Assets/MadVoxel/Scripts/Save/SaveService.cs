@@ -7,6 +7,7 @@ using MadVoxel.Core.Player;
 using MadVoxel.Farming.Plots;
 using MadVoxel.World.Fields;
 using MadVoxel.Horde;
+using MadVoxel.Modding;
 using MadVoxel.Inventory;
 using MadVoxel.World.Terrain;
 using UnityEngine;
@@ -35,6 +36,9 @@ namespace MadVoxel.Save
 
         public string WorldName { get { return _worldName; } }
         public int Seed { get { return _seed; } }
+
+        /// <summary>Stamped into world.json so a later load can warn about missing mods.</summary>
+        public System.Collections.Generic.IReadOnlyList<ModManifest> ActiveMods { get; set; }
 
         public void Init(ContentDatabase content, ChunkStreamer streamer, StructureWorld structures,
                          BuildingWorld buildings, FieldWorld fields, WorldClock clock, HordeDirector horde, PlayerRig player,
@@ -78,6 +82,12 @@ namespace MadVoxel.Save
             world.hordeNumber = _horde != null ? _horde.HordeNumber : 0;
             if (string.IsNullOrEmpty(world.createdUtc)) world.createdUtc = DateTime.UtcNow.ToString("o");
             world.lastPlayedUtc = DateTime.UtcNow.ToString("o");
+
+            world.mods.Clear();
+            if (ActiveMods != null)
+            {
+                for (int i = 0; i < ActiveMods.Count; i++) world.mods.Add(ActiveMods[i].Id);
+            }
             WorldSaveIO.WriteWorld(_worldName, world);
 
             if (_player != null) WorldSaveIO.WritePlayer(_worldName, CapturePlayer());

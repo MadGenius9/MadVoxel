@@ -1,0 +1,138 @@
+{
+  // ---------------------------------------------------------------------------
+  // A new crop, end to end: seed item, produce item, the crop itself, a recipe to
+  // cook it, and the wild plant you find the seeds on.
+  //
+  // Anything without an explicit "$op" is added if new and patched if it already
+  // exists, so this file both creates content and tunes vanilla content.
+  // ---------------------------------------------------------------------------
+
+  "items": [
+    {
+      "id": "example_pumpkin:seed_pumpkin",
+      "displayName": "Pumpkin Seed",
+      "description": "Plant in a farm plot.",
+      "category": "Resource",
+      "maxStack": 64,
+      "surfaceFamily": "Foliage",
+      "tint": "#c78a3a",
+      "tradeValue": 7
+    },
+    {
+      "id": "example_pumpkin:pumpkin",
+      "displayName": "Pumpkin",
+      "category": "Consumable",
+      "maxStack": 32,
+      "surfaceFamily": "Foliage",
+      "tint": "#d2741f",
+      "foodRestore": 12,
+      "tradeValue": 6
+    },
+    {
+      "id": "example_pumpkin:pumpkin_pie",
+      "displayName": "Pumpkin Pie",
+      "category": "Consumable",
+      "maxStack": 8,
+      "surfaceFamily": "Cloth",
+      "tint": "#c98b45",
+      "foodRestore": 55,
+      "staminaRestore": 35,
+      "healthRestore": 8,
+      "tradeValue": 26
+    },
+
+    // Patching vanilla: only the fields named here change, everything else on the
+    // definition is left exactly as it was.
+    {
+      "id": "madvoxel:baked_potato",
+      "$op": "patch",
+      "staminaRestore": 22
+    }
+  ],
+
+  "crops": [
+    {
+      "id": "example_pumpkin:crop_pumpkin",
+      "displayName": "Pumpkin",
+      "seedItem": "example_pumpkin:seed_pumpkin",
+      "harvestItem": "example_pumpkin:pumpkin",
+      "growsOnPlot": true,
+      "growsOnField": true,
+      "daysToMature": 3,
+      "replants": true,
+      "harvestMin": 1,
+      "harvestMax": 2,
+      "litresPerCell": 16,
+      "plantTint": "#4a6b23",
+      "matureHeight": 0.7,
+      "xpPerHarvest": 14
+    }
+  ],
+
+  "blocks": [
+    {
+      "id": "example_pumpkin:wild_pumpkin",
+      "displayName": "Wild Pumpkin",
+      "solid": false,
+      "opaque": false,
+      "hardness": 0.2,
+      "surfaceFamily": "Foliage",
+      "tint": "#7b8a34",
+      "harvestXp": 2,
+      "dropItem": "example_pumpkin:pumpkin",
+      "dropMin": 1,
+      "dropMax": 2,
+      "secondaryDropItem": "example_pumpkin:seed_pumpkin",
+      "secondaryDropChance": 0.6,
+      "secondaryDropMin": 1,
+      "secondaryDropMax": 2
+    }
+  ],
+
+  "recipes": [
+    {
+      "id": "example_pumpkin:cook_pumpkin_pie",
+      "output": "example_pumpkin:pumpkin_pie",
+      "outputCount": 1,
+      "station": "Campfire",
+      "craftSeconds": 6,
+      "ingredients": [
+        { "item": "example_pumpkin:pumpkin", "count": 2 },
+        { "item": "madvoxel:flour", "count": 2 }
+      ]
+    }
+  ],
+
+  "zombies": [
+    {
+      "id": "example_pumpkin:scarecrow",
+      "displayName": "Scarecrow",
+      "maxHealth": 220,
+      "walkSpeed": 1.1,
+      "chaseSpeed": 3.6,
+      "meleeDamage": 16,
+      "digDamagePerSecond": 40,
+      "sightRange": 34,
+      "xpReward": 75,
+      "height": 2.05,
+      "tint": "#6b5a30",
+      "dropItem": "example_pumpkin:seed_pumpkin",
+      "dropMin": 1,
+      "dropMax": 3
+    }
+  ],
+
+  // Make blood moons slightly rarer but heavier, and put the scarecrow in them.
+  "hordeSchedule": {
+    "everyNDays": 8,
+    "baseWaveSize": 5,
+    "heavyZombie": "example_pumpkin:scarecrow",
+    "heavyFromHordeNumber": 2,
+    "heavyShare": 0.3
+  },
+
+  // Longer days, so there is time to farm.
+  "config": {
+    "dayLengthSeconds": 1500
+  }
+}

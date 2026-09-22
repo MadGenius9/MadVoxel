@@ -1,0 +1,18 @@
+{
+  // Content can be split across as many files as you like; they all merge.
+  // This one only touches a vanilla trader, adding the new seeds to her stock.
+  "traders": [
+    {
+      "id": "madvoxel:trader_mara",
+      "$op": "patch",
+      "greeting": "Tools, timber, and pumpkin seed while it lasts.",
+      "stock": [
+        { "item": "madvoxel:plank", "count": 64, "priceMultiplier": 1.3 },
+        { "item": "madvoxel:stone_pickaxe", "count": 2, "priceMultiplier": 1.4 },
+        { "item": "madvoxel:stone_axe", "count": 2, "priceMultiplier": 1.4 },
+        { "item": "madvoxel:piece_farm_plot", "count": 8, "priceMultiplier": 1.5 },
+        { "item": "example_pumpkin:seed_pumpkin", "count": 16, "priceMultiplier": 1.6 }
+      ]
+    }
+  ]
+}

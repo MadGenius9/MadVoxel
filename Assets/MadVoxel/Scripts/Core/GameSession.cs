@@ -4,6 +4,7 @@ using MadVoxel.Building;
 using MadVoxel.Content;
 using MadVoxel.Core.Player;
 using MadVoxel.Horde;
+using MadVoxel.Modding;
 using MadVoxel.Save;
 using MadVoxel.World.Fields;
 using MadVoxel.UI;
@@ -45,6 +46,9 @@ namespace MadVoxel.Core
 
         /// <summary>Set by GameBootstrap; off means no test hotkeys are registered at all.</summary>
         public bool DeveloperToolsEnabled { get; set; }
+
+        /// <summary>Mods loaded this session; stamped into each world save.</summary>
+        public System.Collections.Generic.IReadOnlyList<ModManifest> ActiveMods { get; set; }
 
         public bool IsRunning { get { return _worldRoot != null; } }
         public PlayerRig Player { get { return _player; } }
@@ -88,6 +92,7 @@ namespace MadVoxel.Core
             _worldName = SavePaths.Sanitise(worldName);
             _seed = meta.seed;
 
+            WarnAboutMissingMods(meta);
             BuildWorld(meta.totalHours, meta.hordeNumber);
 
             var playerData = WorldSaveIO.ReadPlayer(_worldName);
@@ -97,6 +102,34 @@ namespace MadVoxel.Core
 
             Notifications.PostFormat("Loaded '{0}' - day {1}", _worldName, _clock.Day);
             StartCoroutine(SpawnWhenReady(playerData == null));
+        }
+
+        /// <summary>
+        /// A world built with a mod and reopened without it will have lost content. The
+        /// save layer already degrades unknown blocks to air rather than corrupting the
+        /// chunk, but the player deserves to be told before they walk into the hole.
+        /// </summary>
+        void WarnAboutMissingMods(Save.WorldSaveData meta)
+        {
+            if (meta.mods == null || meta.mods.Count == 0) return;
+
+            var present = new System.Collections.Generic.HashSet<string>();
+            if (ActiveMods != null)
+            {
+                for (int i = 0; i < ActiveMods.Count; i++) present.Add(ActiveMods[i].Id);
+            }
+
+            var missing = new System.Collections.Generic.List<string>();
+            for (int i = 0; i < meta.mods.Count; i++)
+            {
+                if (!present.Contains(meta.mods[i])) missing.Add(meta.mods[i]);
+            }
+
+            if (missing.Count == 0) return;
+
+            Notifications.PostFormat("This world was built with {0} mod(s) that are not loaded: {1}",
+                missing.Count, string.Join(", ", missing.ToArray()));
+            Debug.LogWarningFormat("MadVoxel: world '{0}' is missing mod(s): {1}", _worldName, string.Join(", ", missing.ToArray()));
         }
 
         void BuildWorld(double totalHours, int hordeNumber)
@@ -144,6 +177,7 @@ namespace MadVoxel.Core
             _save = _worldRoot.AddComponent<SaveService>();
             _save.Init(_content, _streamer, _structures, _buildings, _fields, _clock, _horde, _player,
                        _worldName, _seed, _content.config.autosaveIntervalSeconds);
+            _save.ActiveMods = ActiveMods;
 
             if (DeveloperToolsEnabled)
             {

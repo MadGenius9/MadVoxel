@@ -4,6 +4,7 @@ using MadVoxel.Core;
 using MadVoxel.Core.Player;
 using MadVoxel.Horde;
 using MadVoxel.Inventory;
+using MadVoxel.Modding;
 using MadVoxel.World.Terrain;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -40,6 +41,9 @@ namespace MadVoxel.UI
 
         GameObject _gameplayUi;
 
+        /// <summary>One line about mods, shown on the title screen.</summary>
+        public string ModSummary { get; private set; }
+
         public void Init()
         {
             EnsureEventSystem();
@@ -58,6 +62,32 @@ namespace MadVoxel.UI
             Death.RespawnRequested += () => { if (RespawnRequested != null) RespawnRequested(); };
 
             SetState(UiState.MainMenu);
+        }
+
+        public void SetModSummary(System.Collections.Generic.IReadOnlyList<ModManifest> mods, ModLog log)
+        {
+            if (mods == null || mods.Count == 0)
+            {
+                ModSummary = "No mods loaded";
+            }
+            else
+            {
+                var names = new System.Text.StringBuilder();
+                for (int i = 0; i < mods.Count; i++)
+                {
+                    if (i > 0) names.Append(", ");
+                    names.Append(mods[i].DisplayName);
+                }
+                ModSummary = string.Format("{0} mod(s): {1}", mods.Count, names);
+            }
+
+            if (log != null && (log.ErrorCount > 0 || log.WarningCount > 0))
+            {
+                ModSummary += string.Format("   [{0} error(s), {1} warning(s) - see the console]",
+                    log.ErrorCount, log.WarningCount);
+            }
+
+            if (MainMenu != null) MainMenu.SetModSummary(ModSummary);
         }
 
         static void EnsureEventSystem()

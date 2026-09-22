@@ -38,6 +38,43 @@ namespace UnityEngine
     public static class Application
     {
         public static string persistentDataPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "MadVoxelHeadless");
+        public static string streamingAssetsPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "MadVoxelHeadlessStreaming");
+    }
+
+    public static class ColorUtility
+    {
+        public static bool TryParseHtmlString(string html, out Color colour)
+        {
+            colour = new Color(0f, 0f, 0f, 1f);
+            if (string.IsNullOrEmpty(html)) return false;
+            if (html[0] == '#') html = html.Substring(1);
+            if (html.Length != 6 && html.Length != 8) return false;
+
+            int[] v = new int[html.Length / 2];
+            for (int i = 0; i < v.Length; i++)
+            {
+                int hi = Hex(html[i * 2]), lo = Hex(html[i * 2 + 1]);
+                if (hi < 0 || lo < 0) return false;
+                v[i] = hi * 16 + lo;
+            }
+
+            colour = new Color(v[0] / 255f, v[1] / 255f, v[2] / 255f, v.Length > 3 ? v[3] / 255f : 1f);
+            return true;
+        }
+
+        static int Hex(char c)
+        {
+            if (c >= '0' && c <= '9') return c - '0';
+            if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+            if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+            return -1;
+        }
+
+        public static string ToHtmlStringRGB(Color c)
+        {
+            return string.Format("{0:X2}{1:X2}{2:X2}",
+                (int)(c.r * 255f), (int)(c.g * 255f), (int)(c.b * 255f));
+        }
     }
 
     public static class Resources

@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using MadVoxel.Content;
+using MadVoxel.Modding;
 using MadVoxel.UI;
 using UnityEngine;
 
@@ -13,6 +15,9 @@ namespace MadVoxel.Core
         [Tooltip("Leave empty to load Resources/MadVoxel/ContentDatabase, or fall back to the code-defined content.")]
         public ContentDatabase contentOverride;
 
+        [Tooltip("Load mod folders from the Mods directory at startup. Turn off to play pure vanilla.")]
+        public bool loadMods = true;
+
         [Tooltip("Test-session hotkeys (fly, skip time, force a blood moon, grant a kit). Turn this off for a release build.")]
         public bool developerTools = true;
 
@@ -25,6 +30,10 @@ namespace MadVoxel.Core
         UiRoot _ui;
         GameSession _session;
 
+        /// <summary>Mods that loaded this session, in load order.</summary>
+        public IReadOnlyList<ModManifest> LoadedMods { get; private set; }
+        public ModLog ModLog { get; private set; }
+
         void Awake()
         {
             Application.targetFrameRate = -1;
@@ -33,15 +42,26 @@ namespace MadVoxel.Core
             _content = contentOverride != null ? contentOverride : ContentDatabase.LoadOrBuild();
             _content.Build();
 
+            // Mods layer on top of the base content before anything reads it, so every
+            // system downstream sees one merged database and needs no mod awareness.
+            ModLog = new ModLog();
+            LoadedMods = loadMods
+                ? ModLoader.LoadAll(_content, ModLog)
+                : new List<ModManifest>();
+            ModLog.Flush();
+            _content.Build();
+
             var uiGo = new GameObject("UI");
             uiGo.transform.SetParent(transform, false);
             _ui = uiGo.AddComponent<UiRoot>();
             _ui.Init();
+            _ui.SetModSummary(LoadedMods, ModLog);
 
             var sessionGo = new GameObject("Session");
             sessionGo.transform.SetParent(transform, false);
             _session = sessionGo.AddComponent<GameSession>();
             _session.Init(_content, _ui);
+            _session.ActiveMods = LoadedMods;
             _session.DeveloperToolsEnabled = developerTools;
 
             _ui.MainMenu.NewWorldRequested += _session.StartNewWorld;

@@ -117,6 +117,17 @@ tension.
 
 ---
 
+**Mods.** Drop-in folders of JSON that add to and patch the content database: blocks,
+items, tools, recipes, crops, snap pieces, deployables, zombies, perks, quests, traders,
+vehicles, the horde schedule, the tuning config and the starting loadout. Patching is
+field-level, so a mod changes one number without restating a definition. References
+resolve in a second pass after every mod has contributed, so mods can point at each
+other regardless of load order. Dependencies and load order are declared and resolved
+deterministically; a missing dependency skips a mod instead of half-applying it, and a
+broken mod reports and is skipped without taking the others down. Nothing is compiled or
+executed. Worlds record which mods built them and warn on load if one is missing. See
+`MODDING.md`.
+
 ## Deliberately not implemented
 
 - Multiplayer, dedicated server, netcode.
@@ -129,7 +140,7 @@ tension.
 ## Known limitations and shortcuts
 
 - **Not play-tested in the Unity editor.** Scripts compile clean against Unity
-  reference assemblies and 268 headless checks (`Tests/Headless`) execute the content
+  reference assemblies and 358 headless checks (`Tests/Headless`) execute the content
   wiring, build grid, chunk storage, mesher, terrain, POIs, inventory, crafting and
   save. None of that reaches rendering, physics, the character controller, streaming,
   AI behaviour or the UI. Expect tuning, not rewrites.
@@ -162,6 +173,11 @@ tension.
 - **Developer hotkeys ship enabled.** Untick *Developer Tools* on the `MadVoxel` object
   before a release build.
 - **Audio.** There is none.
+- **Mods are data only.** A mod can add a crop or a zombie because the game already
+  knows how to grow and fight; it cannot add new behaviour. Script mods are the next
+  layer and the loader is shaped for them.
+- **Mods cannot ship art.** Every material is procedural and tinted, so `tint` and
+  `surfaceFamily` are the only visual controls a mod has.
 
 ---
 
@@ -182,5 +198,6 @@ Every step has an implementation behind it. The test itself needs a Unity editor
 4. **Quest flow** — accept, track, turn in; add the mining contract.
 5. **Furnace** — a proper smelter, and the iron economy that feeds metal tier.
 6. **Vehicle** — drive the buggy over edited terrain without falling through it.
-7. **Horde that reads the dig** — prefer an open ramp or an unfinished wall over chewing
+7. **Script mods** — a sandboxed hook layer on top of the data loader.
+8. **Horde that reads the dig** — prefer an open ramp or an unfinished wall over chewing
    the strongest face.

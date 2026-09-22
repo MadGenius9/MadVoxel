@@ -17,6 +17,8 @@ namespace MadVoxel.Save
         public int hordeNumber;
         public string createdUtc = "";
         public string lastPlayedUtc = "";
+        /// <summary>Mod ids active when this world was last played, so a missing one can be reported.</summary>
+        public List<string> mods = new List<string>();
     }
 
     [Serializable]

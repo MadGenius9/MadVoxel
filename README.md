@@ -10,7 +10,7 @@ a garden beside it. Large but finite map. Not an endless cartoon-cube planet.
 
 **Status: Phase 0 complete and playable.** See [`SCOPE.md`](SCOPE.md) for what is
 implemented, what is data-only, and what is deliberately deferred.
-See [`DESIGN.md`](DESIGN.md) for the core loop.
+See [`DESIGN.md`](DESIGN.md) for the core loop, and [`MODDING.md`](MODDING.md) to make mods.
 
 ---
 
@@ -223,7 +223,7 @@ Saves live under Unity's persistent data path:
 
 ```
 <persistentDataPath>/Saves/<World Name>/
-    world.json          seed, elapsed hours, blood-moon counter, timestamps
+    world.json          seed, elapsed hours, blood-moon counter, active mods, timestamps
     player.json         position, vitals, all 36 inventory slots, level, XP, perks
     structures.json     deployables, snap pieces, crate contents, plot crops and
                         planting times, grain bin litres, worked field cells
@@ -242,6 +242,30 @@ before making a world you want to keep.)*
 Only chunks you have actually changed are written to disk. Everything else is
 regenerated from the seed, which is what keeps an infinite world off your drive.
 The world autosaves every two minutes, on death, on pause-menu *Save now*, and on quit.
+
+## Mods
+
+Mods are **folders you drop in** — no compiling, no scripts, nothing executed. A mod is
+JSON that adds to and patches the game's content database, so installing one from the
+internet cannot run code on your machine.
+
+```
+<persistentDataPath>/Mods/
+  my_mod/
+    mod.json
+    content/*.json
+```
+
+A mod can add blocks, items, tools, recipes, crops, snap pieces, deployables, zombies,
+perks, quests and traders, and can **patch any vanilla definition field by field** —
+change one number on an item and everything else about it stays as it was. References
+resolve after every mod has loaded, so mods can point at each other in any order.
+
+`Mods/example_pumpkin/` in this repository is a complete worked example. Read
+[`MODDING.md`](MODDING.md) for the full field reference.
+
+In the editor: **MadVoxel → Mods → Open Mods Folder**, **Write Content Id Reference**
+(dumps every id in the game to `ContentIds.txt`) and **Validate Installed Mods**.
 
 ## Content and data
 
@@ -268,6 +292,7 @@ Assets/MadVoxel/
     World/Fields/    FS-style field cell grid, tillage state machine, litre yield
     Farming/Crops/   crop definitions shared by both farming layers
     Farming/Plots/   garden farm plot, plant growth visuals, grain bin
+    Modding/         JSON parser, mod manifest, loader, content applier
     Building/        snap grid and pieces, stability, deployables, cupboard, build ghost
     Inventory/       items, stacks, containers, recipes, crafting
     Perks/           XP and levelling, perk tree definitions
@@ -315,11 +340,12 @@ cd Tests/Headless
 dotnet run
 ```
 
-**268 checks, all passing.** They compile the real gameplay sources against a small
+**358 checks, all passing.** They compile the real gameplay sources against a small
 executable `UnityEngine` shim and actually run them, covering content wiring, the build
 grid and its connection graph, chunk storage and coordinates, the greedy mesher,
 terrain generation, POI layout, crop growth timing, the field tillage state machine and
-its yield, inventory, crafting and the chunk-file save round-trip.
+its yield, inventory, crafting, the chunk-file save round-trip, and the whole mod
+pipeline — including loading the example mod that ships in this repository.
 See [`Tests/Headless/README.md`](Tests/Headless/README.md) for the full list and for
 what is deliberately out of reach.
 

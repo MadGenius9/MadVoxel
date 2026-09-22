@@ -13,6 +13,7 @@ namespace MadVoxel.UI
         InputField _nameField;
         InputField _seedField;
         RectTransform _worldList;
+        Text _modLine;
         readonly List<GameObject> _worldButtons = new List<GameObject>();
 
         public event Action<string, int> NewWorldRequested;
@@ -36,6 +37,9 @@ namespace MadVoxel.UI
 
             BuildNewWorldPanel();
             BuildWorldListPanel();
+
+            _modLine = UIKit.Label(_canvas.transform, "Mods", "", 20, TextAnchor.LowerCenter, UIKit.TextDim);
+            UIKit.Place(_modLine.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 108f), new Vector2(1400f, 26f));
 
             var quit = UIKit.Button(_canvas.transform, "Quit", "Quit");
             UIKit.Place(quit.GetComponent<RectTransform>(), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 40f), new Vector2(240f, 52f));
@@ -97,6 +101,11 @@ namespace MadVoxel.UI
             while (SavePaths.WorldExists(unique)) unique = worldName + " " + suffix++;
 
             if (NewWorldRequested != null) NewWorldRequested(unique, seed);
+        }
+
+        public void SetModSummary(string summary)
+        {
+            if (_modLine != null) _modLine.text = summary;
         }
 
         public void Open()

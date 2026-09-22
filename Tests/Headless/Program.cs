@@ -26,6 +26,7 @@ namespace MadVoxel.Headless
             TerrainTests.Run(db);
             BuildTests.Run(db);
             FarmingTests.Run(db);
+            ModTests.Run();
             InventoryTests.Run(db);
             SaveTests.Run(db);
 

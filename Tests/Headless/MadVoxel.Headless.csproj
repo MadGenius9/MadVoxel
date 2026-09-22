@@ -28,6 +28,7 @@
     <Compile Include="TerrainTests.cs" />
     <Compile Include="BuildTests.cs" />
     <Compile Include="FarmingTests.cs" />
+    <Compile Include="ModTests.cs" />
     <Compile Include="InventoryTests.cs" />
     <Compile Include="SaveTests.cs" />
   </ItemGroup>
@@ -73,6 +74,14 @@
     <Compile Include="../../Assets/MadVoxel/Scripts/Content/ItemIds.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Content/ContentDatabase.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Content/ContentLibrary.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Modding/Json.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Modding/JsonReader.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Modding/ModLog.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Modding/ModManifest.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Modding/ModLinker.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Modding/ModDefinitions.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Modding/ModContentApplier.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Modding/ModLoader.cs" />
 
     <Compile Include="../../Assets/MadVoxel/Scripts/Save/SavePaths.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Save/SaveModel.cs" />

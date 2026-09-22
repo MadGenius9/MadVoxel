@@ -1,0 +1,19 @@
+{
+  // Every mod folder needs one of these. The id is the namespace for everything
+  // the mod adds, and it must be lowercase letters, digits and underscores.
+  "id": "example_pumpkin",
+  "name": "Pumpkin Patch",
+  "version": "1.0.0",
+  "author": "MadGenius",
+  "description": "A worked example: adds a pumpkin crop, a tougher zombie, and tweaks a few vanilla numbers.",
+
+  // Lower numbers load first. Leave it at 100 unless you need to override another mod.
+  "loadOrder": 100,
+
+  // Mods listed here load before this one. A missing dependency skips the mod
+  // rather than half-applying it.
+  "dependencies": [],
+
+  // Set false to keep the folder installed but switched off.
+  "enabled": true
+}
