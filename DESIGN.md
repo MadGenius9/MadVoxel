@@ -1,15 +1,18 @@
 # MadVoxel — the loop
 
-One page. Rust's building and look, 7 Days to Die's dirt, perks and hordes.
+One page. Rust's building and look, 7 Days to Die's dirt, perks and hordes, and two
+scales of farming.
 
 ```
-   dig / mine ──► perk ──► shape the killbox ──► rust-build + upgrade
-        ▲                                                │
-        │                                                ▼
-   repair / expand ◄──── horde night ◄──── trade / quest
+   forage / mine ──► place plots ──► eat from the garden ──► flatten acreage
+        ▲                                                          │
+        │                                                          ▼
+   replant ◄── horde wrecks a row ◄── armour the farm ◄── perk ◄── sell bulk ◄── tractor
 ```
 
 Every arrow costs daylight. That is the game.
+
+**Garden feeds you tonight. Fields fund the steel walls next month.**
 
 ---
 
@@ -55,6 +58,34 @@ ground — so mining out the dirt under someone's wall brings it down, including
 
 Plant the **tool cupboard**: it is your claim, and it is what the horde walks toward.
 
+## Farm
+
+### The garden, beside the shack
+
+Clear wild yucca and grain out of the old fields and they hand you seeds. Craft plots
+from planks and fibre, drop them on dirt in a dip you dug beside the shack, fence it,
+and plant.
+
+Crops grow on the calendar, not on your attention: a potato is ready in a day and a
+half whether you watched it or were down a mine. Pick it and the bed goes bare, usually
+with seed back. Corn takes longer, stands taller, and keeps producing once it is in.
+
+Then cook. Raw potato is a snack; baked potato, corn bread and stew are the only food
+that gives stamina back as well as hunger — which is exactly what you need the evening
+before a blood moon, and exactly what you lose when a shambler walks through the row.
+
+### The field, out on the flat
+
+The garden does not scale. When you want money rather than dinner, you take the pad you
+flattened and keep flattening: plow, cultivate, sow, harvest in swaths, and measure the
+result in **litres** into a grain bin rather than stacks into a bag.
+
+Same crops where it makes sense — corn and wheat grow in both — so the second scale
+teaches itself.
+
+*(Phase 1: the tillage cycle, growth timing and yield are implemented; the tractor and
+implements that work a swath are next. A hoe already breaks one cell by hand.)*
+
 ## Trade and quest
 
 Two walled outposts out on the map, concrete perimeter and an iron strongroom, findable
@@ -72,7 +103,9 @@ cupboard, and they respect what you dug: they walk your ramp, fall into your pit
 where they cannot path they chew — wall, door, foundation or dirt, whichever is in
 front of them. No flying, no phasing.
 
-A bad dig or an under-upgraded wall gets breached. That is the feedback.
+A bad dig or an under-upgraded wall gets breached. Plots are soft and they are outside
+the strongest wall, so a bad night costs you the garden before it costs you the shack.
+That is the feedback.
 
 ## Repair and expand
 
@@ -83,8 +116,13 @@ Then it happens again, bigger.
 
 ---
 
-## Why the two halves need each other
+## Why the pieces need each other
 
-7DTD digging without Rust pieces is a mud hut. Rust pieces without digging is a flat
-box on flat ground. Together: **you carve the shape, then armour it** — and the horde
-is the reason to do both.
+7DTD digging without Rust pieces is a mud hut. Rust pieces without digging is a flat box
+on flat ground. Together: **you carve the shape, then armour it**.
+
+Farming is why you stay. Without it the loop is a treadmill of looting cans; with it,
+the pad you flattened for a base is also the pad you plow, the dip you dug is also the
+garden, and the horde has something to take away that you actually made.
+
+And the horde is the reason to do all of it.

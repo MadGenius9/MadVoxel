@@ -19,24 +19,27 @@ namespace MadVoxel.Core
     {
         public const string KeyHelp =
             "F4 fly   F5 +1h   F6 dawn   F7 blood moon   F8 spawn zombie\n" +
-            "F9 refill   F10 test kit   F11 invulnerable";
+            "F9 refill   F10 test kit   F11 invulnerable   F12 ripen crops";
 
         ContentDatabase _content;
         WorldClock _clock;
         HordeSchedule _schedule;
         HordeDirector _horde;
         SpawnDirector _spawner;
+        MadVoxel.Building.StructureWorld _structures;
         TerrainWorld _voxels;
         PlayerRig _player;
 
         public void Init(ContentDatabase content, WorldClock clock, HordeDirector horde, HordeSchedule schedule,
-                         SpawnDirector spawner, TerrainWorld voxels, PlayerRig player)
+                         SpawnDirector spawner, MadVoxel.Building.StructureWorld structures,
+                         TerrainWorld voxels, PlayerRig player)
         {
             _content = content;
             _clock = clock;
             _horde = horde;
             _schedule = schedule;
             _spawner = spawner;
+            _structures = structures;
             _voxels = voxels;
             _player = player;
         }
@@ -53,6 +56,7 @@ namespace MadVoxel.Core
             if (Input.GetKeyDown(KeyCode.F9)) Refill();
             if (Input.GetKeyDown(KeyCode.F10)) GiveTestKit();
             if (Input.GetKeyDown(KeyCode.F11)) ToggleInvulnerable();
+            if (Input.GetKeyDown(KeyCode.F12)) RipenCrops();
         }
 
         void ToggleFly()
@@ -108,6 +112,30 @@ namespace MadVoxel.Core
             Notifications.Post("Spawned a shambler in front of you");
         }
 
+        /// <summary>
+        /// Crops take in-game days. Rather than a separate time skip that also brings on
+        /// night, this back-dates every planting so the whole garden is ready now.
+        /// </summary>
+        void RipenCrops()
+        {
+            if (_structures == null) return;
+
+            var all = _structures.All;
+            int ripened = 0;
+
+            for (int i = 0; i < all.Count; i++)
+            {
+                if (all[i] == null) continue;
+                var plot = all[i].GetComponent<MadVoxel.Farming.Plots.FarmPlotStructure>();
+                if (plot == null || plot.Crop == null) continue;
+
+                plot.RestoreCrop(plot.Crop, _clock.TotalHours - plot.Crop.HoursToMature - 1f);
+                ripened++;
+            }
+
+            Notifications.PostFormat(ripened > 0 ? "Ripened {0} plot(s)" : "No planted plots to ripen", ripened);
+        }
+
         void Refill()
         {
             _player.Stats.ResetToFull();
@@ -149,12 +177,20 @@ namespace MadVoxel.Core
             Give(ItemIds.SnapRoof, 16);
             Give(ItemIds.SnapLadder, 6);
             Give(ItemIds.SnapHatch, 4);
+            Give(ItemIds.SnapFence, 24);
 
             Give(ItemIds.Hammer, 1);
+            Give(ItemIds.Hoe, 1);
             Give(ItemIds.PieceStorageBox, 4);
             Give(ItemIds.PieceWorkbench, 2);
             Give(ItemIds.PieceCampfire, 2);
             Give(ItemIds.PieceToolCupboard, 1);
+
+            // The garden, ready to plant.
+            Give(ItemIds.PieceFarmPlot, 12);
+            Give(ItemIds.SeedPotato, 16);
+            Give(ItemIds.SeedCorn, 16);
+            Give(ItemIds.SeedWheat, 16);
             Give(ItemIds.PieceBedroll, 1);
 
             Give(ItemIds.CannedFood, 10);

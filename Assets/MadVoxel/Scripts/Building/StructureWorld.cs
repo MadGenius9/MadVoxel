@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using MadVoxel.Content;
 using MadVoxel.Core;
 using MadVoxel.World.Terrain;
 using UnityEngine;
@@ -21,14 +22,20 @@ namespace MadVoxel.Building
 
         public LandClaimRegistry Claims { get; private set; }
 
+        /// <summary>Crops grow on the world clock, so plots need it.</summary>
+        public WorldClock Clock { get; private set; }
+        public ContentDatabase Content { get; private set; }
+
         public event Action<PlacedStructure> Placed;
         public event Action<PlacedStructure> Removed;
 
         public IReadOnlyList<PlacedStructure> All { get { return _all; } }
 
-        public void Init(TerrainWorld voxels)
+        public void Init(TerrainWorld voxels, WorldClock clock, ContentDatabase content)
         {
             _voxels = voxels;
+            Clock = clock;
+            Content = content;
             Claims = new LandClaimRegistry();
 
             var rootGo = new GameObject("Structures");
@@ -91,7 +98,21 @@ namespace MadVoxel.Building
                 if (_byCell.ContainsKey(c)) return false;
             }
 
+            if (def.requiresSoil && !IsSoilUnder(cell)) return false;
+
             return !def.requiresSupport || HasSupport(def, cell, rotationSteps, null);
+        }
+
+        /// <summary>Farm plots need dirt under them - not stone, concrete or planking.</summary>
+        public bool IsSoilUnder(Vector3Int cell)
+        {
+            var def = _voxels.GetBlockDef(cell.x, cell.y - 1, cell.z);
+            if (def == null || def.isAir) return false;
+
+            return def.stringId == BlockIds.Dirt
+                || def.stringId == BlockIds.Grass
+                || def.stringId == BlockIds.Clay
+                || def.stringId == BlockIds.Sand;
         }
 
         bool HasSupport(StructureDefinition def, Vector3Int cell, int rotationSteps, PlacedStructure ignore)

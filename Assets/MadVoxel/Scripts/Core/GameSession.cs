@@ -5,6 +5,7 @@ using MadVoxel.Content;
 using MadVoxel.Core.Player;
 using MadVoxel.Horde;
 using MadVoxel.Save;
+using MadVoxel.World.Fields;
 using MadVoxel.UI;
 using MadVoxel.World.Terrain;
 using UnityEngine;
@@ -26,6 +27,7 @@ namespace MadVoxel.Core
         ChunkStreamer _streamer;
         StructureWorld _structures;
         BuildingWorld _buildings;
+        FieldWorld _fields;
         BlockDamageTracker _blockDamage;
         WorldClock _clock;
         SkyController _sky;
@@ -106,23 +108,26 @@ namespace MadVoxel.Core
 
             _store = new ChunkFileStore(_worldName, _content.blocks);
 
+            _clock = _worldRoot.AddComponent<WorldClock>();
+            _clock.Init(_content.config, totalHours);
+
             _structures = _worldRoot.AddComponent<StructureWorld>();
-            _structures.Init(_voxels);
+            _structures.Init(_voxels, _clock, _content);
 
             _buildings = _worldRoot.AddComponent<BuildingWorld>();
             _buildings.Init(_voxels);
 
+            _fields = _worldRoot.AddComponent<FieldWorld>();
+            _fields.Init(_voxels, _clock, _content);
+
             _blockDamage = _worldRoot.AddComponent<BlockDamageTracker>();
             _blockDamage.Init(_voxels);
-
-            _clock = _worldRoot.AddComponent<WorldClock>();
-            _clock.Init(_content.config, totalHours);
 
             _sky = _worldRoot.AddComponent<SkyController>();
             _sky.Init(_clock);
 
             _worldSpawn = FindSurfaceSpawn(0, 0);
-            _player = PlayerFactory.Create(_content.config, _voxels, _structures, _buildings, _worldSpawn);
+            _player = PlayerFactory.Create(_content.config, _voxels, _structures, _buildings, _fields, _worldSpawn);
             _player.transform.SetParent(_worldRoot.transform, true);
 
             _streamer = _worldRoot.AddComponent<ChunkStreamer>();
@@ -137,13 +142,13 @@ namespace MadVoxel.Core
             _horde.LoadState(hordeNumber);
 
             _save = _worldRoot.AddComponent<SaveService>();
-            _save.Init(_content, _streamer, _structures, _buildings, _clock, _horde, _player,
+            _save.Init(_content, _streamer, _structures, _buildings, _fields, _clock, _horde, _player,
                        _worldName, _seed, _content.config.autosaveIntervalSeconds);
 
             if (DeveloperToolsEnabled)
             {
                 _devTools = _worldRoot.AddComponent<DeveloperTools>();
-                _devTools.Init(_content, _clock, _horde, _content.hordeSchedule, _spawner, _voxels, _player);
+                _devTools.Init(_content, _clock, _horde, _content.hordeSchedule, _spawner, _structures, _voxels, _player);
             }
 
             _ui.CreateGameplayUi(_player, _clock, _horde, _content, _voxels, _streamer, _seed, DeveloperToolsEnabled);
@@ -417,6 +422,7 @@ namespace MadVoxel.Core
             _streamer = null;
             _structures = null;
             _buildings = null;
+            _fields = null;
             _blockDamage = null;
             _clock = null;
             _sky = null;

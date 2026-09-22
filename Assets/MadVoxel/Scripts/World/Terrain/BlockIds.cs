@@ -14,11 +14,17 @@ namespace MadVoxel.World.Terrain
         public const string Sand = "madvoxel:sand";
         public const string Gravel = "madvoxel:gravel";
         public const string Clay = "madvoxel:clay";
+        public const string TilledSoil = "madvoxel:tilled_soil";
         public const string CoalOre = "madvoxel:coal_ore";
         public const string IronOre = "madvoxel:iron_ore";
         public const string PineLog = "madvoxel:pine_log";
         public const string PineNeedles = "madvoxel:pine_needles";
         public const string ScrapHeap = "madvoxel:scrap_heap";
+
+        // Wild forage: how the garden starts, before you have any seeds.
+        public const string WildYucca = "madvoxel:wild_yucca";
+        public const string WildGrain = "madvoxel:wild_grain";
+        public const string WildCorn = "madvoxel:wild_corn";
 
         // Crafted / build blocks. These form the Phase 2 upgrade chain.
         public const string WoodFrame = "madvoxel:wood_frame";

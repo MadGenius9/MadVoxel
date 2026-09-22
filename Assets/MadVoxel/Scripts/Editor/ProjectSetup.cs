@@ -23,6 +23,7 @@ namespace MadVoxel.EditorTools
         [MenuItem("MadVoxel/Setup/Configure Project", priority = 1)]
         public static void Configure()
         {
+            EnsureProductStrings();
             EnsureInputHandling();
             EnsureAlwaysIncludedShaders();
             SceneBuilder.AddSceneToBuildSettings();
@@ -30,6 +31,17 @@ namespace MadVoxel.EditorTools
 
             AssetDatabase.SaveAssets();
             Debug.Log("MadVoxel: project configured. Open Assets/MadVoxel/Scenes/MadVoxel.unity and press Play.");
+        }
+
+        /// <summary>
+        /// The save path is built from these, so they have to match the product string
+        /// before anyone makes a world they want to keep.
+        /// </summary>
+        static void EnsureProductStrings()
+        {
+            if (PlayerSettings.companyName != "MadGenius") PlayerSettings.companyName = "MadGenius";
+            if (PlayerSettings.productName != "MadVoxel") PlayerSettings.productName = "MadVoxel";
+            Debug.LogFormat("MadVoxel: product set to {0} / {1}.", PlayerSettings.companyName, PlayerSettings.productName);
         }
 
         /// <summary>

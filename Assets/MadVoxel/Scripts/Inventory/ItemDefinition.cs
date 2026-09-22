@@ -66,6 +66,8 @@ namespace MadVoxel.Inventory
         public float foodRestore;
         public float waterRestore;
         public float healthRestore;
+        [Tooltip("Cooked food is what gets you through a night, so meals restore stamina too.")]
+        public float staminaRestore;
 
         [Header("Economy / fuel")]
         [Tooltip("Seconds of campfire burn time. 0 means not a fuel.")]

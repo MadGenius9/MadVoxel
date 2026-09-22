@@ -27,6 +27,7 @@
     <Compile Include="ContentTests.cs" />
     <Compile Include="TerrainTests.cs" />
     <Compile Include="BuildTests.cs" />
+    <Compile Include="FarmingTests.cs" />
     <Compile Include="InventoryTests.cs" />
     <Compile Include="SaveTests.cs" />
   </ItemGroup>
@@ -58,9 +59,13 @@
     <Compile Include="../../Assets/MadVoxel/Scripts/Building/StructureDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Building/BuildGrid.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Building/BuildPieceDefinition.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Farming/Crops/CropDefinition.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Fields/FieldCell.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Fields/FieldGrid.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/AI/ZombieDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Horde/HordeSchedule.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Perks/PerkDefinition.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Perks/PerkIds.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Traders/TraderDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Quests/QuestDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Vehicles/VehicleDefinition.cs" />

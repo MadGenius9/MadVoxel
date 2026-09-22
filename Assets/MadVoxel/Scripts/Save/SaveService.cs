@@ -4,6 +4,8 @@ using MadVoxel.Building;
 using MadVoxel.Content;
 using MadVoxel.Core;
 using MadVoxel.Core.Player;
+using MadVoxel.Farming.Plots;
+using MadVoxel.World.Fields;
 using MadVoxel.Horde;
 using MadVoxel.Inventory;
 using MadVoxel.World.Terrain;
@@ -21,6 +23,7 @@ namespace MadVoxel.Save
         ChunkStreamer _streamer;
         StructureWorld _structures;
         BuildingWorld _buildings;
+        FieldWorld _fields;
         WorldClock _clock;
         HordeDirector _horde;
         PlayerRig _player;
@@ -34,13 +37,14 @@ namespace MadVoxel.Save
         public int Seed { get { return _seed; } }
 
         public void Init(ContentDatabase content, ChunkStreamer streamer, StructureWorld structures,
-                         BuildingWorld buildings, WorldClock clock, HordeDirector horde, PlayerRig player,
+                         BuildingWorld buildings, FieldWorld fields, WorldClock clock, HordeDirector horde, PlayerRig player,
                          string worldName, int seed, float autosaveInterval)
         {
             _content = content;
             _streamer = streamer;
             _structures = structures;
             _buildings = buildings;
+            _fields = fields;
             _clock = clock;
             _horde = horde;
             _player = player;
@@ -144,6 +148,22 @@ namespace MadVoxel.Save
                     health = structure.Health
                 };
 
+                var plot = structure.GetComponent<FarmPlotStructure>();
+                if (plot != null && plot.Crop != null)
+                {
+                    entry.cropId = plot.Crop.stringId;
+                    entry.plantedAtHours = plot.PlantedAtHours;
+                }
+
+                var silo = structure.GetComponent<SiloStructure>();
+                if (silo != null)
+                {
+                    foreach (var kv in silo.Contents)
+                    {
+                        entry.silo.Add(new SiloEntryData { cropId = kv.Key, litres = kv.Value });
+                    }
+                }
+
                 var storage = structure.GetComponent<StorageStructure>();
                 if (storage != null)
                 {
@@ -158,6 +178,7 @@ namespace MadVoxel.Save
             }
 
             CaptureBuildPieces(data);
+            CaptureFields(data);
             return data;
         }
 
@@ -181,6 +202,49 @@ namespace MadVoxel.Save
                     side = piece.Address.Side,
                     health = piece.Health,
                     open = piece.IsOpen
+                });
+            }
+        }
+
+        void CaptureFields(StructuresSaveData data)
+        {
+            if (_fields == null) return;
+
+            foreach (var kv in _fields.Grid.Cells)
+            {
+                int x, z;
+                FieldGrid.Decode(kv.Key, out x, out z);
+                var cell = kv.Value;
+
+                data.fieldCells.Add(new FieldCellSaveData
+                {
+                    x = x,
+                    z = z,
+                    state = (byte)cell.State,
+                    cropIndex = cell.CropIndex,
+                    moisture = cell.Moisture,
+                    fertiliser = cell.Fertiliser,
+                    yieldFactor = cell.YieldFactor,
+                    changedAtHours = cell.ChangedAtHours
+                });
+            }
+        }
+
+        void RestoreFields(StructuresSaveData data)
+        {
+            if (_fields == null || data.fieldCells == null) return;
+
+            for (int i = 0; i < data.fieldCells.Count; i++)
+            {
+                var entry = data.fieldCells[i];
+                _fields.Grid.Set(entry.x, entry.z, new FieldCell
+                {
+                    State = (FieldCellState)entry.state,
+                    CropIndex = entry.cropIndex,
+                    Moisture = entry.moisture,
+                    Fertiliser = entry.fertiliser,
+                    YieldFactor = entry.yieldFactor,
+                    ChangedAtHours = entry.changedAtHours
                 });
             }
         }
@@ -277,6 +341,23 @@ namespace MadVoxel.Save
                 var placed = _structures.Place(def, cell, entry.rotation, entry.health, false);
                 if (placed == null) continue;
 
+                var plot = placed.GetComponent<FarmPlotStructure>();
+                if (plot != null && !string.IsNullOrEmpty(entry.cropId))
+                {
+                    var crop = _content.Crop(entry.cropId);
+                    if (crop != null) plot.RestoreCrop(crop, entry.plantedAtHours);
+                    else Debug.LogWarningFormat("Save references unknown crop '{0}'.", entry.cropId);
+                }
+
+                var silo = placed.GetComponent<SiloStructure>();
+                if (silo != null && entry.silo != null)
+                {
+                    for (int s2 = 0; s2 < entry.silo.Count; s2++)
+                    {
+                        silo.RestoreContents(entry.silo[s2].cropId, entry.silo[s2].litres);
+                    }
+                }
+
                 var storage = placed.GetComponent<StorageStructure>();
                 if (storage != null)
                 {
@@ -295,6 +376,7 @@ namespace MadVoxel.Save
             }
 
             RestoreBuildPieces(data);
+            RestoreFields(data);
         }
 
         void OnApplicationQuit()

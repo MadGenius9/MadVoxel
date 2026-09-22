@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using MadVoxel.AI;
 using MadVoxel.Building;
 using MadVoxel.Core;
+using MadVoxel.Farming.Crops;
 using MadVoxel.Horde;
 using MadVoxel.Inventory;
 using MadVoxel.Quests;
@@ -28,6 +29,7 @@ namespace MadVoxel.Content
         public List<RecipeDefinition> recipes = new List<RecipeDefinition>();
         public List<StructureDefinition> structures = new List<StructureDefinition>();
         public List<BuildPieceDefinition> buildPieces = new List<BuildPieceDefinition>();
+        public List<CropDefinition> crops = new List<CropDefinition>();
         public List<ZombieDefinition> zombies = new List<ZombieDefinition>();
         public HordeSchedule hordeSchedule;
 
@@ -50,6 +52,8 @@ namespace MadVoxel.Content
         readonly Dictionary<string, ItemDefinition> _itemsById = new Dictionary<string, ItemDefinition>();
         readonly Dictionary<string, StructureDefinition> _structuresById = new Dictionary<string, StructureDefinition>();
         readonly Dictionary<string, BuildPieceDefinition> _piecesById = new Dictionary<string, BuildPieceDefinition>();
+        readonly Dictionary<string, CropDefinition> _cropsById = new Dictionary<string, CropDefinition>();
+        readonly Dictionary<ItemDefinition, CropDefinition> _cropsBySeed = new Dictionary<ItemDefinition, CropDefinition>();
         readonly Dictionary<string, ZombieDefinition> _zombiesById = new Dictionary<string, ZombieDefinition>();
         readonly Dictionary<string, RecipeDefinition> _recipesById = new Dictionary<string, RecipeDefinition>();
         bool _built;
@@ -59,12 +63,21 @@ namespace MadVoxel.Content
             _itemsById.Clear();
             _structuresById.Clear();
             _piecesById.Clear();
+            _cropsById.Clear();
+            _cropsBySeed.Clear();
             _zombiesById.Clear();
             _recipesById.Clear();
 
             for (int i = 0; i < items.Count; i++) if (items[i] != null) _itemsById[items[i].stringId] = items[i];
             for (int i = 0; i < structures.Count; i++) if (structures[i] != null) _structuresById[structures[i].stringId] = structures[i];
             for (int i = 0; i < buildPieces.Count; i++) if (buildPieces[i] != null) _piecesById[buildPieces[i].stringId] = buildPieces[i];
+            for (int i = 0; i < crops.Count; i++)
+            {
+                var crop = crops[i];
+                if (crop == null) continue;
+                _cropsById[crop.stringId] = crop;
+                if (crop.seedItem != null) _cropsBySeed[crop.seedItem] = crop;
+            }
             for (int i = 0; i < zombies.Count; i++) if (zombies[i] != null) _zombiesById[zombies[i].stringId] = zombies[i];
             for (int i = 0; i < recipes.Count; i++) if (recipes[i] != null) _recipesById[recipes[i].stringId] = recipes[i];
 
@@ -96,6 +109,22 @@ namespace MadVoxel.Content
             EnsureBuilt();
             BuildPieceDefinition def;
             return _piecesById.TryGetValue(stringId, out def) ? def : null;
+        }
+
+        public CropDefinition Crop(string stringId)
+        {
+            EnsureBuilt();
+            CropDefinition def;
+            return _cropsById.TryGetValue(stringId, out def) ? def : null;
+        }
+
+        /// <summary>The crop a seed item plants, or null if the item is not a seed.</summary>
+        public CropDefinition CropForSeed(ItemDefinition seed)
+        {
+            EnsureBuilt();
+            if (seed == null) return null;
+            CropDefinition def;
+            return _cropsBySeed.TryGetValue(seed, out def) ? def : null;
         }
 
         public ZombieDefinition Zombie(string stringId)

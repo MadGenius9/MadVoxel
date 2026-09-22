@@ -170,6 +170,99 @@ namespace MadVoxel.Headless
             Harness.Check(unreachable.Count == 0,
                 string.Format("no block needs a tool tier above the best craftable ({0})", maxToolTier)
                 + (unreachable.Count > 0 ? ": " + string.Join(", ", unreachable) : ""));
+
+            Obtainability();
+        }
+
+        /// <summary>
+        /// An item existing in the table is not the same as a player being able to get
+        /// one. A recipe deleted by accident leaves the item, its tier and every check
+        /// above perfectly happy while the tool is quietly unobtainable.
+        /// </summary>
+        static void Obtainability()
+        {
+            var obtainable = new HashSet<ItemDefinition>();
+
+            for (int i = 0; i < Database.recipes.Count; i++)
+            {
+                if (Database.recipes[i].output != null) obtainable.Add(Database.recipes[i].output);
+            }
+            for (int i = 0; i < Database.traders.Count; i++)
+            {
+                var trader = Database.traders[i];
+                for (int j = 0; j < trader.stock.Count; j++)
+                {
+                    if (trader.stock[j].item != null) obtainable.Add(trader.stock[j].item);
+                }
+            }
+            for (int i = 0; i < Database.quests.Count; i++)
+            {
+                var quest = Database.quests[i];
+                for (int j = 0; j < quest.rewards.Count; j++)
+                {
+                    if (quest.rewards[j].item != null) obtainable.Add(quest.rewards[j].item);
+                }
+            }
+            for (int i = 0; i < Database.startingItems.Count; i++)
+            {
+                if (Database.startingItems[i].item != null) obtainable.Add(Database.startingItems[i].item);
+            }
+            for (int i = 0; i < Database.blocks.blocks.Count; i++)
+            {
+                var block = Database.blocks.blocks[i];
+                if (block.dropItem != null) obtainable.Add(block.dropItem);
+                if (block.secondaryDropItem != null) obtainable.Add(block.secondaryDropItem);
+            }
+            for (int i = 0; i < Database.zombies.Count; i++)
+            {
+                if (Database.zombies[i].dropItem != null) obtainable.Add(Database.zombies[i].dropItem);
+            }
+            // Growing a crop is a source too: potatoes exist only because you farm them.
+            for (int i = 0; i < Database.crops.Count; i++)
+            {
+                var crop = Database.crops[i];
+                if (crop == null) continue;
+                if (crop.harvestItem != null) obtainable.Add(crop.harvestItem);
+                if (crop.seedItem != null) obtainable.Add(crop.seedItem);
+            }
+
+            // Every tool has to be reachable, or a whole tier of digging is closed off.
+            var strandedTools = new List<string>();
+            for (int i = 0; i < Database.items.Count; i++)
+            {
+                var item = Database.items[i];
+                if (item.toolType == ToolType.None) continue;
+                if (!obtainable.Contains(item)) strandedTools.Add(item.stringId);
+            }
+            Harness.Check(strandedTools.Count == 0, "every tool can actually be obtained"
+                + (strandedTools.Count > 0 ? ": " + string.Join(", ", strandedTools) : ""));
+
+            // Same for anything you place: a deployable with no recipe is dead content.
+            var strandedPlaceables = new List<string>();
+            for (int i = 0; i < Database.items.Count; i++)
+            {
+                var item = Database.items[i];
+                if (!item.IsPlaceable) continue;
+                if (!obtainable.Contains(item)) strandedPlaceables.Add(item.stringId);
+            }
+            Harness.Check(strandedPlaceables.Count == 0, "every placeable item can actually be obtained"
+                + (strandedPlaceables.Count > 0 ? ": " + string.Join(", ", strandedPlaceables) : ""));
+
+            // And every ingredient a recipe asks for must itself be gettable, or the
+            // recipe is decoration.
+            var strandedIngredients = new List<string>();
+            for (int i = 0; i < Database.recipes.Count; i++)
+            {
+                var recipe = Database.recipes[i];
+                for (int j = 0; j < recipe.ingredients.Count; j++)
+                {
+                    var ing = recipe.ingredients[j].item;
+                    if (ing == null || obtainable.Contains(ing)) continue;
+                    strandedIngredients.Add(recipe.stringId + " needs " + ing.stringId);
+                }
+            }
+            Harness.Check(strandedIngredients.Count == 0, "every recipe ingredient is obtainable"
+                + (strandedIngredients.Count > 0 ? ": " + string.Join("; ", strandedIngredients) : ""));
         }
 
         static void RecipeChecks()
@@ -267,7 +360,16 @@ namespace MadVoxel.Headless
             var tree = Database.perkTree;
             var categories = new HashSet<Perks.PerkCategory>();
             for (int i = 0; i < tree.perks.Count; i++) categories.Add(tree.perks[i].category);
-            Harness.Equal(categories.Count, 6, "all six skill categories are represented");
+
+            var allCategories = System.Enum.GetValues(typeof(Perks.PerkCategory));
+            var missing = new List<string>();
+            foreach (Perks.PerkCategory category in allCategories)
+            {
+                if (!categories.Contains(category)) missing.Add(category.ToString());
+            }
+            Harness.Check(missing.Count == 0,
+                string.Format("every perk category has at least one perk ({0} categories)", allCategories.Length)
+                + (missing.Count > 0 ? "; missing: " + string.Join(", ", missing) : ""));
 
             // A skill that unlocks a recipe id that does not exist is a dead node.
             var danglingUnlocks = new List<string>();

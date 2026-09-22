@@ -38,6 +38,7 @@ namespace MadVoxel.Building
                 case BuildPieceKind.Roof: Roof(body.transform, mat, trim); break;
                 case BuildPieceKind.Ladder: Ladder(body.transform, mat, piece.Address.Side); break;
                 case BuildPieceKind.Hatch: Hatch(body.transform, mat, trim); break;
+                case BuildPieceKind.Fence: Fence(body.transform, mat, trim, piece.Address.Side); break;
             }
 
             AddCollider(piece);
@@ -177,6 +178,23 @@ namespace MadVoxel.Building
                 PanelSize(along, through, opening * 0.92f, 0.14f, 0.18f), trim, "BandBottom");
         }
 
+        static void Fence(Transform parent, Material mat, Material trim, int side)
+        {
+            Vector3 centre, along, through;
+            EdgeFrame(side, out centre, out along, out through);
+
+            const float height = 1.25f;
+            PrimitiveBuilder.Box(parent, centre + along * (-Cell * 0.5f + 0.1f) + Vector3.up * (height * 0.5f),
+                PanelSize(along, through, 0.2f, height, 0.2f), trim, "PostA");
+            PrimitiveBuilder.Box(parent, centre + Vector3.up * (height * 0.5f),
+                PanelSize(along, through, 0.2f, height, 0.2f), trim, "PostMid");
+            PrimitiveBuilder.Box(parent, centre + along * (Cell * 0.5f - 0.1f) + Vector3.up * (height * 0.5f),
+                PanelSize(along, through, 0.2f, height, 0.2f), trim, "PostB");
+
+            PrimitiveBuilder.Box(parent, centre + Vector3.up * (height - 0.15f), PanelSize(along, through, Cell, 0.12f, 0.1f), mat, "RailTop");
+            PrimitiveBuilder.Box(parent, centre + Vector3.up * (height * 0.5f), PanelSize(along, through, Cell, 0.1f, 0.1f), mat, "RailMid");
+        }
+
         static void Ladder(Transform parent, Material mat, int side)
         {
             Vector3 centre, along, through;
@@ -256,7 +274,9 @@ namespace MadVoxel.Building
                     break;
 
                 default: // Wall
-                    float height = def.kind == BuildPieceKind.HalfWall ? Level * 0.5f : Level;
+                    float height = Level;
+                    if (def.kind == BuildPieceKind.HalfWall) height = Level * 0.5f;
+                    else if (def.kind == BuildPieceKind.Fence) height = 1.25f;
                     SizeEdgeCollider(box, piece.Address.Side, height, 0.24f);
                     // A doorway must be walk-through; its posts are decoration only.
                     if (!def.blocksMovement) box.isTrigger = true;

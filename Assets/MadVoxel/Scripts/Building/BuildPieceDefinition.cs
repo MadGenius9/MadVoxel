@@ -17,7 +17,9 @@ namespace MadVoxel.Building
         Roof,
         Ladder,
         Hatch,
-        Door
+        Door,
+        /// <summary>Low barrier for penning a garden without walling it in.</summary>
+        Fence
     }
 
     /// <summary>Rust-style upgrade chain. Every piece starts at Twig and is hammered up.</summary>

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using MadVoxel.Building;
+using MadVoxel.World.Fields;
 using MadVoxel.Inventory;
 using MadVoxel.Perks;
 using MadVoxel.World.Terrain;
@@ -45,6 +46,7 @@ namespace MadVoxel.Core.Player
         TerrainWorld _voxels;
         StructureWorld _structures;
         BuildingWorld _buildings;
+        FieldWorld _fields;
         PlayerInventory _inventory;
         PlayerStats _stats;
         PlayerProgression _progression;
@@ -70,12 +72,14 @@ namespace MadVoxel.Core.Player
         public event Action<Vector3Int, BlockDefinition> BlockMined;
 
         public void Init(GameConfig config, TerrainWorld voxels, StructureWorld structures, BuildingWorld buildings,
-                         PlayerInventory inventory, PlayerStats stats, PlayerProgression progression, Camera camera)
+                         FieldWorld fields, PlayerInventory inventory, PlayerStats stats,
+                         PlayerProgression progression, Camera camera)
         {
             _config = config;
             _voxels = voxels;
             _structures = structures;
             _buildings = buildings;
+            _fields = fields;
             _inventory = inventory;
             _stats = stats;
             _progression = progression;
@@ -327,6 +331,13 @@ namespace MadVoxel.Core.Player
                 if (count > 0) _inventory.Collect(def.dropItem, count);
             }
 
+            // Forage plants hand back seeds as well as fibre, which is how the garden starts.
+            if (def.secondaryDropItem != null && UnityEngine.Random.value <= def.secondaryDropChance)
+            {
+                int extra = UnityEngine.Random.Range(def.secondaryDropMin, def.secondaryDropMax + 1);
+                if (extra > 0) _inventory.Collect(def.secondaryDropItem, extra);
+            }
+
             bool wasPlayerPlaced = _playerPlaced.Remove(cell);
             if (!wasPlayerPlaced && def.harvestXp > 0f)
             {
@@ -439,9 +450,9 @@ namespace MadVoxel.Core.Player
             var held = _inventory.SelectedStack;
             if (held.IsEmpty) return;
 
-            if (held.Item.category == ItemCategory.Consumable && (held.Item.foodRestore > 0f || held.Item.waterRestore > 0f || held.Item.healthRestore > 0f))
+            if (held.Item.category == ItemCategory.Consumable && (held.Item.foodRestore > 0f || held.Item.waterRestore > 0f || held.Item.healthRestore > 0f || held.Item.staminaRestore > 0f))
             {
-                _stats.Consume(held.Item.foodRestore, held.Item.waterRestore, held.Item.healthRestore);
+                _stats.Consume(held.Item.foodRestore, held.Item.waterRestore, held.Item.healthRestore, held.Item.staminaRestore);
                 _inventory.ConsumeSelected(1);
                 Notifications.PostFormat("Ate {0}", held.Item.displayName);
                 return;
@@ -453,11 +464,39 @@ namespace MadVoxel.Core.Player
                 return;
             }
 
+            // The hoe breaks open ground into a field cell. One cell by hand today; a
+            // Phase 1 implement will work a swath through the same call.
+            if (held.Item.stringId == MadVoxel.Content.ItemIds.Hoe && Target.Kind == TargetKind.Block)
+            {
+                PlowTarget();
+                return;
+            }
+
             if (Target.Kind == TargetKind.None) return;
 
             if (held.Item.placeableBuildPiece != null) PlaceBuildPiece(held.Item);
             else if (held.Item.placeableStructure != null) PlaceStructure(held.Item);
             else if (held.Item.placeableBlock != null) PlaceBlock(held.Item);
+        }
+
+        void PlowTarget()
+        {
+            if (_fields == null) return;
+            if (!_stats.TrySpendStamina(6f))
+            {
+                Notifications.Post("Too tired to break ground");
+                return;
+            }
+
+            if (!_fields.TryPlow(Target.BlockCell))
+            {
+                Notifications.Post("Nothing to plow here");
+                return;
+            }
+
+            _inventory.WearSelected(1);
+            _progression.AddXp(2f, XpSource.Harvest);
+            Notifications.Post("Ground broken");
         }
 
         void PlaceBuildPiece(ItemDefinition item)
@@ -599,7 +638,16 @@ namespace MadVoxel.Core.Player
                 if (Target.Kind == TargetKind.Block)
                 {
                     var def = _voxels.GetBlockDef(Target.BlockCell.x, Target.BlockCell.y, Target.BlockCell.z);
-                    return def != null && !def.isAir ? def.displayName : "";
+                    if (def == null || def.isAir) return "";
+
+                    string field = _fields != null ? _fields.DescribeAt(Target.BlockCell) : "";
+                    if (!string.IsNullOrEmpty(field)) return def.displayName + "  -  " + field;
+
+                    var held = _inventory.SelectedItem;
+                    if (held != null && held.stringId == MadVoxel.Content.ItemIds.Hoe && _fields != null && _fields.IsTillable(Target.BlockCell))
+                        return def.displayName + "  -  RMB plow";
+
+                    return def.displayName;
                 }
                 return "";
             }

@@ -11,7 +11,8 @@ namespace MadVoxel.Perks
         Combat,
         Scavenging,
         Medicine,
-        Vehicles
+        Vehicles,
+        Farming
     }
 
     public enum PerkEffectType
@@ -26,7 +27,8 @@ namespace MadVoxel.Perks
         LootQuantityMultiplier,
         HealingMultiplier,
         VehicleFuelEfficiency,
-        RepairSpeedMultiplier
+        RepairSpeedMultiplier,
+        FieldYieldMultiplier
     }
 
     [Serializable]

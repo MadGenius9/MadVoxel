@@ -15,7 +15,9 @@ namespace MadVoxel.Building
         CraftStation,
         Campfire,
         ToolCupboard,
-        Bedroll
+        Bedroll,
+        FarmPlot,
+        Silo
     }
 
     /// <summary>
@@ -58,6 +60,12 @@ namespace MadVoxel.Building
         public Color lightColour = new Color(1f, 0.62f, 0.28f);
         [Tooltip("Tool cupboard only: building privilege radius in metres. 0 uses the game config value.")]
         public float claimRadius;
+
+        [Header("Farming")]
+        [Tooltip("Farm plot only: must be placed on soil rather than stone or concrete.")]
+        public bool requiresSoil;
+        [Tooltip("Silo only: how many litres of produce it holds (Phase 1).")]
+        public float siloCapacityLitres = 20000f;
 
         [Header("Salvage")]
         [Tooltip("Item returned when the piece is removed with a wrench.")]

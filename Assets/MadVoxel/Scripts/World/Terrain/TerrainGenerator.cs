@@ -20,6 +20,7 @@ namespace MadVoxel.World.Terrain
         readonly ushort _air, _bedrock, _stone, _dirt, _grass, _sand, _gravel;
         readonly ushort _coalOre, _ironOre, _log, _leaves, _scrap, _clay;
         readonly ushort _concrete, _planks, _ironBlock, _cobble;
+        readonly ushort _wildYucca, _wildGrain, _wildCorn;
 
         /// <summary>Points of interest. Read-only after construction, so workers can use it.</summary>
         public PoiPlanner Pois { get; private set; }
@@ -45,6 +46,9 @@ namespace MadVoxel.World.Terrain
             _planks = registry.IdOf(BlockIds.Planks);
             _ironBlock = registry.IdOf(BlockIds.IronBlock);
             _cobble = registry.IdOf(BlockIds.Cobblestone);
+            _wildYucca = registry.IdOf(BlockIds.WildYucca);
+            _wildGrain = registry.IdOf(BlockIds.WildGrain);
+            _wildCorn = registry.IdOf(BlockIds.WildCorn);
 
             // The planner samples the raw height field, so it must be built from
             // BaseSurfaceHeight rather than the pad-aware SurfaceHeight below.
@@ -165,6 +169,7 @@ namespace MadVoxel.World.Terrain
             }
 
             ApplySurfaceScrap(coord, blocks);
+            ApplyForage(coord, blocks);
             ApplyPois(coord, blocks);
             ApplyTrees(coord, blocks);
         }
@@ -265,6 +270,42 @@ namespace MadVoxel.World.Terrain
         /// is already flat because SurfaceHeight returns the pad level there, so these
         /// only have to build upward.
         /// </summary>
+        /// <summary>
+        /// Wild yucca, grain and corn on open ground. These are the only seed source
+        /// before a trader, so they have to be common enough to find on a first walk -
+        /// but they are the ruined-farmland flavour, so they cluster where the scrub
+        /// thins out.
+        /// </summary>
+        void ApplyForage(ChunkCoord coord, ushort[] blocks)
+        {
+            var origin = coord.Origin;
+
+            for (int lz = 0; lz < Chunk.Size; lz++)
+            {
+                int wz = origin.z + lz;
+                for (int lx = 0; lx < Chunk.Size; lx++)
+                {
+                    int wx = origin.x + lx;
+
+                    Poi ignored;
+                    if (Pois != null && Pois.TryGetAt(wx, wz, out ignored)) continue;
+
+                    float scrub = ScrubFactor(wx, wz);
+                    // Old fields grow food; deep pine scrub mostly does not.
+                    float density = Mathf.Lerp(0.030f, 0.006f, scrub);
+                    if (Noise.Hash01(wx, 9, wz, _seed + 5107) > density) continue;
+
+                    int surface = SurfaceHeight(wx, wz);
+                    if (surface <= SeaLevel - 6) continue;
+
+                    // Patches rather than confetti: the local hash picks the species.
+                    uint pick = Noise.Hash(wx / 6, 11, wz / 6, _seed + 5113) % 3u;
+                    ushort plant = pick == 0u ? _wildYucca : (pick == 1u ? _wildGrain : _wildCorn);
+                    Put(blocks, coord, wx, surface + 1, wz, plant, true);
+                }
+            }
+        }
+
         void ApplyPois(ChunkCoord coord, ushort[] blocks)
         {
             if (Pois == null) return;

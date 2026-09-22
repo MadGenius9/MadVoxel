@@ -28,6 +28,8 @@ never collide with the real engine.
 | **Content wiring** | The whole `ContentLibrary` is built. Every block, item, recipe, structure, skill, quest, trader and vehicle resolves; no null or dangling cross-reference; ids are unique. Locked recipes are reachable through the skill tree and skill unlocks point at real recipes. Every mineable block drops something, no block demands a tool tier above the best craftable one, and the workbench and campfire are hand-craftable so there is no bootstrap deadlock. |
 | **Build grid** | Cell maths including negative coordinates; shared-edge canonicalisation, so the wall between two cells is one slot however it is addressed; and that the connection graph the stability flood fill walks is **symmetric**, self-free, and links floors to the walls under them. |
 | **Snap content** | Every piece kind has a complete Twig→Armored chain that climbs in health and resistance, every upgrade costs real materials, perk gates name perks that exist and are reachable, wood and stone stay ungated, and only twig is placeable from an item. |
+| **Farming** | Crop content resolves both ways (seed → crop → harvest item), no crop is a dead end, wild plants drop plantable seeds so the garden is reachable without a trader, meals restore stamina and all have recipes, and the plot is hand-craftable and soil-only. Garden growth stages map correctly onto elapsed hours including negatives. The field tillage cycle walks wild → plowed → cultivated → seeded → growing → ready → stubble and back, rejects illegal transitions, yields litres, loses fertility with repeated cropping, and can be driven across a swath. |
+| **Obtainability** | Every tool, every placeable and every recipe ingredient can actually be acquired — from a recipe, a trader, a quest reward, a block drop, a crop or the starting kit. |
 | **POIs** | Two trader outposts, off spawn and inside the map; no two POIs overlap; pads are genuinely level so foundations fit; layout is deterministic per seed; and the stamp puts real blocks into the chunk. |
 | **Coordinates** | Floor division and modulo for negative world coordinates, world↔chunk mapping, and hash distribution across neighbouring chunks. |
 | **Chunk storage** | Uniform-chunk compression, materialisation on first write, index packing over all 4096 cells, compaction, and the copy the save writer takes. |
@@ -52,3 +54,7 @@ Bugs caught here that a compile could not see:
   did not list ceilings, and stairs listed the floor above but not the reverse.
   The stability flood fill walks connections in both directions, so roofs and
   upper storeys would have silently collapsed.
+- A perk unlocking a recipe id that no longer existed — which turned out to be the
+  visible symptom of an edit that had silently deleted the wrench, both iron tool
+  and the iron block recipes. Every other check still passed, because the *items*
+  were all still there. That is what the obtainability checks now cover.

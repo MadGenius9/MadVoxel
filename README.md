@@ -1,11 +1,12 @@
 # MadVoxel
 
-A single-player survival game in **Unity 6 (URP)**: Rust's modular building and worn
-industrial look on top of 7 Days to Die's diggable terrain, perks, traders and
-blood-moon hordes. You cut the shape of your base out of the ground, then armour it
-with snap pieces.
+A single-player survival-farming game in **Unity 6 (URP)** by **MadGenius**: Rust's
+modular building and worn industrial look, 7 Days to Die's diggable terrain, perks,
+traders and blood-moon hordes, and two layers of farming — a 7DTD garden you eat from
+tonight, and Farming-Simulator-style acreage you sell from.
 
-Large but finite map. Not an endless cartoon-cube planet.
+You cut the shape of your base out of the ground, armour it with snap pieces, and put
+a garden beside it. Large but finite map. Not an endless cartoon-cube planet.
 
 **Status: Phase 0 complete and playable.** See [`SCOPE.md`](SCOPE.md) for what is
 implemented, what is data-only, and what is deliberately deferred.
@@ -111,6 +112,45 @@ down — which is also how a horde gets in.
 Plant the **tool cupboard** to claim the area. Wandering zombies avoid claimed ground;
 the horde walks straight at it.
 
+## Farming
+
+Two layers, at two scales, on purpose.
+
+### The garden (playable now)
+
+Craft a **farm plot** from planks and fibre and drop it on dirt — it will not sit on
+stone or concrete. Plant a seed with `E`, and the crop grows on the world clock:
+seedling → growing → mature → ready, visible as the plant gets taller and turns
+gold when it is ripe. `E` again harvests it into your bag.
+
+Seeds come from the world before they come from a trader: **wild yucca, grain and corn**
+grow in the old fields and drop seeds when you clear them. Three crops to start:
+
+| Crop | Matures | After harvest | Also a field crop |
+| --- | --- | --- | --- |
+| Potato | 1.5 days | Plot goes bare, usually returns seed | No |
+| Corn | 2.5 days | Keeps growing — pick it again | Yes |
+| Wheat | 2 days | Plot goes bare, usually returns seed | Yes |
+
+Cook at a campfire: baked potato, corn bread, vegetable stew. **Cooked food is the only
+thing that restores stamina as well as hunger**, which is what makes the garden matter
+the day before a blood moon.
+
+A horde that reaches your plots will smash them and take the crop with them, so fence
+the garden or keep it inside the walls.
+
+### The field (Phase 1)
+
+The bulk layer: a one-metre cell grid over the terrain running the FS tillage cycle —
+wild → plowed → cultivated → seeded → growing → ready → stubble — with moisture,
+fertiliser and a per-cell yield factor. Harvest is measured in **litres**, not stacks,
+and goes into a grain bin.
+
+The whole state machine, the growth timing and the litre yield are implemented and
+tested today. What Phase 1 adds is the tractor and implements that work a swath at a
+time. You can already break ground by hand: hold the **hoe** and right-click open
+ground to plow one cell — the block turns to tilled soil and stays that way.
+
 ## The world
 
 A finite map, 3072 m square by default (`worldRadiusChunks` in the game config), all of
@@ -139,6 +179,7 @@ sitting. They are live whenever **Developer Tools** is ticked on the `MadVoxel` 
 | `F9` | Refill health, stamina, food and water |
 | `F10` | Grant the test kit: iron tools, hammer, wrench, terrain blocks, the full snap set, deployables, food and bandages |
 | `F11` | Toggle invulnerability |
+| `F12` | Ripen every planted crop, so the garden can be tested without waiting days |
 
 ### Walking the Phase 0 success test in about ten minutes
 
@@ -146,14 +187,20 @@ sitting. They are live whenever **Developer Tools** is ticked on the `MadVoxel` 
    it — that is the 7DTD half.
 2. `F10` for the kit. Lay foundations on the pad, then walls, a doorway, a door and a
    roof. Put a storage box inside and something in the box.
-3. Plant the tool cupboard. Point the hammer at one wall and right-click twice:
+3. **Drop farm plots in a fenced dip beside the shack**, plant potato and corn seeds in
+   them, then press `F12` to ripen and `E` to harvest. Cook the potatoes at a campfire
+   and eat one — watch stamina come back, not just hunger.
+4. Plant the tool cupboard. Point the hammer at one wall and right-click twice:
    twig → wood → stone. Watch the piece change material and get tougher.
-4. Try undermining your own foundation with the shovel — the wall above it should come
+5. Try undermining your own foundation with the shovel — the wall above it should come
    down. Rebuild it.
-5. `F7`, then hold the shack through the blood moon. They walk the ramp, fall in the
-   pit, and chew whatever is in front of them.
-6. Quit to the menu, then **Continue**: the hole, the base, the box contents and your
-   inventory should all come back.
+6. Hold the hoe and right-click open ground: it turns to tilled soil. That is the field
+   layer's first step.
+7. `F7`, then hold the shack through the blood moon. They walk the ramp, fall in the
+   pit, and chew whatever is in front of them — **including your plots**, so leave one
+   outside the fence and check it gets smashed.
+8. Quit to the menu, then **Continue**: the hole, the base, the box contents, your
+   inventory **and the plots with their growth still part-done** should all come back.
 
 `F11` and `F4` are there for when you want to watch the horde work on the base rather
 than fight it.
@@ -177,16 +224,20 @@ Saves live under Unity's persistent data path:
 ```
 <persistentDataPath>/Saves/<World Name>/
     world.json          seed, elapsed hours, blood-moon counter, timestamps
-    player.json         position, vitals, all 36 inventory slots, level, XP, skills
-    structures.json     every placed snap piece, door states, crate contents
+    player.json         position, vitals, all 36 inventory slots, level, XP, perks
+    structures.json     deployables, snap pieces, crate contents, plot crops and
+                        planting times, grain bin litres, worked field cells
     chunks/c.<x>.<y>.<z>.mvc   edited chunks only, palette + run-length encoded
 ```
 
 | Platform | `<persistentDataPath>` |
 | --- | --- |
-| Windows | `%USERPROFILE%\AppData\LocalLow\<Company>\MadVoxel` |
-| macOS | `~/Library/Application Support/<Company>/MadVoxel` |
-| Linux | `~/.config/unity3d/<Company>/MadVoxel` |
+| Windows | `%USERPROFILE%\AppData\LocalLow\MadGenius\MadVoxel` |
+| macOS | `~/Library/Application Support/MadGenius/MadVoxel` |
+| Linux | `~/.config/unity3d/MadGenius/MadVoxel` |
+
+*(**MadVoxel → Setup → Configure Project** sets the company and product names, so run it
+before making a world you want to keep.)*
 
 Only chunks you have actually changed are written to disk. Everything else is
 regenerated from the seed, which is what keeps an infinite world off your drive.
@@ -214,6 +265,9 @@ Assets/MadVoxel/
     Core/            bootstrap, session, clock, sky, noise, materials, input, damage
     Core/Player/     first-person motor, look, vitals, inventory, dig/place/interact
     World/Terrain/   chunks, terrain generation, POIs, greedy mesher, streaming, raycast
+    World/Fields/    FS-style field cell grid, tillage state machine, litre yield
+    Farming/Crops/   crop definitions shared by both farming layers
+    Farming/Plots/   garden farm plot, plant growth visuals, grain bin
     Building/        snap grid and pieces, stability, deployables, cupboard, build ghost
     Inventory/       items, stacks, containers, recipes, crafting
     Perks/           XP and levelling, perk tree definitions
@@ -261,10 +315,11 @@ cd Tests/Headless
 dotnet run
 ```
 
-**218 checks, all passing.** They compile the real gameplay sources against a small
+**268 checks, all passing.** They compile the real gameplay sources against a small
 executable `UnityEngine` shim and actually run them, covering content wiring, the build
 grid and its connection graph, chunk storage and coordinates, the greedy mesher,
-terrain generation, POI layout, inventory, crafting and the chunk-file save round-trip.
+terrain generation, POI layout, crop growth timing, the field tillage state machine and
+its yield, inventory, crafting and the chunk-file save round-trip.
 See [`Tests/Headless/README.md`](Tests/Headless/README.md) for the full list and for
 what is deliberately out of reach.
 

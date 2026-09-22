@@ -10,7 +10,9 @@ namespace MadVoxel.Quests
         Fetch,
         Clear,
         SurviveNights,
-        Deliver
+        Deliver,
+        /// <summary>Bulk produce measured in litres from the field layer.</summary>
+        DeliverLitres
     }
 
     [Serializable]
@@ -39,6 +41,8 @@ namespace MadVoxel.Quests
         public int objectiveCount = 10;
         [Tooltip("Clear: restrict to this zombie type, or leave empty for any.")]
         public string objectiveZombieId = "";
+        [Tooltip("DeliverLitres: the crop whose litres count.")]
+        public string objectiveCropId = "";
 
         [Header("Requirements")]
         public int requiredPlayerLevel = 1;

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using MadVoxel.AI;
 using MadVoxel.Building;
 using MadVoxel.Core;
+using MadVoxel.Farming.Crops;
 using MadVoxel.Horde;
 using MadVoxel.Inventory;
 using MadVoxel.Quests;
@@ -67,6 +68,7 @@ namespace MadVoxel.Content
             db.zombies = BuildZombies(itemMap);
             db.hordeSchedule = BuildHordeSchedule(db.zombies);
 
+            db.crops = BuildCrops(itemMap);
             db.perkTree = BuildPerkTree();
             db.quests = BuildQuests(itemMap);
             db.traders = BuildTraders(itemMap, db.quests);
@@ -77,7 +79,8 @@ namespace MadVoxel.Content
                 Starting(itemMap[ItemIds.StoneAxe], 1),
                 Starting(itemMap[ItemIds.CannedFood], 2),
                 Starting(itemMap[ItemIds.WaterBottle], 2),
-                Starting(itemMap[ItemIds.PlantFibre], 8)
+                Starting(itemMap[ItemIds.PlantFibre], 8),
+                Starting(itemMap[ItemIds.SeedPotato], 3)
             };
 
             return db;
@@ -140,11 +143,21 @@ namespace MadVoxel.Content
             map[BlockIds.Grass] = Block(BlockIds.Grass, "Scrub Grass", SurfaceFamily.Grass, ColGrass, 0.6f, ToolType.Shovel, 0, 0.4f, 60f);
             map[BlockIds.Sand] = Block(BlockIds.Sand, "Sand", SurfaceFamily.Sand, ColSand, 0.5f, ToolType.Shovel, 0, 0.4f, 45f);
             map[BlockIds.Gravel] = Block(BlockIds.Gravel, "Gravel", SurfaceFamily.Stone, ColGravel, 0.7f, ToolType.Shovel, 0, 0.6f, 70f);
+            // Broken ground: what a plow leaves behind, and what a field reads as.
+            var tilled = Block(BlockIds.TilledSoil, "Tilled Soil", SurfaceFamily.Dirt, new Color(0.26f, 0.19f, 0.13f), 0.45f, ToolType.Shovel, 0, 0.3f, 55f);
+            map[BlockIds.TilledSoil] = tilled;
+
             map[BlockIds.Clay] = Block(BlockIds.Clay, "Clay", SurfaceFamily.Dirt, ColClay, 0.7f, ToolType.Shovel, 0, 0.8f, 70f);
             map[BlockIds.CoalOre] = Block(BlockIds.CoalOre, "Coal Seam", SurfaceFamily.Ore, ColCoal, 2.6f, ToolType.Pickaxe, 1, 4f, 220f);
             map[BlockIds.IronOre] = Block(BlockIds.IronOre, "Iron Ore", SurfaceFamily.Ore, ColIron, 3.2f, ToolType.Pickaxe, 1, 5f, 240f);
             map[BlockIds.PineLog] = Block(BlockIds.PineLog, "Pine Log", SurfaceFamily.Wood, ColWood, 1.8f, ToolType.Axe, 0, 3f, 140f);
             map[BlockIds.ScrapHeap] = Block(BlockIds.ScrapHeap, "Scrap Heap", SurfaceFamily.Metal, ColRust, 2.0f, ToolType.Pickaxe, 0, 5f, 150f);
+
+            // Wild forage. Non-solid so you walk through them, cheap to clear, and they
+            // are the only source of seeds until a trader sells you better ones.
+            AddForage(map, BlockIds.WildYucca, "Wild Yucca", new Color(0.36f, 0.45f, 0.26f));
+            AddForage(map, BlockIds.WildGrain, "Wild Grain", new Color(0.62f, 0.55f, 0.28f));
+            AddForage(map, BlockIds.WildCorn, "Wild Corn", new Color(0.44f, 0.52f, 0.24f));
 
             var needles = Block(BlockIds.PineNeedles, "Pine Needles", SurfaceFamily.Foliage, ColNeedle, 0.3f, ToolType.None, 0, 0.2f, 25f);
             needles.opaque = false; // lets light through the canopy and halves the face count
@@ -193,6 +206,14 @@ namespace MadVoxel.Content
             return map;
         }
 
+        static void AddForage(Dictionary<string, BlockDefinition> map, string id, string name, Color tint)
+        {
+            var def = Block(id, name, SurfaceFamily.Foliage, tint, 0.18f, ToolType.None, 0, 1.5f, 12f);
+            def.solid = false;
+            def.opaque = false;
+            map[id] = def;
+        }
+
         static BlockRegistry BuildRegistry(Dictionary<string, BlockDefinition> map)
         {
             var registry = ScriptableObject.CreateInstance<BlockRegistry>();
@@ -202,8 +223,9 @@ namespace MadVoxel.Content
             string[] order =
             {
                 BlockIds.Air, BlockIds.Bedrock, BlockIds.Stone, BlockIds.Dirt, BlockIds.Grass,
-                BlockIds.Sand, BlockIds.Gravel, BlockIds.Clay, BlockIds.CoalOre, BlockIds.IronOre,
+                BlockIds.Sand, BlockIds.Gravel, BlockIds.Clay, BlockIds.TilledSoil, BlockIds.CoalOre, BlockIds.IronOre,
                 BlockIds.PineLog, BlockIds.PineNeedles, BlockIds.ScrapHeap,
+                BlockIds.WildYucca, BlockIds.WildGrain, BlockIds.WildCorn,
                 BlockIds.WoodFrame, BlockIds.Planks, BlockIds.Cobblestone, BlockIds.IronBlock,
                 BlockIds.SteelBlock, BlockIds.Concrete, BlockIds.Glass
             };
@@ -286,6 +308,9 @@ namespace MadVoxel.Content
             Add(Tool(ItemIds.Club, "Reinforced Club", ToolType.Melee, 1, 1.0f, 15f, 220, ColWood, 24));
             Add(Tool(ItemIds.Wrench, "Wrench", ToolType.Wrench, 1, 1.2f, 6f, 300, ColIronPlate, 40));
             Add(Tool(ItemIds.Hammer, "Building Hammer", ToolType.Hammer, 1, 1.0f, 8f, 600, ColWood, 30));
+            Add(Tool(ItemIds.Hoe, "Hoe", ToolType.Shovel, 1, 2.0f, 5f, 260, ColWood, 22));
+
+            AddFarmingItems(map);
 
             // Block items. Each carries the block it places.
             AddBlockItem(map, blocks, ItemIds.BlockWoodFrame, BlockIds.WoodFrame, "Wood Frame", SurfaceFamily.Plank, ColPlank * 0.9f, 2);
@@ -299,8 +324,10 @@ namespace MadVoxel.Content
             Add(Item(ItemIds.PieceStorageBox, "Storage Box", ItemCategory.Structure, 8, SurfaceFamily.Plank, ColPlank * 1.05f, 26));
             Add(Item(ItemIds.PieceWorkbench, "Workbench", ItemCategory.Structure, 4, SurfaceFamily.Plank, ColPlank, 40));
             Add(Item(ItemIds.PieceCampfire, "Campfire", ItemCategory.Structure, 4, SurfaceFamily.Stone, ColStone, 14));
-            Add(Item(ItemIds.PieceToolCupboard, "Land Claim Stake", ItemCategory.Structure, 2, SurfaceFamily.Wood, ColWood, 120));
+            Add(Item(ItemIds.PieceToolCupboard, "Tool Cupboard", ItemCategory.Structure, 2, SurfaceFamily.Plank, ColPlank, 120));
             Add(Item(ItemIds.PieceBedroll, "Bedroll", ItemCategory.Structure, 2, SurfaceFamily.Cloth, new Color(0.45f, 0.42f, 0.36f), 30));
+            Add(Item(ItemIds.PieceFarmPlot, "Farm Plot", ItemCategory.Structure, 16, SurfaceFamily.Dirt, new Color(0.33f, 0.24f, 0.16f), 14));
+            Add(Item(ItemIds.PieceSilo, "Grain Bin", ItemCategory.Structure, 2, SurfaceFamily.Metal, new Color(0.55f, 0.53f, 0.49f), 240));
 
             // Phase 1 economy and vehicle parts.
             Add(Item(ItemIds.TradeToken, "Trade Token", ItemCategory.Misc, 999, SurfaceFamily.Metal, new Color(0.72f, 0.62f, 0.30f), 1));
@@ -314,6 +341,56 @@ namespace MadVoxel.Content
             Add(Item(ItemIds.BuggyKit, "Scrap Buggy Kit", ItemCategory.Misc, 1, SurfaceFamily.Metal, ColRust, 600));
 
             return map;
+        }
+
+        /// <summary>
+        /// Seeds, produce and meals. Cooked food is the reason to farm in Phase 0: it is
+        /// the only thing that restores stamina as well as hunger, which is what gets you
+        /// through a horde night.
+        /// </summary>
+        static void AddFarmingItems(Dictionary<string, ItemDefinition> map)
+        {
+            void Add(ItemDefinition def) { map[def.stringId] = def; }
+
+            var potatoSeed = Item(ItemIds.SeedPotato, "Potato Seed", ItemCategory.Resource, 64, SurfaceFamily.Foliage, new Color(0.55f, 0.46f, 0.30f), 6);
+            potatoSeed.description = "Plant in a farm plot.";
+            Add(potatoSeed);
+
+            var cornSeed = Item(ItemIds.SeedCorn, "Corn Seed", ItemCategory.Resource, 64, SurfaceFamily.Foliage, new Color(0.66f, 0.58f, 0.26f), 6);
+            cornSeed.description = "Plant in a farm plot, or sow a field with it later.";
+            Add(cornSeed);
+
+            var wheatSeed = Item(ItemIds.SeedWheat, "Wheat Seed", ItemCategory.Resource, 64, SurfaceFamily.Foliage, new Color(0.70f, 0.63f, 0.34f), 6);
+            wheatSeed.description = "Plant in a farm plot, or sow a field with it later.";
+            Add(wheatSeed);
+
+            var potato = Item(ItemIds.Potato, "Potato", ItemCategory.Consumable, 64, SurfaceFamily.Dirt, new Color(0.60f, 0.48f, 0.30f), 4);
+            potato.foodRestore = 8f;
+            Add(potato);
+
+            var corn = Item(ItemIds.CornEar, "Corn Ear", ItemCategory.Consumable, 64, SurfaceFamily.Foliage, new Color(0.76f, 0.67f, 0.25f), 4);
+            corn.foodRestore = 7f;
+            Add(corn);
+
+            Add(Item(ItemIds.Grain, "Grain", ItemCategory.Resource, 64, SurfaceFamily.Foliage, new Color(0.72f, 0.64f, 0.36f), 3));
+            Add(Item(ItemIds.Flour, "Flour", ItemCategory.Resource, 64, SurfaceFamily.Cloth, new Color(0.82f, 0.78f, 0.70f), 6));
+
+            var baked = Item(ItemIds.BakedPotato, "Baked Potato", ItemCategory.Consumable, 16, SurfaceFamily.Dirt, new Color(0.66f, 0.50f, 0.28f), 12);
+            baked.foodRestore = 30f;
+            baked.staminaRestore = 15f;
+            Add(baked);
+
+            var bread = Item(ItemIds.CornBread, "Corn Bread", ItemCategory.Consumable, 16, SurfaceFamily.Cloth, new Color(0.78f, 0.66f, 0.38f), 18);
+            bread.foodRestore = 42f;
+            bread.staminaRestore = 25f;
+            Add(bread);
+
+            var stew = Item(ItemIds.VegetableStew, "Vegetable Stew", ItemCategory.Consumable, 8, SurfaceFamily.Metal, new Color(0.54f, 0.42f, 0.24f), 30);
+            stew.foodRestore = 60f;
+            stew.waterRestore = 20f;
+            stew.healthRestore = 10f;
+            stew.staminaRestore = 40f;
+            Add(stew);
         }
 
         static void AddBlockItem(Dictionary<string, ItemDefinition> map, Dictionary<string, BlockDefinition> blocks,
@@ -332,6 +409,8 @@ namespace MadVoxel.Content
             items[ItemIds.PieceWorkbench].placeableStructure = structures[StructureIds.Workbench];
             items[ItemIds.PieceCampfire].placeableStructure = structures[StructureIds.Campfire];
             items[ItemIds.PieceToolCupboard].placeableStructure = structures[StructureIds.ToolCupboard];
+            items[ItemIds.PieceFarmPlot].placeableStructure = structures[StructureIds.FarmPlot];
+            items[ItemIds.PieceSilo].placeableStructure = structures[StructureIds.Silo];
             items[ItemIds.PieceBedroll].placeableStructure = structures[StructureIds.Bedroll];
         }
 
@@ -343,12 +422,21 @@ namespace MadVoxel.Content
             Drop(blocks[BlockIds.Sand], items[ItemIds.Sand], 1, 1);
             Drop(blocks[BlockIds.Gravel], items[ItemIds.Stone], 1, 1);
             Drop(blocks[BlockIds.Clay], items[ItemIds.Clay], 1, 2);
+            Drop(blocks[BlockIds.TilledSoil], items[ItemIds.Dirt], 1, 1);
             Drop(blocks[BlockIds.CoalOre], items[ItemIds.Coal], 1, 3);
             Drop(blocks[BlockIds.IronOre], items[ItemIds.IronOre], 1, 3);
             Drop(blocks[BlockIds.PineLog], items[ItemIds.WoodLog], 1, 2);
             Drop(blocks[BlockIds.PineNeedles], items[ItemIds.PlantFibre], 0, 2);
             Drop(blocks[BlockIds.ScrapHeap], items[ItemIds.ScrapMetal], 2, 5);
             Drop(blocks[BlockIds.Concrete], items[ItemIds.Stone], 2, 3);
+
+            // Forage: fibre or produce in hand, and sometimes the seed that starts a garden.
+            Drop(blocks[BlockIds.WildYucca], items[ItemIds.PlantFibre], 1, 3);
+            SecondDrop(blocks[BlockIds.WildYucca], items[ItemIds.SeedPotato], 0.45f, 1, 2);
+            Drop(blocks[BlockIds.WildGrain], items[ItemIds.Grain], 1, 2);
+            SecondDrop(blocks[BlockIds.WildGrain], items[ItemIds.SeedWheat], 0.5f, 1, 2);
+            Drop(blocks[BlockIds.WildCorn], items[ItemIds.CornEar], 1, 2);
+            SecondDrop(blocks[BlockIds.WildCorn], items[ItemIds.SeedCorn], 0.5f, 1, 2);
 
             Drop(blocks[BlockIds.WoodFrame], items[ItemIds.BlockWoodFrame], 1, 1);
             Drop(blocks[BlockIds.Planks], items[ItemIds.BlockPlanks], 1, 1);
@@ -363,6 +451,14 @@ namespace MadVoxel.Content
             block.dropItem = item;
             block.dropMin = min;
             block.dropMax = max;
+        }
+
+        static void SecondDrop(BlockDefinition block, ItemDefinition item, float chance, int min, int max)
+        {
+            block.secondaryDropItem = item;
+            block.secondaryDropChance = chance;
+            block.secondaryDropMin = min;
+            block.secondaryDropMax = max;
         }
 
         // -------------------------------------------------------------- structures
@@ -411,6 +507,19 @@ namespace MadVoxel.Content
             bedroll.blocksMovement = false;
             bedroll.salvageItem = items[ItemIds.PieceBedroll];
             map[bedroll.stringId] = bedroll;
+
+            // The garden. Low health on purpose: a horde that reaches your plots should
+            // cost you dinner.
+            var plot = Structure(StructureIds.FarmPlot, "Farm Plot", StructureKind.FarmPlot, Vector3Int.one, SurfaceFamily.Dirt, new Color(0.30f, 0.22f, 0.15f), 70f);
+            plot.requiresSoil = true;
+            plot.blocksMovement = false;
+            plot.salvageItem = items[ItemIds.PieceFarmPlot];
+            map[plot.stringId] = plot;
+
+            var silo = Structure(StructureIds.Silo, "Grain Bin", StructureKind.Silo, new Vector3Int(2, 4, 2), SurfaceFamily.Metal, new Color(0.55f, 0.53f, 0.49f), 600f);
+            silo.siloCapacityLitres = 20000f;
+            silo.salvageItem = items[ItemIds.PieceSilo];
+            map[silo.stringId] = silo;
 
             // Not craftable: spawned by the death handler to hold a dropped bag.
             var backpack = Structure(StructureIds.DeathBackpack, "Backpack", StructureKind.Storage, Vector3Int.one, SurfaceFamily.Cloth, new Color(0.30f, 0.27f, 0.22f), 1000f);
@@ -462,6 +571,13 @@ namespace MadVoxel.Content
             list.Add(Recipe("madvoxel:craft_club", it[ItemIds.Club], 1, CraftStation.Hand, 2.0f,
                 Ing(it[ItemIds.WoodLog], 2), Ing(it[ItemIds.ScrapMetal], 2), Ing(it[ItemIds.PlantFibre], 2)));
 
+            // The garden has to be reachable on day one, so the plot and the hoe are
+            // hand recipes from what a forager already has.
+            list.Add(Recipe("madvoxel:craft_farm_plot", it[ItemIds.PieceFarmPlot], 1, CraftStation.Hand, 2f,
+                Ing(it[ItemIds.Plank], 4), Ing(it[ItemIds.PlantFibre], 4)));
+            list.Add(Recipe("madvoxel:craft_hoe", it[ItemIds.Hoe], 1, CraftStation.Hand, 2.5f,
+                Ing(it[ItemIds.WoodLog], 1), Ing(it[ItemIds.Stone], 2), Ing(it[ItemIds.PlantFibre], 2)));
+
             list.Add(Recipe("madvoxel:craft_hammer", it[ItemIds.Hammer], 1, CraftStation.Hand, 2.5f,
                 Ing(it[ItemIds.WoodLog], 2), Ing(it[ItemIds.Stone], 2), Ing(it[ItemIds.PlantFibre], 2)));
 
@@ -484,13 +600,25 @@ namespace MadVoxel.Content
                 Ing(it[ItemIds.IronOre], 2), Ing(it[ItemIds.Coal], 1)));
             list.Add(Recipe("madvoxel:smelt_scrap", it[ItemIds.IronIngot], 1, CraftStation.Campfire, 5f,
                 Ing(it[ItemIds.ScrapMetal], 5), Ing(it[ItemIds.Coal], 1)));
+            // Cooking. Meals are the only food that restores stamina, which is what makes
+            // the garden matter the night before a blood moon.
+            list.Add(Recipe("madvoxel:cook_baked_potato", it[ItemIds.BakedPotato], 2, CraftStation.Campfire, 4f,
+                Ing(it[ItemIds.Potato], 3)));
+            list.Add(Recipe("madvoxel:mill_flour", it[ItemIds.Flour], 2, CraftStation.Campfire, 3f,
+                Ing(it[ItemIds.Grain], 4)));
+            list.Add(Recipe("madvoxel:cook_corn_bread", it[ItemIds.CornBread], 2, CraftStation.Campfire, 5f,
+                Ing(it[ItemIds.Flour], 2), Ing(it[ItemIds.CornEar], 2)));
+            list.Add(Recipe("madvoxel:cook_stew", it[ItemIds.VegetableStew], 1, CraftStation.Campfire, 6f,
+                Ing(it[ItemIds.Potato], 3), Ing(it[ItemIds.CornEar], 2), Ing(it[ItemIds.WaterBottle], 1)));
+
             list.Add(Recipe("madvoxel:smelt_glass", it[ItemIds.BlockGlass], 2, CraftStation.Campfire, 4f,
                 Ing(it[ItemIds.Sand], 3), Ing(it[ItemIds.Coal], 1)));
 
             list.Add(Recipe("madvoxel:craft_storage_box", it[ItemIds.PieceStorageBox], 1, CraftStation.Workbench, 4f,
                 Ing(it[ItemIds.Plank], 12), Ing(it[ItemIds.IronIngot], 1)));
-            list.Add(Recipe("madvoxel:craft_claim_stake", it[ItemIds.PieceToolCupboard], 1, CraftStation.Workbench, 6f,
-                Ing(it[ItemIds.WoodLog], 6), Ing(it[ItemIds.IronIngot], 2), Ing(it[ItemIds.Cloth], 2)));
+            list.Add(Recipe("madvoxel:craft_tool_cupboard", it[ItemIds.PieceToolCupboard], 1, CraftStation.Workbench, 6f,
+                Ing(it[ItemIds.Plank], 16), Ing(it[ItemIds.IronIngot], 2), Ing(it[ItemIds.Cloth], 2)));
+
             list.Add(Recipe("madvoxel:craft_wrench", it[ItemIds.Wrench], 1, CraftStation.Workbench, 4f,
                 Ing(it[ItemIds.IronIngot], 3), Ing(it[ItemIds.Plank], 1)));
             list.Add(Recipe("madvoxel:craft_iron_pickaxe", it[ItemIds.IronPickaxe], 1, CraftStation.Workbench, 5f,
@@ -499,6 +627,14 @@ namespace MadVoxel.Content
                 Ing(it[ItemIds.IronIngot], 4), Ing(it[ItemIds.Plank], 2)));
             list.Add(Recipe("madvoxel:craft_block_iron", it[ItemIds.BlockIron], 1, CraftStation.Workbench, 3f,
                 Ing(it[ItemIds.IronIngot], 4)));
+
+            // The grain bin is the field layer's destination, so it is gated on Agronomist.
+            var silo = Recipe("madvoxel:craft_silo", it[ItemIds.PieceSilo], 1, CraftStation.Workbench, 12f,
+                Ing(it[ItemIds.IronIngot], 14), Ing(it[ItemIds.ScrapMetal], 30), Ing(it[ItemIds.Plank], 12));
+            silo.unlockedByDefault = false;
+            silo.requiredPerkId = PerkIds.Agronomist;
+            silo.requiredPerkRank = 1;
+            list.Add(silo);
 
             // Locked behind skills. Phase 1 turns the ranks into unlocks; the data is real now.
             var steel = Recipe("madvoxel:craft_block_steel", it[ItemIds.BlockSteel], 1, CraftStation.Workbench, 6f,
@@ -648,6 +784,18 @@ namespace MadVoxel.Content
             grease.unlocksRecipeIds.Add("madvoxel:craft_buggy_kit");
             tree.perks.Add(grease);
 
+            var farming = Perk(PerkIds.Farming, "Living Off The Land", PerkCategory.Farming,
+                "Garden plots yield more, and seeds come back more often.", 5, 1,
+                Effect(PerkEffectType.HarvestYieldMultiplier, 0.15f));
+            farming.unlocksRecipeIds.Add("madvoxel:craft_farm_plot");
+            tree.perks.Add(farming);
+
+            var agronomist = Perk(PerkIds.Agronomist, "Agronomist", PerkCategory.Farming,
+                "Unlocks field implements and lifts the yield an acre returns.", 3, 6,
+                Effect(PerkEffectType.FieldYieldMultiplier, 0.12f));
+            agronomist.unlocksRecipeIds.Add("madvoxel:craft_silo");
+            tree.perks.Add(agronomist);
+
             tree.perks.Add(Perk("madvoxel:perk_economiser", "Economiser", PerkCategory.Vehicles,
                 "Squeeze more distance out of every gas can.", 3, 7,
                 Effect(PerkEffectType.VehicleFuelEfficiency, 0.15f)));
@@ -710,6 +858,39 @@ namespace MadVoxel.Content
             survive.rewards.Add(Reward(it[ItemIds.IronPickaxe], 1));
             list.Add(survive);
 
+            var garden = ScriptableObject.CreateInstance<QuestDefinition>();
+            garden.name = "Quest_FirstHarvest";
+            garden.stringId = "madvoxel:quest_first_harvest";
+            garden.title = "First Harvest";
+            garden.description = "Anyone can loot a can. Bring me food you grew yourself and I will take you seriously.";
+            garden.kind = QuestKind.Fetch;
+            garden.objectiveItem = it[ItemIds.Potato];
+            garden.objectiveCount = 12;
+            garden.xpReward = 160f;
+            garden.reputationReward = 120;
+            garden.rewards.Add(Reward(it[ItemIds.TradeToken], 140));
+            garden.rewards.Add(Reward(it[ItemIds.SeedCorn], 8));
+            garden.rewards.Add(Reward(it[ItemIds.PieceFarmPlot], 4));
+            list.Add(garden);
+
+            // Phase 1: the field layer measures in litres, so this one turns in bulk.
+            var bulk = ScriptableObject.CreateInstance<QuestDefinition>();
+            bulk.name = "Quest_GrainDelivery";
+            bulk.stringId = "madvoxel:quest_grain_delivery";
+            bulk.title = "Grain Delivery";
+            bulk.description = "The town mill pays by the litre. Plow an acre, fill a bin, and I will move it for you.";
+            bulk.kind = QuestKind.DeliverLitres;
+            bulk.objectiveItem = it[ItemIds.Grain];
+            bulk.objectiveCount = 2000;
+            bulk.objectiveCropId = "madvoxel:crop_wheat";
+            bulk.requiredPlayerLevel = 6;
+            bulk.requiredReputationTier = 1;
+            bulk.xpReward = 520f;
+            bulk.reputationReward = 300;
+            bulk.rewards.Add(Reward(it[ItemIds.TradeToken], 600));
+            bulk.rewards.Add(Reward(it[ItemIds.GasCan], 10));
+            list.Add(bulk);
+
             return list;
         }
 
@@ -738,6 +919,8 @@ namespace MadVoxel.Content
             vance.stock.Add(Stock(it[ItemIds.Wheel], 4, 1.7f, 2));
             vance.stock.Add(Stock(it[ItemIds.EngineBlock], 1, 2.2f, 3));
             vance.stock.Add(Stock(it[ItemIds.GasCan], 10, 1.5f, 1));
+            vance.stock.Add(Stock(it[ItemIds.SeedCorn], 24, 1.4f, 0));
+            vance.stock.Add(Stock(it[ItemIds.SeedWheat], 24, 1.4f, 0));
             vance.questBoard.AddRange(quests);
 
             var mara = ScriptableObject.CreateInstance<TraderDefinition>();
@@ -754,6 +937,9 @@ namespace MadVoxel.Content
             mara.stock.Add(Stock(it[ItemIds.Wrench], 1, 1.8f, 1));
             mara.stock.Add(Stock(it[ItemIds.PieceStorageBox], 3, 1.6f, 1));
             mara.stock.Add(Stock(it[ItemIds.PieceToolCupboard], 1, 2.0f, 2));
+            mara.stock.Add(Stock(it[ItemIds.PieceFarmPlot], 8, 1.5f, 0));
+            mara.stock.Add(Stock(it[ItemIds.SeedPotato], 24, 1.4f, 0));
+            mara.stock.Add(Stock(it[ItemIds.Hoe], 2, 1.5f, 0));
 
             return new List<TraderDefinition> { vance, mara };
         }
@@ -781,6 +967,59 @@ namespace MadVoxel.Content
             return new List<VehicleDefinition> { buggy };
         }
 
+
+        // ------------------------------------------------------------------ crops
+
+        static CropDefinition Crop(string id, string name, ItemDefinition seed, ItemDefinition harvest,
+                                   float days, bool replants, bool onField, Color tint, float height,
+                                   int min, int max, float litres)
+        {
+            var def = ScriptableObject.CreateInstance<CropDefinition>();
+            def.name = "Crop_" + ShortName(id);
+            def.stringId = id;
+            def.displayName = name;
+            def.seedItem = seed;
+            def.harvestItem = harvest;
+            def.daysToMature = days;
+            def.replants = replants;
+            def.growsOnPlot = true;
+            def.growsOnField = onField;
+            def.plantTint = tint;
+            def.matureHeight = height;
+            def.harvestMin = min;
+            def.harvestMax = max;
+            def.litresPerCell = litres;
+            return def;
+        }
+
+        static List<CropDefinition> BuildCrops(Dictionary<string, ItemDefinition> it)
+        {
+            var list = new List<CropDefinition>();
+
+            // Potato: quick, garden-only, and it eats the plant - you replant from the
+            // seeds it returns. The staple that gets you through week one.
+            var potato = Crop("madvoxel:crop_potato", "Potato", it[ItemIds.SeedPotato], it[ItemIds.Potato],
+                1.5f, false, false, new Color(0.30f, 0.46f, 0.22f), 0.55f, 2, 4, 0f);
+            potato.seedReturnChance = 0.75f;
+            potato.xpPerHarvest = 8f;
+            list.Add(potato);
+
+            // Corn: slower, taller, keeps growing after a pick, and scales to a field.
+            var corn = Crop("madvoxel:crop_corn", "Corn", it[ItemIds.SeedCorn], it[ItemIds.CornEar],
+                2.5f, true, true, new Color(0.34f, 0.50f, 0.20f), 1.35f, 1, 3, 14f);
+            corn.xpPerHarvest = 11f;
+            list.Add(corn);
+
+            // Wheat: the bulk crop. Modest in a plot, the point of an acre.
+            var wheat = Crop("madvoxel:crop_wheat", "Wheat", it[ItemIds.SeedWheat], it[ItemIds.Grain],
+                2f, false, true, new Color(0.56f, 0.53f, 0.24f), 0.95f, 2, 4, 18f);
+            wheat.seedReturnChance = 0.8f;
+            wheat.seedReturnMax = 3;
+            wheat.xpPerHarvest = 9f;
+            list.Add(wheat);
+
+            return list;
+        }
 
         // ------------------------------------------------------------ snap pieces
 
@@ -821,6 +1060,8 @@ namespace MadVoxel.Content
             new SnapSpec { Kind = BuildPieceKind.Ladder, Name = "Ladder", Slot = BuildSlot.Attachment,
                            Blocks = false, RequiresHost = true, HostKind = BuildPieceKind.Wall,
                            WoodHealth = 80f, ItemId = ItemIds.SnapLadder, PlankCost = 5 },
+            new SnapSpec { Kind = BuildPieceKind.Fence, Name = "Fence", Slot = BuildSlot.Wall,
+                           Blocks = true, WoodHealth = 90f, ItemId = ItemIds.SnapFence, PlankCost = 3 },
             new SnapSpec { Kind = BuildPieceKind.Door, Name = "Door", Slot = BuildSlot.Attachment,
                            Blocks = true, RequiresHost = true, HostKind = BuildPieceKind.Doorway,
                            WoodHealth = 260f, ItemId = ItemIds.SnapDoor, PlankCost = 9 },

@@ -19,6 +19,18 @@ namespace MadVoxel.Content
         public const string WaterBottle = "madvoxel:water_bottle";
         public const string Bandage = "madvoxel:bandage";
 
+        // Farming: seeds, produce and the meals they cook into.
+        public const string SeedPotato = "madvoxel:seed_potato";
+        public const string SeedCorn = "madvoxel:seed_corn";
+        public const string SeedWheat = "madvoxel:seed_wheat";
+        public const string Potato = "madvoxel:potato";
+        public const string CornEar = "madvoxel:corn_ear";
+        public const string Grain = "madvoxel:grain";
+        public const string Flour = "madvoxel:flour";
+        public const string BakedPotato = "madvoxel:baked_potato";
+        public const string CornBread = "madvoxel:corn_bread";
+        public const string VegetableStew = "madvoxel:vegetable_stew";
+
         public const string StonePickaxe = "madvoxel:stone_pickaxe";
         public const string StoneAxe = "madvoxel:stone_axe";
         public const string StoneShovel = "madvoxel:stone_shovel";
@@ -27,6 +39,7 @@ namespace MadVoxel.Content
         public const string Club = "madvoxel:club";
         public const string Wrench = "madvoxel:wrench";
         public const string Hammer = "madvoxel:hammer";
+        public const string Hoe = "madvoxel:hoe";
 
         public const string BlockWoodFrame = "madvoxel:block_wood_frame";
         public const string BlockPlanks = "madvoxel:block_planks";
@@ -41,6 +54,8 @@ namespace MadVoxel.Content
         public const string PieceCampfire = "madvoxel:piece_campfire";
         public const string PieceToolCupboard = "madvoxel:piece_tool_cupboard";
         public const string PieceBedroll = "madvoxel:piece_bedroll";
+        public const string PieceFarmPlot = "madvoxel:piece_farm_plot";
+        public const string PieceSilo = "madvoxel:piece_silo";
 
         // Rust-style snap pieces. Each item places the Twig tier; the hammer upgrades it.
         public const string SnapFoundation = "madvoxel:snap_foundation";
@@ -54,6 +69,7 @@ namespace MadVoxel.Content
         public const string SnapLadder = "madvoxel:snap_ladder";
         public const string SnapHatch = "madvoxel:snap_hatch";
         public const string SnapDoor = "madvoxel:snap_door";
+        public const string SnapFence = "madvoxel:snap_fence";
 
         // Phase 1 economy / vehicle content.
         public const string TradeToken = "madvoxel:trade_token";
@@ -70,6 +86,8 @@ namespace MadVoxel.Content
         public const string Campfire = "madvoxel:campfire";
         public const string ToolCupboard = "madvoxel:tool_cupboard";
         public const string Bedroll = "madvoxel:bedroll";
+        public const string FarmPlot = "madvoxel:farm_plot";
+        public const string Silo = "madvoxel:silo";
         public const string DeathBackpack = "madvoxel:death_backpack";
     }
 

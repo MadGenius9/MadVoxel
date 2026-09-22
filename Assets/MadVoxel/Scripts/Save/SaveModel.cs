@@ -63,6 +63,33 @@ namespace MadVoxel.Save
         public bool doorOpen;
         public bool isDeathBackpack;
         public List<ItemStackData> contents = new List<ItemStackData>();
+
+        // Farm plot state. Growth is derived from the planting hour, so a crop keeps
+        // maturing across a save and reload.
+        public string cropId = "";
+        public double plantedAtHours;
+
+        // Grain bin contents, in litres.
+        public List<SiloEntryData> silo = new List<SiloEntryData>();
+    }
+
+    [Serializable]
+    public class SiloEntryData
+    {
+        public string cropId = "";
+        public float litres;
+    }
+
+    [Serializable]
+    public class FieldCellSaveData
+    {
+        public int x, z;
+        public byte state;
+        public byte cropIndex;
+        public float moisture;
+        public float fertiliser;
+        public float yieldFactor;
+        public double changedAtHours;
     }
 
     [Serializable]
@@ -81,5 +108,6 @@ namespace MadVoxel.Save
     {
         public List<StructureSaveData> structures = new List<StructureSaveData>();
         public List<BuildPieceSaveData> pieces = new List<BuildPieceSaveData>();
+        public List<FieldCellSaveData> fieldCells = new List<FieldCellSaveData>();
     }
 }

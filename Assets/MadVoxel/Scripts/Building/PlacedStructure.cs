@@ -65,6 +65,8 @@ namespace MadVoxel.Building
                 case StructureKind.Campfire: gameObject.AddComponent<CampfireStructure>().Bind(this); break;
                 case StructureKind.ToolCupboard: gameObject.AddComponent<ToolCupboardStructure>().Bind(this); break;
                 case StructureKind.Bedroll: gameObject.AddComponent<BedrollStructure>().Bind(this); break;
+                case StructureKind.FarmPlot: gameObject.AddComponent<Farming.Plots.FarmPlotStructure>().Bind(this); break;
+                case StructureKind.Silo: gameObject.AddComponent<Farming.Plots.SiloStructure>().Bind(this); break;
             }
         }
 

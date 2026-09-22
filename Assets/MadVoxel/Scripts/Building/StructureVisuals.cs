@@ -42,6 +42,12 @@ namespace MadVoxel.Building
                 case StructureKind.Bedroll:
                     BuildBedroll(body.transform, mat);
                     break;
+                case StructureKind.FarmPlot:
+                    BuildFarmPlot(body.transform, def);
+                    break;
+                case StructureKind.Silo:
+                    BuildSilo(body.transform, mat);
+                    break;
                 default:
                     PrimitiveBuilder.Box(body.transform, new Vector3(0.5f, 0.5f, 0.5f), Vector3.one * 0.98f, mat, "Block");
                     break;
@@ -127,6 +133,44 @@ namespace MadVoxel.Building
             PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.09f, 0.5f), new Vector3(0.78f, 0.18f, 0.96f), mat, "Roll");
             PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.2f, 0.16f), new Vector3(0.5f, 0.14f, 0.24f),
                 MaterialLibrary.Get(SurfaceFamily.Cloth, new Color(0.5f, 0.46f, 0.4f)), "Pillow");
+        }
+
+        /// <summary>A framed soil bed, the way a 7DTD farm plot reads: timber frame, tilled earth.</summary>
+        static void BuildFarmPlot(Transform parent, StructureDefinition def)
+        {
+            var frame = MaterialLibrary.Get(SurfaceFamily.Plank, new Color(0.40f, 0.30f, 0.19f));
+            var soil = MaterialLibrary.Get(SurfaceFamily.Dirt, new Color(0.24f, 0.17f, 0.11f));
+
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.12f, 0.5f), new Vector3(0.9f, 0.24f, 0.9f), soil, "Soil");
+
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.14f, 0.04f), new Vector3(1.0f, 0.28f, 0.08f), frame, "FrameN");
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.14f, 0.96f), new Vector3(1.0f, 0.28f, 0.08f), frame, "FrameS");
+            PrimitiveBuilder.Box(parent, new Vector3(0.04f, 0.14f, 0.5f), new Vector3(0.08f, 0.28f, 1.0f), frame, "FrameW");
+            PrimitiveBuilder.Box(parent, new Vector3(0.96f, 0.14f, 0.5f), new Vector3(0.08f, 0.28f, 1.0f), frame, "FrameE");
+
+            // Tilled furrows, so bare soil still reads as worked ground.
+            for (int i = 0; i < 3; i++)
+            {
+                PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.25f, 0.28f + i * 0.22f),
+                    new Vector3(0.82f, 0.04f, 0.06f), soil, "Furrow" + i);
+            }
+        }
+
+        /// <summary>A corrugated grain bin. Tall enough to be a landmark on a farm.</summary>
+        static void BuildSilo(Transform parent, Material mat)
+        {
+            var metal = MaterialLibrary.Get(SurfaceFamily.Metal, new Color(0.55f, 0.53f, 0.49f), 0.3f, 0.7f);
+            var roof = MaterialLibrary.Get(SurfaceFamily.Metal, new Color(0.40f, 0.38f, 0.35f), 0.35f, 0.75f);
+
+            PrimitiveBuilder.Cylinder(parent, new Vector3(0.5f, 1.6f, 0.5f), new Vector3(1.9f, 1.6f, 1.9f), metal, "Bin");
+            PrimitiveBuilder.Cylinder(parent, new Vector3(0.5f, 3.3f, 0.5f), new Vector3(1.5f, 0.3f, 1.5f), roof, "Cap");
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.12f, 0.5f), new Vector3(2.1f, 0.24f, 2.1f), roof, "Base");
+
+            // Ladder up the side reads the scale.
+            for (int i = 0; i < 8; i++)
+            {
+                PrimitiveBuilder.Box(parent, new Vector3(1.45f, 0.4f + i * 0.35f, 0.5f), new Vector3(0.3f, 0.05f, 0.05f), roof, "Rung" + i);
+            }
         }
 
         /// <summary>Darkens the piece as it takes damage so players can read base integrity.</summary>

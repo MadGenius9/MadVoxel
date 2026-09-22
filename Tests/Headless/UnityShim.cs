@@ -127,6 +127,17 @@ namespace UnityEngine
         public override string ToString() { return string.Format("({0},{1},{2})", x, y, z); }
     }
 
+    public struct RectInt
+    {
+        public int xMin, yMin, width, height;
+        public RectInt(int x, int y, int width, int height)
+        {
+            xMin = x; yMin = y; this.width = width; this.height = height;
+        }
+        public int xMax { get { return xMin + width; } }
+        public int yMax { get { return yMin + height; } }
+    }
+
     public static class Mathf
     {
         public const float PI = 3.14159265f;

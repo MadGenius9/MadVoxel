@@ -1,7 +1,7 @@
 # MadVoxel — scope
 
-Rust building and look, 7 Days to Die terrain, perks and hordes. Single-player, local
-saves. No multiplayer and no netcode; the world, inventory, building, perk and save
+Rust building and look, 7 Days to Die terrain, perks and hordes, plus two layers of
+farming: a 7DTD garden and FS-style acreage. Single-player, local saves. No multiplayer and no netcode; the world, inventory, building, perk and save
 layers are plain C# with no static player reference, so co-op stays possible later.
 
 ---
@@ -10,16 +10,15 @@ layers are plain C# with no static player reference, so co-op stays possible lat
 
 | # | Requirement | State |
 | --- | --- | --- |
-| 1 | Streamed diggable terrain chunks + a few POIs | **Done** |
-| 2 | First-person move, look, jump, sprint, interact | **Done** |
-| 3 | Mine/dig terrain blocks; pick, shovel, hatchet; drops to inventory | **Done** |
-| 4 | Inventory hotbar + bag; save/load world edits + inventory | **Done** |
-| 5 | Place dirt/stone back; craft hammer, cupboard, wood snap set, box, campfire | **Done** |
-| 6 | Snap-build a closable shack on flattened/dug ground | **Done** |
-| 7 | Upgrade one piece wood → stone | **Done** |
-| 8 | Day/night + wandering zombies that walk the dug terrain | **Done** |
-| 9 | First horde night that attacks the cupboard and uses ramps/holes | **Done** |
-| 10 | Die, respawn at bed or world spawn, digs and buildings persist | **Done** |
+| 1 | Diggable streamed terrain | **Done** |
+| 2 | FP controller, tools, inventory, save | **Done** |
+| 3 | Craft/place farm plots; plant seeds; growth stages; harvest; cook/eat | **Done** |
+| 4 | Flatten a pad; snap shack + door + box + cupboard + plots in a fenced dip | **Done** |
+| 5 | Upgrade one wall | **Done** |
+| 6 | Day/night zombies; horde can break a plot | **Done** |
+| 7 | Respawn; plots, growth and holes persist | **Done** |
+| — | *Also:* POIs, tool cupboard, stability, finite map | **Done** |
+| — | *Also:* field grid, tillage state machine and litre yield (Phase 1 groundwork) | **Done** |
 
 ### Detail
 
@@ -64,6 +63,24 @@ piece near it. They path at the cupboard, walk ramps, fall into pits, and chew t
 whatever blocks them: one raycast handles snap pieces, deployables and terrain alike,
 so a wall, a door and a dirt berm are all equally edible.
 
+**Farming, layer A — the garden.** Farm plots are deployables that must sit on soil.
+Three crops (potato, corn, wheat) with per-crop `growsOnPlot` / `growsOnField`,
+`daysToMature` and `replants` flags exactly as the brief specifies. Growth is derived
+from the world-clock hour the seed went in, so a crop keeps maturing across a save and
+reload rather than only while you watch. Corn replants itself on harvest; potato and
+wheat clear the bed and usually return seed. Wild yucca, grain and corn grow in the
+world and drop plantable seeds, so the garden is reachable before any trader. Crops cook
+at a campfire into meals that restore stamina as well as hunger — the only food that
+does. Plots are low-health on purpose, so a horde that reaches them costs you dinner.
+
+**Farming, layer B — the field.** A one-metre cell grid with the full FS tillage cycle
+(wild → plowed → cultivated → seeded → growing → ready → stubble), moisture, fertiliser
+and a per-cell yield factor, harvesting to **litres** and a grain bin that stores them.
+Repeated cropping without fertiliser measurably reduces yield, and trampling knocks a
+growing cell back to stubble. All of it is implemented and tested; what Phase 1 adds is
+the tractor and implements that drive it across a swath. The hoe already plows one cell
+by hand, turning the block to tilled soil so the work is visible and persists.
+
 **Death.** You keep your hotbar; the rest of the bag goes into a lootable backpack where
 you fell, which persists like any other container.
 
@@ -81,10 +98,11 @@ are deliberately unwritten until Phase 0 passes its success test.
 
 | Area | Shipped | Still to write |
 | --- | --- | --- |
-| **Perks** | 12 perks across Mining, Construction, Combat, Scavenging, Medicine and Vehicles, with per-rank effects, level gates and recipe unlocks. XP, levelling and point accrual **are live** and scale the horde. Metal and Armored building tiers are already gated on Construction rank. | The perk screen; applying effect values to dig speed, yield, stamina, melee and healing. |
+| **Perks** | 14 perks across Mining, Construction, Combat, Scavenging, Medicine, Vehicles and Farming — including Living Off The Land for garden yield and seed returns, and Agronomist for field yield and the grain bin, with per-rank effects, level gates and recipe unlocks. XP, levelling and point accrual **are live** and scale the horde. Metal and Armored building tiers are already gated on Construction rank. | The perk screen; applying effect values to dig speed, yield, stamina, melee and healing. |
 | **Traders** | 2 outposts standing in the world, with stock lists, price multipliers, reputation gates, restock interval and currency. | Trader NPC, shop UI, buy/sell, restock, reputation. |
 | **Quests** | 3 contracts (fetch 20 scrap, clear 12 shamblers, survive 2 nights) with XP, reputation and item rewards. | Accept/track/turn-in, the journal, and a mining contract. |
 | **Vehicles** | Scrap Buggy: speed, acceleration, climb height, fuel economy, seats, storage, health, parts and a perk-gated recipe. | Driving, fuel burn, seats and storage, collision against edited terrain and foundations. |
+| **Field machines** | The whole grid, state machine, growth timing, litre yield and the grain bin. | Tractor, plow, seeder and harvester; working width and a hopper; sowing and harvesting a swath. |
 | **Furnace** | Smelting exists as campfire recipes (ore → ingot, sand → glass). | A dedicated furnace deployable and its throughput. |
 | **Horde** | Live, and already budgets on base footprint. | Waves that actively exploit an open dig rather than pathing at the cupboard. |
 
@@ -111,7 +129,7 @@ tension.
 ## Known limitations and shortcuts
 
 - **Not play-tested in the Unity editor.** Scripts compile clean against Unity
-  reference assemblies and 218 headless checks (`Tests/Headless`) execute the content
+  reference assemblies and 268 headless checks (`Tests/Headless`) execute the content
   wiring, build grid, chunk storage, mesher, terrain, POIs, inventory, crafting and
   save. None of that reaches rendering, physics, the character controller, streaming,
   AI behaviour or the UI. Expect tuning, not rewrites.
@@ -128,6 +146,14 @@ tension.
   undermined; overhanging *terrain* does not fall.
 - **POIs are block stamps**, not authored prefabs — no interiors, loot containers or
   trader NPCs yet.
+- **Field crops have no visuals.** Plowing shows as tilled soil, but a sown or growing
+  field cell looks the same as a plowed one. Rendering crop cover across thousands of
+  cells needs an instanced mesh pass, which belongs with the tractor in Phase 1.
+- **No water or fertiliser gameplay.** The cell fields exist and fertility does fall
+  with each crop, but nothing adds it back yet.
+- **Farm snap pieces are limited to the fence.** Barn, shed, pen and greenhouse frame
+  are Phase 1; the grain bin ships as a deployable rather than a snap piece.
+- **The seed bag is just the seed stack.** No dedicated seeding container.
 - **Perk points accrue but cannot be spent** until the Phase 1 perk screen exists.
 - **XP farming guard is session-only.** Blocks you placed are remembered in memory and
   pay no XP when re-mined, but the set is not saved. Crafted building blocks pay no
@@ -141,19 +167,20 @@ tension.
 
 ## Success test (Phase 0)
 
-> New world → dig a pit and a ramp → mine stone/ore → flatten a pad → snap-build a wood
-> shack with door and box → plant cupboard → upgrade one wall → survive night → survive
-> a horde that walks the ramp and hits the walls → quit → reload with the same hole,
-> base and inventory.
+> Place farm plots → plant → wait stages → harvest food → cook → build shack beside the
+> garden → horde breaks at least one plot or plant → reload with remaining plots and
+> growth intact.
 
 Every step has an implementation behind it. The test itself needs a Unity editor.
 
 ## Next milestone
 
-1. **Perk screen** — spend points, apply Mining and Construction effects for real.
-2. **Trader runtime** — NPC in the strongroom, shop UI, restock, reputation.
-3. **Quest flow** — accept, track, turn in; add the mining contract.
-4. **Furnace** — a proper smelter, and the iron economy that feeds metal tier.
-5. **Vehicle** — drive the buggy over edited terrain without falling through it.
-6. **Horde that reads the dig** — prefer an open ramp or an unfinished wall over chewing
+1. **Field machines** — tractor, plow and seeder or harvester; fuel, hitch, working
+   width and a hopper that tips litres into the grain bin.
+2. **Perk screen** — spend points, apply Mining, Construction and Farming effects.
+3. **Trader runtime** — NPC in the strongroom, shop UI, restock, reputation.
+4. **Quest flow** — accept, track, turn in; add the mining contract.
+5. **Furnace** — a proper smelter, and the iron economy that feeds metal tier.
+6. **Vehicle** — drive the buggy over edited terrain without falling through it.
+7. **Horde that reads the dig** — prefer an open ramp or an unfinished wall over chewing
    the strongest face.

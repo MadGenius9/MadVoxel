@@ -108,11 +108,12 @@ namespace MadVoxel.Core.Player
             if (Health <= 0f && Died != null) Died();
         }
 
-        public void Consume(float food, float water, float health)
+        public void Consume(float food, float water, float health, float stamina = 0f)
         {
             Food = Mathf.Min(_config.maxFood, Food + food);
             Water = Mathf.Min(_config.maxWater, Water + water);
             Health = Mathf.Min(_config.maxHealth, Health + health);
+            if (stamina > 0f) Stamina = Mathf.Min(_config.maxStamina, Stamina + stamina);
         }
 
         public void GrantInvulnerability(float seconds)

@@ -45,6 +45,12 @@ namespace MadVoxel.World.Terrain
         [Tooltip("XP awarded for breaking this block. Player-placed blocks award none.")]
         public float harvestXp = 1f;
 
+        [Tooltip("Second drop, used by forage plants to return seeds alongside fibre.")]
+        public ItemDefinition secondaryDropItem;
+        [Range(0f, 1f)] public float secondaryDropChance = 0.5f;
+        public int secondaryDropMin = 1;
+        public int secondaryDropMax = 1;
+
         [Header("Building")]
         [Tooltip("0 = natural, 1 = wood, 2 = cobble, 3 = iron, 4 = steel. Used by Phase 2 upgrades.")]
         public int buildTier;
