@@ -1,0 +1,73 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Runs MadVoxel's engine-agnostic code outside Unity. It compiles the real gameplay
+    sources against a small executable UnityEngine shim (UnityShim.cs), so these are
+    genuine runs of the shipping code, not a parallel copy of it.
+
+    This project lives outside Assets/, so Unity never compiles it.
+    Run with: dotnet run from inside this folder.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9</LangVersion>
+    <AssemblyName>MadVoxel.Headless</AssemblyName>
+    <RootNamespace>MadVoxel.Headless</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <!-- Unity-style public serialized fields trip these; they are not defects here. -->
+    <NoWarn>CS0649;CS0169;CS0414;CS0067</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup Label="Test harness">
+    <Compile Include="UnityShim.cs" />
+    <Compile Include="Harness.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="ContentTests.cs" />
+    <Compile Include="VoxelTests.cs" />
+    <Compile Include="InventoryTests.cs" />
+    <Compile Include="SaveTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup Label="Game sources under test">
+    <Compile Include="../../Assets/MadVoxel/Scripts/Core/Noise.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Core/XorRng.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Core/SurfaceFamily.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Core/GameConfig.cs" />
+
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Voxel/BlockIds.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Voxel/BlockDefinition.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Voxel/BlockRegistry.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Voxel/Chunk.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Voxel/ChunkCoord.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Voxel/ChunkMeshData.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Voxel/ChunkMesher.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Voxel/TerrainGenerator.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Voxel/VoxelWorld.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Voxel/IChunkStore.cs" />
+
+    <Compile Include="../../Assets/MadVoxel/Scripts/Inventory/ItemDefinition.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Inventory/ItemStack.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Inventory/Inventory.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Inventory/RecipeDefinition.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Inventory/CraftingService.cs" />
+
+    <Compile Include="../../Assets/MadVoxel/Scripts/Building/StructureDefinition.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/AI/ZombieDefinition.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Horde/HordeSchedule.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Skills/SkillDefinition.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Traders/TraderDefinition.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Quests/QuestDefinition.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Vehicles/VehicleDefinition.cs" />
+
+    <Compile Include="../../Assets/MadVoxel/Scripts/Content/ItemIds.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Content/ContentDatabase.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Content/ContentLibrary.cs" />
+
+    <Compile Include="../../Assets/MadVoxel/Scripts/Save/SavePaths.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Save/SaveModel.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Save/ChunkFileStore.cs" />
+  </ItemGroup>
+
+</Project>

@@ -163,7 +163,9 @@ namespace MadVoxel.Content
             ironBlock.smoothness = 0.28f;
             map[BlockIds.IronBlock] = ironBlock;
 
-            var steelBlock = Block(BlockIds.SteelBlock, "Steel Block", SurfaceFamily.Metal, ColSteel, 6.0f, ToolType.Pickaxe, 3, 0f, 900f);
+            // Tier 2 (iron) because that is the best tool the game currently crafts; a
+            // steel pickaxe arrives with the Phase 2 tool tiers.
+            var steelBlock = Block(BlockIds.SteelBlock, "Steel Block", SurfaceFamily.Metal, ColSteel, 6.0f, ToolType.Pickaxe, 2, 0f, 900f);
             steelBlock.buildTier = 4;
             steelBlock.metallic = 0.85f;
             steelBlock.smoothness = 0.4f;

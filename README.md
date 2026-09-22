@@ -169,9 +169,20 @@ Assets/MadVoxel/
 
 ## Verification
 
-The voxel mesher and terrain generator are covered by headless tests that run outside
-Unity (see the commit history for the harness). They check that greedy meshing merges
-coplanar faces, culls hidden ones, emits outward-facing normals with matching winding,
-and that terrain is deterministic per seed and actually produces surface, caves, ore,
-trees and scrap. Everything else has been compile-verified against Unity reference
-assemblies but **has not been play-tested in the editor** — see `SCOPE.md`.
+Run the headless checks on any machine with the .NET SDK — no Unity, no GPU, no licence:
+
+```bash
+cd Tests/Headless
+dotnet run
+```
+
+**171 checks, all passing.** They compile the real gameplay sources against a small
+executable `UnityEngine` shim and actually run them, covering content wiring, chunk
+storage and coordinates, the greedy mesher, terrain generation, inventory, crafting
+and the chunk-file save round-trip. See [`Tests/Headless/README.md`](Tests/Headless/README.md)
+for the full list and for what is deliberately out of reach.
+
+What they cannot cover is anything that needs the engine: rendering, physics, the
+character controller, chunk streaming, AI behaviour, the UI, and how any of it feels.
+**The game has not yet been run in a Unity editor** — see the limitations section of
+`SCOPE.md`.

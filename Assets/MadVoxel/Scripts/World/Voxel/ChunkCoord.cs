@@ -66,12 +66,18 @@ namespace MadVoxel.World.Voxel
 
         public override int GetHashCode()
         {
+            // A plain XOR of per-axis products collides structurally for neighbouring
+            // chunks, which is exactly the access pattern here, so mix properly.
             unchecked
             {
-                int h = X * 73856093;
-                h ^= Y * 19349663;
-                h ^= Z * 83492791;
-                return h;
+                uint h = (uint)X * 2654435761u;
+                h ^= (uint)Y * 2246822519u;
+                h = (h << 13) | (h >> 19);
+                h ^= (uint)Z * 3266489917u;
+                h ^= h >> 15;
+                h *= 2654435761u;
+                h ^= h >> 13;
+                return (int)h;
             }
         }
 

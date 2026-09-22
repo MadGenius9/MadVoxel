@@ -16,6 +16,8 @@ Packages/packages-lock.json
 .vs/
 .idea/
 *.csproj
+# ...but the headless test project is real source, not Unity-generated.
+!Tests/Headless/*.csproj
 *.sln
 *.user
 *.unityproj
@@ -35,3 +37,7 @@ Thumbs.db
 # Crash reports
 sysinfo.txt
 crashlytics-build.properties
+
+# Headless test project build output (Tests/Headless)
+Tests/Headless/bin/
+Tests/Headless/obj/

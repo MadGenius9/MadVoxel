@@ -98,12 +98,12 @@ fragment, warehouse). Base decay or upkeep. Map, compass, backpack slots.
 These are real, and worth knowing before the first play session.
 
 - **Not play-tested in the Unity editor.** The runtime and editor scripts compile
-  clean against Unity reference assemblies, and the greedy mesher and terrain
-  generator pass headless tests (face merging, hidden-face culling, outward normals,
-  winding, seed determinism, presence of surface/caves/ore/trees/scrap). Everything
-  else — the feel of the movement, the UI layout at different resolutions, the AI
-  behaviour, frame budget on real hardware — has not been observed running. Expect
-  tuning, not rewrites.
+  clean against Unity reference assemblies, and 171 headless checks
+  (`Tests/Headless`, `dotnet run`) actually execute the content wiring, chunk storage
+  and coordinates, the greedy mesher, terrain generation, inventory, crafting and the
+  save round-trip. What none of that reaches is anything needing the engine: rendering,
+  physics, the character controller, chunk streaming across threads, AI behaviour, the
+  UI, and how the whole thing feels. Expect tuning, not rewrites.
 - **No ambient occlusion on chunk meshes.** Faces are lit by the directional light
   only. Corners read flatter than they should. A custom URP shader with baked
   per-vertex AO is the fix; it was skipped to avoid shipping an untestable shader.
