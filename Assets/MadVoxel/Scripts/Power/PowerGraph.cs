@@ -57,6 +57,13 @@ namespace MadVoxel.Power
 
         int _nextId = 1;
 
+        /// <summary>
+        /// Metres added to every wire by the Electrician perk. It lives on the graph
+        /// rather than on each device so a rank bought mid-game applies at once,
+        /// without rewriting a single definition.
+        /// </summary>
+        public float ExtraReach;
+
         // Scratch, reused every tick so a grid does not allocate once a second.
         readonly Queue<PowerNode> _frontier = new Queue<PowerNode>();
         readonly List<PowerNode> _reached = new List<PowerNode>();
@@ -146,7 +153,8 @@ namespace MadVoxel.Power
         public float ReachOf(int id)
         {
             var node = Get(id);
-            return node != null && node.Definition != null ? node.Definition.WireReach : 0f;
+            if (node == null || node.Definition == null) return 0f;
+            return node.Definition.WireReach + Mathf.Max(0f, ExtraReach);
         }
 
         public WireResult CanConnect(int fromId, int toId)
@@ -165,7 +173,7 @@ namespace MadVoxel.Power
             if (from.Outputs.Contains(toId)) return WireResult.AlreadyWired;
             if (from.Outputs.Count >= Mathf.Max(1, from.Definition.maxOutputs)) return WireResult.OutputsFull;
 
-            float reach = from.Definition.WireReach;
+            float reach = from.Definition.WireReach + Mathf.Max(0f, ExtraReach);
             if ((to.Position - from.Position).sqrMagnitude > reach * reach) return WireResult.TooFar;
 
             // A ring would make the brown-out walk ambiguous and buys nothing without

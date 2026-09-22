@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using MadVoxel.Building;
 using MadVoxel.World.Fields;
 using MadVoxel.Inventory;
+using MadVoxel.Fluid;
 using MadVoxel.Perks;
+using MadVoxel.Power;
 using MadVoxel.World.Terrain;
 using UnityEngine;
 
@@ -71,6 +73,15 @@ namespace MadVoxel.Core.Player
         PerkEffects Perks { get { return _progression != null ? _progression.Effects : NoPerks; } }
 
         readonly BuildGhost _ghost = new BuildGhost();
+
+        /// <summary>
+        /// Wiring and plumbing. One tool does both graphs, because from the player's
+        /// side it is the same gesture: click a fitting, click the next one.
+        /// </summary>
+        public WireTool Wiring { get; private set; }
+
+        PowerWorld _power;
+        FluidWorld _fluid;
 
         // Blocks the player put down this session earn no harvest XP when mined again.
         readonly HashSet<Vector3Int> _playerPlaced = new HashSet<Vector3Int>();
@@ -299,8 +310,73 @@ namespace MadVoxel.Core.Player
 
         // ------------------------------------------------------------------- mining
 
+        /// <summary>The grids are handed over after the worlds exist, not at Init.</summary>
+        public void BindUtilities(PowerWorld power, FluidWorld fluid)
+        {
+            _power = power;
+            _fluid = fluid;
+            if (Wiring == null) Wiring = new WireTool();
+        }
+
+        /// <summary>True while the wire tool is in hand, so the HUD can switch layers.</summary>
+        public bool IsWiring
+        {
+            get
+            {
+                var held = _inventory != null ? _inventory.SelectedItem : null;
+                return held != null && held.stringId == MadVoxel.Content.ItemIds.WireTool;
+            }
+        }
+
+        /// <summary>
+        /// Routes a click to whichever graph is under the crosshair. Returns true when
+        /// the wire tool consumed it, so mining and melee never fire through a click
+        /// meant for a socket.
+        /// </summary>
+        bool HandleWiring(bool primary)
+        {
+            if (!IsWiring || Wiring == null) return false;
+
+            var collider = Target.Structure != null ? Target.Structure.GetComponent<Collider>() : null;
+            var powerDevice = Target.Structure != null
+                ? Target.Structure.GetComponentInChildren<PowerDeviceStructure>() : null;
+            var fluidDevice = Target.Structure != null
+                ? Target.Structure.GetComponentInChildren<FluidDeviceStructure>() : null;
+
+            if (!primary)
+            {
+                Wiring.Cut(_power != null ? _power.Graph : null, powerDevice,
+                           _fluid != null ? _fluid.Graph : null, fluidDevice);
+                return true;
+            }
+
+            // A pump is on both graphs. While a hose is in the air it is a fitting;
+            // otherwise the grid wins, because that is what the tool is mostly for.
+            if (fluidDevice != null && (Wiring.PendingFluidNode != 0 || powerDevice == null))
+            {
+                Wiring.ClickFluid(_fluid != null ? _fluid.Graph : null, fluidDevice);
+                return true;
+            }
+
+            if (powerDevice != null)
+            {
+                Wiring.ClickPower(_power != null ? _power.Graph : null, powerDevice);
+                return true;
+            }
+
+            if (Wiring.HasPending)
+            {
+                Notifications.Post("Point at a device to finish the line");
+                return true;
+            }
+
+            return false;
+        }
+
         void HandlePrimary()
         {
+            if (HandleWiring(true)) { ResetMining(); return; }
+
             switch (Target.Kind)
             {
                 case TargetKind.Block:
@@ -498,6 +574,8 @@ namespace MadVoxel.Core.Player
 
         void HandleSecondary()
         {
+            if (HandleWiring(false)) return;
+
             var held = _inventory.SelectedStack;
             if (held.IsEmpty) return;
 

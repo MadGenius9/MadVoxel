@@ -54,6 +54,8 @@ namespace MadVoxel.World.Biomes
         [Header("Water and power")]
         [Tooltip("Scales what a pump draws here. Dry flats are punishing.")]
         public float pumpMultiplier = 1f;
+        [Tooltip("Raises or lowers the water table. Negative means a deeper dig for a well.")]
+        public int waterTableOffset;
         [Tooltip("Scales solar bank output before the weather's own multiplier.")]
         public float solarMultiplier = 1f;
 

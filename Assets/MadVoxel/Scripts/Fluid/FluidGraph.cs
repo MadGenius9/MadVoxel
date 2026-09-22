@@ -52,6 +52,9 @@ namespace MadVoxel.Fluid
 
         int _nextId = 1;
 
+        /// <summary>Metres added to every hose by the Electrician perk.</summary>
+        public float ExtraReach;
+
         readonly Queue<FluidNode> _frontier = new Queue<FluidNode>();
         readonly List<FluidNode> _live = new List<FluidNode>();
 
@@ -136,7 +139,7 @@ namespace MadVoxel.Fluid
             if (from.Outputs.Contains(toId)) return PipeResult.AlreadyPiped;
             if (from.Outputs.Count >= Mathf.Max(1, from.Definition.maxOutputs)) return PipeResult.OutputsFull;
 
-            float reach = from.Definition.maxPipeLength;
+            float reach = from.Definition.maxPipeLength + Mathf.Max(0f, ExtraReach);
             if ((to.Position - from.Position).sqrMagnitude > reach * reach) return PipeResult.TooFar;
 
             if (Reaches(to, fromId)) return PipeResult.WouldLoop;

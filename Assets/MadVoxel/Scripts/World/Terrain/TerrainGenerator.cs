@@ -13,6 +13,16 @@ namespace MadVoxel.World.Terrain
     public class TerrainGenerator
     {
         public const int SeaLevel = 48;
+
+        /// <summary>
+        /// Where saturated ground sits by default. Low ground reaches it in a few
+        /// blocks; a hill is a real dig. The biome shifts it, which is what makes a
+        /// well on the dry flats a project and a well in the bottomland an afternoon.
+        /// </summary>
+        public const int WaterTableLevel = SeaLevel - 4;
+
+        /// <summary>How thick the saturated band is before it goes back to stone.</summary>
+        const int WaterTableThickness = 5;
         const int TreeCell = 8;
 
         readonly int _seed;
@@ -22,6 +32,7 @@ namespace MadVoxel.World.Terrain
         readonly ushort _coalOre, _ironOre, _log, _leaves, _scrap, _clay;
         readonly ushort _concrete, _planks, _ironBlock, _cobble;
         readonly ushort _wildYucca, _wildGrain, _wildCorn;
+        readonly ushort _waterTable;
 
         /// <summary>Points of interest. Read-only after construction, so workers can use it.</summary>
         public PoiPlanner Pois { get; private set; }
@@ -46,6 +57,7 @@ namespace MadVoxel.World.Terrain
             public float TreeDensity;
             public float ForageDensity;
             public float ScrapDensity;
+            public int WaterTableOffset;
         }
 
         readonly BiomeProfile[] _profiles = new BiomeProfile[BiomeIds.Count];
@@ -75,6 +87,7 @@ namespace MadVoxel.World.Terrain
             _wildYucca = registry.IdOf(BlockIds.WildYucca);
             _wildGrain = registry.IdOf(BlockIds.WildGrain);
             _wildCorn = registry.IdOf(BlockIds.WildCorn);
+            _waterTable = registry.IdOf(BlockIds.WaterTable);
 
             Biomes = new BiomeMap(seed, worldExtentMetres);
             BuildBiomeProfiles(registry, biomes);
@@ -106,7 +119,8 @@ namespace MadVoxel.World.Terrain
                     OreDepthBonus = 0,
                     TreeDensity = 1f,
                     ForageDensity = 1f,
-                    ScrapDensity = 1f
+                    ScrapDensity = 1f,
+                    WaterTableOffset = 0
                 };
             }
 
@@ -131,7 +145,8 @@ namespace MadVoxel.World.Terrain
                     OreDepthBonus = def.oreDepthBonus,
                     TreeDensity = Mathf.Max(0f, def.treeDensityMultiplier),
                     ForageDensity = Mathf.Max(0f, def.forageDensityMultiplier),
-                    ScrapDensity = Mathf.Max(0f, def.scrapDensityMultiplier)
+                    ScrapDensity = Mathf.Max(0f, def.scrapDensityMultiplier),
+                    WaterTableOffset = def.waterTableOffset
                 };
             }
         }
@@ -276,6 +291,18 @@ namespace MadVoxel.World.Terrain
                                 id = _coalOre;
                             if (wy < ironCeiling && Noise.Fbm3D(wx * 0.062f, wy * 0.080f, wz * 0.062f, _seed + 509, 2) > ironCut)
                                 id = _ironOre;
+                        }
+
+                        // Saturated ground, in a band rather than an ocean. This is the
+                        // whole water economy: a pump wants one of these under it, and
+                        // finding one is a dig rather than a recipe.
+                        if (id == _stone || id == _gravel)
+                        {
+                            int table = WaterTableLevel + profile.WaterTableOffset;
+                            if (wy <= table && wy > table - WaterTableThickness && wy < surface - 1)
+                            {
+                                id = _waterTable;
+                            }
                         }
 
                         // Caves. Two ridged sheets intersecting gives tunnels rather than blobs.

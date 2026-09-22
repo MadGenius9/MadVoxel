@@ -19,5 +19,8 @@ namespace MadVoxel.Perks
         /// <summary>Living Off The Land: garden yield, seed returns and, later, field implements.</summary>
         public const string Farming = "madvoxel:perk_farming";
         public const string Agronomist = "madvoxel:perk_agronomist";
+
+        /// <summary>Wiring: longer runs, more relays, storm-proof fittings, the banks.</summary>
+        public const string Electrician = "madvoxel:perk_electrician";
     }
 }

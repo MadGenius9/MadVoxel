@@ -38,8 +38,29 @@ namespace MadVoxel.Inventory
             if (Changed != null) Changed();
         }
 
+        /// <summary>
+        /// Writes a slot without firing Changed. The spoilage sweep touches every slot
+        /// in every crate at once and raises the event itself, rather than making the
+        /// UI rebuild forty times in a row.
+        /// </summary>
+        public void SetSlotQuiet(int index, ItemStack stack)
+        {
+            if (index < 0 || index >= _slots.Length) return;
+            _slots[index] = stack.Count <= 0 ? ItemStack.Empty : stack;
+        }
+
         /// <summary>Adds what fits and returns the remainder.</summary>
         public int Add(ItemDefinition item, int count, int durability = -1)
+        {
+            return Add(item, count, durability, Spoil.SpoilRules.FreshLife(item));
+        }
+
+        /// <summary>
+        /// The full add. <paramref name="spoilRemaining"/> is the shelf life the
+        /// incoming food carries: topping a crate up takes the older of the two clocks,
+        /// so fresh corn can never launder corn that has been sitting a week.
+        /// </summary>
+        public int Add(ItemDefinition item, int count, int durability, float spoilRemaining)
         {
             if (item == null || count <= 0) return 0;
             int remaining = count;
@@ -51,8 +72,11 @@ namespace MadVoxel.Inventory
                     if (_slots[i].Item != item) continue;
                     int space = _slots[i].SpaceLeft;
                     if (space <= 0) continue;
+
                     int moved = Mathf.Min(space, remaining);
                     _slots[i].Count += moved;
+                    _slots[i].SpoilRemaining =
+                        Spoil.SpoilRules.MergedLife(_slots[i].SpoilRemaining, spoilRemaining);
                     remaining -= moved;
                 }
             }
@@ -61,7 +85,11 @@ namespace MadVoxel.Inventory
             {
                 if (!_slots[i].IsEmpty) continue;
                 int moved = item.HasDurability ? 1 : Mathf.Min(item.maxStack, remaining);
-                _slots[i] = new ItemStack(item, moved, durability >= 0 ? durability : item.maxDurability);
+
+                var stack = new ItemStack(item, moved, durability >= 0 ? durability : item.maxDurability);
+                stack.SpoilRemaining = Spoil.SpoilRules.Normalise(item, spoilRemaining);
+                _slots[i] = stack;
+
                 remaining -= moved;
             }
 
@@ -71,7 +99,7 @@ namespace MadVoxel.Inventory
 
         public int Add(ItemStack stack)
         {
-            return Add(stack.Item, stack.Count, stack.Durability);
+            return Add(stack.Item, stack.Count, stack.Durability, stack.SpoilRemaining);
         }
 
         public bool CanFit(ItemDefinition item, int count)

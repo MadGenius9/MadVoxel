@@ -17,7 +17,13 @@ namespace MadVoxel.Building
         ToolCupboard,
         Bedroll,
         FarmPlot,
-        Silo
+        Silo,
+        /// <summary>Anything on the electrical grid: banks, relays, lights, traps, the pump.</summary>
+        PowerDevice,
+        /// <summary>Anything on the water side: pipes, tanks, taps, sprinklers.</summary>
+        FluidDevice,
+        /// <summary>The colony charter. One per claim.</summary>
+        ColonyBoard
     }
 
     /// <summary>
@@ -66,6 +72,14 @@ namespace MadVoxel.Building
         public bool requiresSoil;
         [Tooltip("Silo only: how many litres of produce it holds (Phase 1).")]
         public float siloCapacityLitres = 20000f;
+
+        [Header("Utilities")]
+        [Tooltip("Set on a PowerDevice: which electrical device this deployable carries.")]
+        public Power.PowerDeviceDefinition powerDevice;
+        [Tooltip("Set on a FluidDevice: which fitting this deployable carries.")]
+        public Fluid.FluidDeviceDefinition fluidDevice;
+        [Tooltip("A pump can be both: it sits on the water and draws from the grid.")]
+        public bool drawsPower;
 
         [Header("Salvage")]
         [Tooltip("Item returned when the piece is removed with a wrench.")]

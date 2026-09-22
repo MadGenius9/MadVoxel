@@ -12,7 +12,9 @@ namespace MadVoxel.Perks
         Scavenging,
         Medicine,
         Vehicles,
-        Farming
+        Farming,
+        /// <summary>The grid and the plumbing.</summary>
+        Electricity
     }
 
     public enum PerkEffectType
@@ -28,7 +30,20 @@ namespace MadVoxel.Perks
         HealingMultiplier,
         VehicleFuelEfficiency,
         RepairSpeedMultiplier,
-        FieldYieldMultiplier
+        FieldYieldMultiplier,
+
+        /// <summary>Adds metres to every wire and hose you run.</summary>
+        WireLengthBonus,
+        /// <summary>Scales what a pump draws.</summary>
+        PumpRateMultiplier,
+        /// <summary>Scales trap damage.</summary>
+        TrapDamageMultiplier,
+        /// <summary>Cuts the chance a storm breaks an exposed fitting.</summary>
+        StormResistance,
+        /// <summary>Drought hurts a plot less.</summary>
+        DroughtResistance,
+        /// <summary>A quieter claim: heat rises more slowly.</summary>
+        ClaimHeatReduction
     }
 
     [Serializable]

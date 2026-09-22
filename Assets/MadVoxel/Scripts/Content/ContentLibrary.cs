@@ -52,6 +52,7 @@ namespace MadVoxel.Content
             var blockMap = BuildBlocks();
             var itemMap = BuildItems(blockMap);
             var structureMap = BuildStructures(itemMap);
+            AddUtilityContent(itemMap, structureMap);
 
             LinkPlacement(itemMap, blockMap, structureMap);
             LinkBlockDrops(blockMap, itemMap);
@@ -64,6 +65,7 @@ namespace MadVoxel.Content
             db.blocks = BuildRegistry(blockMap);
             db.structures = new List<StructureDefinition>(structureMap.Values);
             db.recipes = BuildRecipes(itemMap);
+            AddUtilityRecipes(itemMap, db.recipes);
             AddSnapItems(itemMap, twigByKind, db.recipes);
             db.items = new List<ItemDefinition>(itemMap.Values);
             db.zombies = BuildZombies(itemMap);
@@ -156,6 +158,12 @@ namespace MadVoxel.Content
             map[BlockIds.IronOre] = Block(BlockIds.IronOre, "Iron Ore", SurfaceFamily.Ore, ColIron, 3.2f, ToolType.Pickaxe, 1, 5f, 240f);
             map[BlockIds.PineLog] = Block(BlockIds.PineLog, "Pine Log", SurfaceFamily.Wood, ColWood, 1.8f, ToolType.Axe, 0, 3f, 140f);
             map[BlockIds.ScrapHeap] = Block(BlockIds.ScrapHeap, "Scrap Heap", SurfaceFamily.Metal, ColRust, 2.0f, ToolType.Pickaxe, 0, 5f, 150f);
+
+            // Saturated ground: the thing a well is dug to find. Soft, worthless to mine,
+            // and the only reason anyone digs past the ore.
+            var waterTable = Block(BlockIds.WaterTable, "Water Table", SurfaceFamily.Dirt,
+                new Color(0.29f, 0.36f, 0.40f), 0.8f, ToolType.Shovel, 0, 1f, 40f);
+            map[BlockIds.WaterTable] = waterTable;
 
             // Wild forage. Non-solid so you walk through them, cheap to clear, and they
             // are the only source of seeds until a trader sells you better ones.
@@ -368,25 +376,51 @@ namespace MadVoxel.Content
             wheatSeed.description = "Plant in a farm plot, or sow a field with it later.";
             Add(wheatSeed);
 
+            // What everything turns into when nobody eats it. It does not spoil again,
+            // and it is the compost the garden will want in Phase 1.
+            var rot = Item(ItemIds.Rot, "Rot", ItemCategory.Resource, 64, SurfaceFamily.Dirt,
+                new Color(0.32f, 0.28f, 0.20f), 1);
+            rot.description = "Spoiled food. Compost, eventually.";
+            Add(rot);
+
+            // Shelf lives are in game hours, and a day is 20 real minutes. Raw produce
+            // keeps a few days; a cooked meal is the thing you must actually eat or
+            // refrigerate, which is what makes the fridge worth its watts.
             var potato = Item(ItemIds.Potato, "Potato", ItemCategory.Consumable, 64, SurfaceFamily.Dirt, new Color(0.60f, 0.48f, 0.30f), 4);
             potato.foodRestore = 8f;
+            potato.spoilHours = 96f;
+            potato.spoiledInto = rot;
             Add(potato);
 
             var corn = Item(ItemIds.CornEar, "Corn Ear", ItemCategory.Consumable, 64, SurfaceFamily.Foliage, new Color(0.76f, 0.67f, 0.25f), 4);
             corn.foodRestore = 7f;
+            corn.spoilHours = 72f;
+            corn.spoiledInto = rot;
             Add(corn);
 
-            Add(Item(ItemIds.Grain, "Grain", ItemCategory.Resource, 64, SurfaceFamily.Foliage, new Color(0.72f, 0.64f, 0.36f), 3));
-            Add(Item(ItemIds.Flour, "Flour", ItemCategory.Resource, 64, SurfaceFamily.Cloth, new Color(0.82f, 0.78f, 0.70f), 6));
+            // Dry goods keep. Grain in a sack is the reason a silo is worth building.
+            var grain = Item(ItemIds.Grain, "Grain", ItemCategory.Resource, 64, SurfaceFamily.Foliage, new Color(0.72f, 0.64f, 0.36f), 3);
+            grain.spoilHours = 336f;
+            grain.spoiledInto = rot;
+            Add(grain);
+
+            var flour = Item(ItemIds.Flour, "Flour", ItemCategory.Resource, 64, SurfaceFamily.Cloth, new Color(0.82f, 0.78f, 0.70f), 6);
+            flour.spoilHours = 288f;
+            flour.spoiledInto = rot;
+            Add(flour);
 
             var baked = Item(ItemIds.BakedPotato, "Baked Potato", ItemCategory.Consumable, 16, SurfaceFamily.Dirt, new Color(0.66f, 0.50f, 0.28f), 12);
             baked.foodRestore = 30f;
             baked.staminaRestore = 15f;
+            baked.spoilHours = 48f;
+            baked.spoiledInto = rot;
             Add(baked);
 
             var bread = Item(ItemIds.CornBread, "Corn Bread", ItemCategory.Consumable, 16, SurfaceFamily.Cloth, new Color(0.78f, 0.66f, 0.38f), 18);
             bread.foodRestore = 42f;
             bread.staminaRestore = 25f;
+            bread.spoilHours = 72f;
+            bread.spoiledInto = rot;
             Add(bread);
 
             var stew = Item(ItemIds.VegetableStew, "Vegetable Stew", ItemCategory.Consumable, 8, SurfaceFamily.Metal, new Color(0.54f, 0.42f, 0.24f), 30);
@@ -394,7 +428,12 @@ namespace MadVoxel.Content
             stew.waterRestore = 20f;
             stew.healthRestore = 10f;
             stew.staminaRestore = 40f;
+            stew.spoilHours = 36f;
+            stew.spoiledInto = rot;
             Add(stew);
+
+            // Canned food is the one thing that never goes off, which is exactly why it
+            // is in the starting kit and why a trader will always take it.
         }
 
         static void AddBlockItem(Dictionary<string, ItemDefinition> map, Dictionary<string, BlockDefinition> blocks,
@@ -789,16 +828,40 @@ namespace MadVoxel.Content
             tree.perks.Add(grease);
 
             var farming = Perk(PerkIds.Farming, "Living Off The Land", PerkCategory.Farming,
-                "Garden plots yield more, and seeds come back more often.", 5, 1,
-                Effect(PerkEffectType.HarvestYieldMultiplier, 0.15f));
+                "Garden plots yield more, seeds come back more often, and dry spells bite less.", 5, 1,
+                Effect(PerkEffectType.HarvestYieldMultiplier, 0.15f),
+                Effect(PerkEffectType.DroughtResistance, 0.12f));
             farming.unlocksRecipeIds.Add("madvoxel:craft_farm_plot");
+            farming.unlocksRecipeIds.Add("madvoxel:craft_hoe");
+            farming.unlocksRecipeIds.Add("madvoxel:craft_sprinkler");
             tree.perks.Add(farming);
+
+            // Quiet Claim: the answer to a farm that has become a beacon.
+            tree.perks.Add(Perk("madvoxel:perk_quiet_claim", "Quiet Claim", PerkCategory.Farming,
+                "Hedges, baffles and habit. Your claim draws less attention after dark.", 3, 4,
+                Effect(PerkEffectType.ClaimHeatReduction, 0.14f)));
 
             var agronomist = Perk(PerkIds.Agronomist, "Agronomist", PerkCategory.Farming,
                 "Unlocks field implements and lifts the yield an acre returns.", 3, 6,
                 Effect(PerkEffectType.FieldYieldMultiplier, 0.12f));
             agronomist.unlocksRecipeIds.Add("madvoxel:craft_silo");
             tree.perks.Add(agronomist);
+
+            // The grid perk. Rank 1 is the battery bank, because the first thing anyone
+            // wants after a generator is for the lights to survive until morning.
+            var electrician = Perk(PerkIds.Electrician, "Electrician", PerkCategory.Electricity,
+                "Longer runs, tougher fittings, and the banks that carry a night.", 3, 3,
+                Effect(PerkEffectType.WireLengthBonus, 4f),
+                Effect(PerkEffectType.StormResistance, 0.2f));
+            electrician.unlocksRecipeIds.Add("madvoxel:craft_battery_bank");
+            electrician.unlocksRecipeIds.Add("madvoxel:craft_solar_bank");
+            electrician.unlocksRecipeIds.Add("madvoxel:craft_fridge");
+            tree.perks.Add(electrician);
+
+            tree.perks.Add(Perk("madvoxel:perk_millwright", "Millwright", PerkCategory.Electricity,
+                "Pumps pull harder and traps bite deeper.", 4, 5,
+                Effect(PerkEffectType.PumpRateMultiplier, 0.12f),
+                Effect(PerkEffectType.TrapDamageMultiplier, 0.15f)));
 
             tree.perks.Add(Perk("madvoxel:perk_economiser", "Economiser", PerkCategory.Vehicles,
                 "Squeeze more distance out of every gas can.", 3, 7,

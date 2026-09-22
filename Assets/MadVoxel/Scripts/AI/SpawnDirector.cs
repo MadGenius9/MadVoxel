@@ -33,6 +33,9 @@ namespace MadVoxel.AI
         public IReadOnlyList<Zombie> Alive { get { return _alive; } }
         public int WanderingCount { get { return CountAlive(false); } }
 
+        /// <summary>Set by the session. Null means no claim has been staked yet.</summary>
+        public MadVoxel.Claim.ClaimHeatTracker Heat { get; set; }
+
         public void Init(GameConfig config, WorldClock clock, TerrainWorld voxels, ChunkStreamer streamer,
                          StructureWorld structures, BlockDamageTracker blockDamage,
                          Transform player, PlayerStats playerStats, ZombieDefinition wanderer)
@@ -63,6 +66,13 @@ namespace MadVoxel.AI
             _timer = 0f;
 
             int cap = _clock.IsNight ? _config.wanderingZombieCapNight : _config.wanderingZombieCapDay;
+
+            // A loud claim is advertised. Heat only lifts the night cap: a farm is not
+            // more dangerous at noon for having its lights on.
+            if (Heat != null && _clock.IsNight)
+            {
+                cap = Mathf.RoundToInt(cap * MadVoxel.Claim.ClaimHeatMath.WandererMultiplier(Heat.Heat));
+            }
             if (CountAlive(false) >= cap) return;
 
             Vector3 position;

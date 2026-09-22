@@ -100,6 +100,25 @@ namespace MadVoxel.Farming.Plots
             RefreshVisuals(true);
         }
 
+        /// <summary>
+        /// Frost taking a growth stage back. Growth is derived from the planting hour,
+        /// so "losing a stage" means pushing that hour forward - which keeps the whole
+        /// derived-growth property intact through a save and a reload.
+        /// </summary>
+        public void SetBackAStage()
+        {
+            if (Crop == null) return;
+
+            var clock = Structure != null && Structure.Owner != null ? Structure.Owner.Clock : null;
+            if (clock == null) return;
+
+            double stageHours = Crop.HoursToMature / 4.0;
+            PlantedAtHours = System.Math.Min(clock.TotalHours, PlantedAtHours + stageHours);
+
+            RefreshVisuals(true);
+            Notifications.PostFormat("Frost set back the {0}", Crop.displayName.ToLowerInvariant());
+        }
+
         public void ClearCrop()
         {
             Crop = null;
@@ -196,8 +215,11 @@ namespace MadVoxel.Farming.Plots
                 yield = Mathf.Max(ground > 0f ? 1 : 0, Mathf.RoundToInt(yield * ground));
             }
 
-            // A sprinkler keeping this bed wet pays for its copper here.
+            // A sprinkler keeping this bed wet pays for its copper here - and a bed with
+            // nothing on it pays for the drought.
             yield = Mathf.RoundToInt(yield * (1f + WaterBonus));
+            float dry = DryLoss(progression);
+            if (dry > 0f) yield = Mathf.Max(1, Mathf.RoundToInt(yield * (1f - dry)));
 
             // The Farming perk is what makes a garden worth expanding.
             if (progression != null)
@@ -233,6 +255,23 @@ namespace MadVoxel.Farming.Plots
         /// drought is biting. Zero is "nobody has watered this and nothing is wrong".
         /// </summary>
         public float WaterBonus { get; set; }
+
+        /// <summary>
+        /// Set by the weather while a drought is biting. A sprinkler cancels it
+        /// outright, and the Farming perk takes the edge off what is left - which is
+        /// what makes a tank and a line the answer rather than a prayer.
+        /// </summary>
+        public float DroughtLoss { get; set; }
+
+        float DryLoss(PlayerProgression progression)
+        {
+            if (DroughtLoss <= 0f || WaterBonus > 0f) return 0f;
+
+            float resist = progression != null
+                ? progression.Effects.Bonus(PerkEffectType.DroughtResistance) : 0f;
+
+            return Mathf.Clamp01(DroughtLoss * Mathf.Clamp01(1f - resist));
+        }
 
         /// <summary>The biome this plot stands on, and the crop's opinion of it.</summary>
         public BiomeId Biome

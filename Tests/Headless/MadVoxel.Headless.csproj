@@ -34,6 +34,7 @@
     <Compile Include="PerkTests.cs" />
     <Compile Include="UiTests.cs" />
     <Compile Include="PowerTests.cs" />
+    <Compile Include="WorldTests.cs" />
     <Compile Include="FluidTests.cs" />
   </ItemGroup>
 
@@ -47,6 +48,8 @@
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Biomes/BiomeId.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Biomes/BiomeMap.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Weather/WeatherDefinition.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Weather/WeatherSchedule.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Claim/ClaimHeat.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/BlockIds.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/BlockDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/BlockRegistry.cs" />
@@ -61,6 +64,7 @@
 
     <Compile Include="../../Assets/MadVoxel/Scripts/Inventory/ItemDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Inventory/ItemStack.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Inventory/Spoil/SpoilRules.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Inventory/Inventory.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Inventory/RecipeDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Inventory/CraftingService.cs" />
@@ -96,6 +100,7 @@
     <Compile Include="../../Assets/MadVoxel/Scripts/Content/ContentDatabase.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Content/ContentLibrary.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Content/ContentLibrary.World.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Content/ContentLibrary.Utilities.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Modding/Json.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Modding/JsonReader.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Modding/ModLog.cs" />

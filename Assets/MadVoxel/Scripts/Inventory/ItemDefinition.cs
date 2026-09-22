@@ -75,6 +75,12 @@ namespace MadVoxel.Inventory
         [Tooltip("Base trader price. Phase 1 uses this for buy/sell.")]
         public int tradeValue = 1;
 
+        [Header("Spoilage")]
+        [Tooltip("Game hours before this goes off in the open. Zero means it never does.")]
+        public float spoilHours;
+        [Tooltip("What it turns into when it does. Null means the stack is simply lost.")]
+        public ItemDefinition spoiledInto;
+
         public bool IsPlaceable
         {
             get { return placeableBlock != null || placeableStructure != null || placeableBuildPiece != null; }

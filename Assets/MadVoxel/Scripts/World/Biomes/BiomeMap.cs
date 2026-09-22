@@ -33,6 +33,14 @@ namespace MadVoxel.World.Biomes
         /// <summary>Past this fraction of the map extent, the shelf takes over.</summary>
         const float FrostBand = 0.74f;
 
+        /// <summary>
+        /// Every site this close to the origin is farmland, whichever cell it belongs
+        /// to. Forcing only the origin's own cell is not enough: sites are jittered
+        /// inside their cells, so a neighbour's site can easily end up nearer to spawn
+        /// than the origin cell's own - and then you wake up on hardpan.
+        /// </summary>
+        const float StarterRadius = 340f;
+
         readonly int _seed;
         readonly float _extent;
 
@@ -80,7 +88,7 @@ namespace MadVoxel.World.Biomes
                     float distSq = ddx * ddx + ddz * ddz;
                     if (distSq >= secondSq) continue;
 
-                    var kind = KindOf(sx, sz, siteZ);
+                    var kind = KindOf(sx, sz, siteX, siteZ);
                     if (distSq < bestSq)
                     {
                         secondSq = bestSq;
@@ -124,6 +132,16 @@ namespace MadVoxel.World.Biomes
 
         void SitePosition(int cellX, int cellZ, out float x, out float z)
         {
+            // The origin's site sits exactly on spawn rather than somewhere inside its
+            // cell, so the ground you wake up on is the middle of a blob and not its
+            // ragged edge.
+            if (cellX == 0 && cellZ == 0)
+            {
+                x = 0f;
+                z = 0f;
+                return;
+            }
+
             // Jitter is kept off the cell edges so two sites cannot land on top of each
             // other and produce a sliver biome nobody can find.
             float jx = Noise.Hash01(cellX, 71, cellZ, _seed + 5501) * 0.62f + 0.19f;
@@ -134,15 +152,15 @@ namespace MadVoxel.World.Biomes
         }
 
         /// <summary>Which biome a site carries. Two cases are forced; the rest is weighted.</summary>
-        BiomeId KindOf(int cellX, int cellZ, float siteZ)
+        BiomeId KindOf(int cellX, int cellZ, float siteX, float siteZ)
         {
-            // You wake up on good dirt. Non-negotiable.
-            if (cellX == 0 && cellZ == 0) return BiomeId.Farmland;
+            // You wake up on good dirt, and so does everything within a walk of it.
+            // Non-negotiable: the first garden has to go somewhere.
+            if (siteX * siteX + siteZ * siteZ <= StarterRadius * StarterRadius) return BiomeId.Farmland;
 
             // The shelf is a band at one edge, not a blob in the middle of your commute.
             if (siteZ > _extent * FrostBand) return BiomeId.FrostShelf;
 
-            // ...and nothing else is allowed to squat there either.
             float roll = Noise.Hash01(cellX, 17, cellZ, _seed + 6607);
 
             if (roll < 0.34f) return BiomeId.PineScrub;

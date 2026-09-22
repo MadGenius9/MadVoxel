@@ -1,6 +1,7 @@
 using System;
 using MadVoxel.AI;
 using MadVoxel.Building;
+using MadVoxel.Claim;
 using MadVoxel.Core;
 using MadVoxel.Perks;
 using UnityEngine;
@@ -26,6 +27,12 @@ namespace MadVoxel.Horde
         int _warnedDay = -1;
         float _nextWaveTime;
         int _hordeNumber;
+
+        /// <summary>
+        /// How loud the claim is. A bigger, brighter, noisier farm pulls a bigger
+        /// horde - which is the whole reason a blackout switch is worth a slot.
+        /// </summary>
+        public ClaimHeatTracker Heat { get; set; }
 
         public bool IsBloodMoonActive { get { return _active; } }
         public int HordeNumber { get { return _hordeNumber; } }
@@ -143,6 +150,7 @@ namespace MadVoxel.Horde
 
             int level = _progression != null ? _progression.Level : 1;
             int target = _schedule.WaveSize(level, baseSize);
+            if (Heat != null) target += ClaimHeatMath.HordeBonus(Heat.Heat, target);
             int room = Mathf.Max(0, _schedule.maxAlive - _spawner.HordeUnitCount);
             int count = Mathf.Min(target, room);
 

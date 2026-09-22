@@ -322,7 +322,13 @@ namespace MadVoxel.Headless
                 PerkEffectType.MeleeDamageMultiplier,   // PlayerInteraction.Attack
                 PerkEffectType.LootQuantityMultiplier,  // PlayerInteraction salvage
                 PerkEffectType.HealingMultiplier,       // PlayerStats.Consume
-                PerkEffectType.RepairSpeedMultiplier    // PlayerInteraction hammer repair
+                PerkEffectType.RepairSpeedMultiplier,   // PlayerInteraction hammer repair
+                PerkEffectType.WireLengthBonus,         // PowerWorld / FluidWorld -> Graph.ExtraReach
+                PerkEffectType.PumpRateMultiplier,      // FluidWorld.Conditions
+                PerkEffectType.TrapDamageMultiplier,    // PowerTrap.Bite
+                PerkEffectType.StormResistance,         // WeatherEffects.RollBreakage
+                PerkEffectType.DroughtResistance,       // FarmPlotStructure.DryLoss
+                PerkEffectType.ClaimHeatReduction       // ClaimHeatTracker.QuietFraction
             };
 
             // Declared in content, read by nothing until the Phase 1 system lands.

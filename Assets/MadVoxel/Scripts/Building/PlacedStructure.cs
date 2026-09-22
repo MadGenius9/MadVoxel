@@ -67,7 +67,16 @@ namespace MadVoxel.Building
                 case StructureKind.Bedroll: gameObject.AddComponent<BedrollStructure>().Bind(this); break;
                 case StructureKind.FarmPlot: gameObject.AddComponent<Farming.Plots.FarmPlotStructure>().Bind(this); break;
                 case StructureKind.Silo: gameObject.AddComponent<Farming.Plots.SiloStructure>().Bind(this); break;
+                case StructureKind.PowerDevice: break;  // handled below
+                case StructureKind.FluidDevice: break;
             }
+
+            // Utilities are attached by what the definition names rather than by kind,
+            // so one deployable can be two things at once. The fridge is a crate that
+            // happens to be on the grid; the pump is a fitting that happens to draw
+            // watts. Neither needs a kind of its own.
+            if (Definition.powerDevice != null) gameObject.AddComponent<Power.PowerDeviceStructure>().Bind(this);
+            if (Definition.fluidDevice != null) gameObject.AddComponent<Fluid.FluidDeviceStructure>().Bind(this);
         }
 
         public void ApplyDamage(DamageInfo info)

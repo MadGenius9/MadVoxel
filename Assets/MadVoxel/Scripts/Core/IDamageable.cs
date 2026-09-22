@@ -10,7 +10,9 @@ namespace MadVoxel.Core
         Starvation,
         Thirst,
         Explosion,
-        Zombie
+        Zombie,
+        /// <summary>Storms and frost. Not anyone's fault, and not a horde's doing.</summary>
+        Weather
     }
 
     public struct DamageInfo

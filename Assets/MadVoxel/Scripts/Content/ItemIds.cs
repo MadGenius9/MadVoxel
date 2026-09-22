@@ -30,6 +30,8 @@ namespace MadVoxel.Content
         public const string BakedPotato = "madvoxel:baked_potato";
         public const string CornBread = "madvoxel:corn_bread";
         public const string VegetableStew = "madvoxel:vegetable_stew";
+        /// <summary>What food becomes when nobody eats it. Compost, later.</summary>
+        public const string Rot = "madvoxel:rot";
 
         public const string StonePickaxe = "madvoxel:stone_pickaxe";
         public const string StoneAxe = "madvoxel:stone_axe";
@@ -77,6 +79,31 @@ namespace MadVoxel.Content
         public const string Wheel = "madvoxel:wheel";
         public const string GasCan = "madvoxel:gas_can";
         public const string BuggyKit = "madvoxel:buggy_kit";
+
+        // Electricity. The wire tool is how every connection gets made.
+        public const string WireTool = "madvoxel:wire_tool";
+        public const string CopperWire = "madvoxel:copper_wire";
+        public const string PieceGeneratorBank = "madvoxel:piece_generator_bank";
+        public const string PieceBatteryBank = "madvoxel:piece_battery_bank";
+        public const string PieceSolarBank = "madvoxel:piece_solar_bank";
+        public const string PieceRelay = "madvoxel:piece_relay";
+        public const string PieceSwitch = "madvoxel:piece_switch";
+        public const string PieceSplitter = "madvoxel:piece_splitter";
+        public const string PieceLight = "madvoxel:piece_light";
+        public const string PieceFridge = "madvoxel:piece_fridge";
+        public const string PieceBladeTrap = "madvoxel:piece_blade_trap";
+        public const string PieceFencePost = "madvoxel:piece_fence_post";
+
+        // Water.
+        public const string PieceWaterPump = "madvoxel:piece_water_pump";
+        public const string PiecePipe = "madvoxel:piece_pipe";
+        public const string PieceWaterTank = "madvoxel:piece_water_tank";
+        public const string PieceWaterBarrel = "madvoxel:piece_water_barrel";
+        public const string PieceTap = "madvoxel:piece_tap";
+        public const string PieceSprinkler = "madvoxel:piece_sprinkler";
+
+        // The colony charter.
+        public const string PieceColonyBoard = "madvoxel:piece_colony_board";
     }
 
     public static class StructureIds
@@ -89,6 +116,26 @@ namespace MadVoxel.Content
         public const string FarmPlot = "madvoxel:farm_plot";
         public const string Silo = "madvoxel:silo";
         public const string DeathBackpack = "madvoxel:death_backpack";
+
+        public const string GeneratorBank = "madvoxel:generator_bank";
+        public const string BatteryBank = "madvoxel:battery_bank";
+        public const string SolarBank = "madvoxel:solar_bank";
+        public const string Relay = "madvoxel:relay";
+        public const string Switch = "madvoxel:switch";
+        public const string Splitter = "madvoxel:splitter";
+        public const string Light = "madvoxel:light";
+        public const string Fridge = "madvoxel:fridge";
+        public const string BladeTrap = "madvoxel:blade_trap";
+        public const string FencePost = "madvoxel:fence_post";
+
+        public const string WaterPump = "madvoxel:water_pump";
+        public const string Pipe = "madvoxel:pipe";
+        public const string WaterTank = "madvoxel:water_tank";
+        public const string WaterBarrel = "madvoxel:water_barrel";
+        public const string Tap = "madvoxel:tap";
+        public const string Sprinkler = "madvoxel:sprinkler";
+
+        public const string ColonyBoard = "madvoxel:colony_board";
     }
 
     public static class ZombieIds

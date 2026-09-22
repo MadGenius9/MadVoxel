@@ -21,6 +21,13 @@ namespace MadVoxel.World.Terrain
         public const string PineNeedles = "madvoxel:pine_needles";
         public const string ScrapHeap = "madvoxel:scrap_heap";
 
+        /// <summary>
+        /// Saturated ground. Dig down to it and a pump set on top has a well. It is a
+        /// solid block, not a fluid: the game has no liquid simulation and does not
+        /// need one for a farm that runs on pipes.
+        /// </summary>
+        public const string WaterTable = "madvoxel:water_table";
+
         // Wild forage: how the garden starts, before you have any seeds.
         public const string WildYucca = "madvoxel:wild_yucca";
         public const string WildGrain = "madvoxel:wild_grain";

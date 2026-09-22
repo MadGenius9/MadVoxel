@@ -5,6 +5,10 @@ using MadVoxel.Content;
 using MadVoxel.Core.Player;
 using MadVoxel.Horde;
 using MadVoxel.Modding;
+using MadVoxel.Claim;
+using MadVoxel.Fluid;
+using MadVoxel.Inventory.Spoil;
+using MadVoxel.Power;
 using MadVoxel.Save;
 using MadVoxel.World.Biomes;
 using MadVoxel.World.Fields;
@@ -35,6 +39,11 @@ namespace MadVoxel.Core
         WorldClock _clock;
         SkyController _sky;
         WeatherDirector _weather;
+        PowerWorld _power;
+        FluidWorld _fluid;
+        ClaimHeatTracker _heat;
+        SpoilService _spoil;
+        WeatherEffects _weatherEffects;
         SpawnDirector _spawner;
         HordeDirector _horde;
         SaveService _save;
@@ -171,6 +180,26 @@ namespace MadVoxel.Core
             _player.transform.SetParent(_worldRoot.transform, true);
             _player.Progression.BindPerkTree(_content.perkTree);
             _weather.Init(_clock, _content, () => _voxels.BiomeAt(_player.transform.position));
+
+            // The grid and the plumbing. Power first: the pump asks it for watts.
+            _power = _worldRoot.AddComponent<PowerWorld>();
+            _power.Init(_structures, _voxels, _clock, _weather, _player.Progression);
+
+            _fluid = _worldRoot.AddComponent<FluidWorld>();
+            _fluid.Init(_structures, _voxels, _clock, _weather, _power, _fields, _player.Progression);
+
+            _player.Interaction.BindUtilities(_power, _fluid);
+
+            _heat = _worldRoot.AddComponent<ClaimHeatTracker>();
+            _heat.Init(_structures, _power, _fields, _clock, _voxels, _content, _player.Progression);
+            _horde.Heat = _heat;
+            _spawner.Heat = _heat;
+
+            _spoil = _worldRoot.AddComponent<SpoilService>();
+            _spoil.Init(_structures, _player, _clock, _content);
+
+            _weatherEffects = _worldRoot.AddComponent<WeatherEffects>();
+            _weatherEffects.Init(_weather, _structures, _power, _fluid, _clock, _player.Progression, _seed);
 
             _streamer = _worldRoot.AddComponent<ChunkStreamer>();
             _streamer.Init(_voxels, _content.config, _store, _player.transform);
