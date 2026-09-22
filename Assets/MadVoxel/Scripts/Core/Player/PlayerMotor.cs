@@ -25,6 +25,9 @@ namespace MadVoxel.Core.Player
         bool _crouching;
         float _lowestSpeedThisFall;
 
+        /// <summary>Developer tools toggle: ignores gravity and collision-driven falling.</summary>
+        public bool FlyMode { get; set; }
+
         public bool IsSprinting { get; private set; }
         public bool IsOnLadder { get; private set; }
         public bool IsGrounded { get { return _controller.isGrounded; } }
@@ -75,6 +78,12 @@ namespace MadVoxel.Core.Player
             float speed = _crouching ? _config.crouchSpeed : (IsSprinting ? _config.sprintSpeed : _config.walkSpeed);
             if (_stats.Food <= 0f || _stats.Water <= 0f) speed *= 0.72f;
 
+            if (FlyMode)
+            {
+                Fly(wish, speed, dt);
+                return;
+            }
+
             if (IsOnLadder)
             {
                 MoveOnLadder(wish, speed, dt);
@@ -99,6 +108,20 @@ namespace MadVoxel.Core.Player
 
             Vector3 motion = wish * speed;
             motion.y = _velocity.y;
+            _controller.Move(motion * dt);
+        }
+
+        void Fly(Vector3 wish, float speed, float dt)
+        {
+            _velocity = Vector3.zero;
+            _lowestSpeedThisFall = 0f;
+
+            float vertical = 0f;
+            if (InputBridge.Jump) vertical += 1f;
+            if (InputBridge.Crouch) vertical -= 1f;
+
+            Vector3 motion = wish * (speed * 2.5f);
+            motion.y = vertical * speed * 2.5f;
             _controller.Move(motion * dt);
         }
 

@@ -68,7 +68,8 @@ namespace MadVoxel.UI
         }
 
         public void CreateGameplayUi(PlayerRig player, WorldClock clock, HordeDirector horde,
-                                     ContentDatabase content, VoxelWorld voxels, ChunkStreamer streamer, int seed)
+                                     ContentDatabase content, VoxelWorld voxels, ChunkStreamer streamer,
+                                     int seed, bool developerTools)
         {
             DestroyGameplayUi();
 
@@ -82,7 +83,7 @@ namespace MadVoxel.UI
             Inventory.Init(player, content);
 
             Debug = _gameplayUi.AddComponent<DebugOverlay>();
-            Debug.Init(player, voxels, streamer, seed);
+            Debug.Init(player, voxels, streamer, seed, developerTools);
 
             StorageStructure.OpenRequested += OnStorageOpen;
             CraftStationStructure.OpenRequested += OnStationOpen;

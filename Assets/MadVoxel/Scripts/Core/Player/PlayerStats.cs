@@ -21,6 +21,9 @@ namespace MadVoxel.Core.Player
 
         public bool IsAlive { get { return Health > 0f; } }
 
+        /// <summary>Developer tools toggle. Never set by gameplay.</summary>
+        public bool Invulnerable { get; set; }
+
         public event Action<DamageInfo> Damaged;
         public event Action Died;
 
@@ -96,7 +99,7 @@ namespace MadVoxel.Core.Player
 
         public void ApplyDamage(DamageInfo info)
         {
-            if (!IsAlive) return;
+            if (!IsAlive || Invulnerable) return;
             if (info.Kind != DamageKind.Starvation && info.Kind != DamageKind.Thirst && Time.time < _invulnerableUntil) return;
 
             Health = Mathf.Max(0f, Health - info.Amount);

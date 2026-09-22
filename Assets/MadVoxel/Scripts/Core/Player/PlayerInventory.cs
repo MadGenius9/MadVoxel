@@ -14,18 +14,24 @@ namespace MadVoxel.Core.Player
         public const int BagSize = 27;
         public const int TotalSize = HotbarSize + BagSize;
 
-        public MadVoxel.Inventory.Inventory Bag { get; private set; }
+        MadVoxel.Inventory.Inventory _bag;
+
+        /// <summary>Created on first access so subscribers never race component Awake.</summary>
+        public MadVoxel.Inventory.Inventory Bag
+        {
+            get
+            {
+                if (_bag == null) _bag = new MadVoxel.Inventory.Inventory(TotalSize);
+                return _bag;
+            }
+        }
+
         public int SelectedIndex { get; private set; }
 
         public event Action SelectionChanged;
 
         public ItemStack SelectedStack { get { return Bag[SelectedIndex]; } }
         public ItemDefinition SelectedItem { get { return Bag[SelectedIndex].Item; } }
-
-        void Awake()
-        {
-            if (Bag == null) Bag = new MadVoxel.Inventory.Inventory(TotalSize);
-        }
 
         public void Select(int index)
         {

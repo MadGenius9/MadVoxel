@@ -33,10 +33,14 @@ namespace MadVoxel.Core
         SaveService _save;
         PlayerRig _player;
         ChunkFileStore _store;
+        DeveloperTools _devTools;
 
         string _worldName;
         int _seed;
         Vector3 _worldSpawn;
+
+        /// <summary>Set by GameBootstrap; off means no test hotkeys are registered at all.</summary>
+        public bool DeveloperToolsEnabled { get; set; }
 
         public bool IsRunning { get { return _worldRoot != null; } }
         public PlayerRig Player { get { return _player; } }
@@ -131,7 +135,13 @@ namespace MadVoxel.Core
             _save.Init(_content, _streamer, _structures, _clock, _horde, _player,
                        _worldName, _seed, _content.config.autosaveIntervalSeconds);
 
-            _ui.CreateGameplayUi(_player, _clock, _horde, _content, _voxels, _streamer, _seed);
+            if (DeveloperToolsEnabled)
+            {
+                _devTools = _worldRoot.AddComponent<DeveloperTools>();
+                _devTools.Init(_content, _clock, _horde, _content.hordeSchedule, _spawner, _voxels, _player);
+            }
+
+            _ui.CreateGameplayUi(_player, _clock, _horde, _content, _voxels, _streamer, _seed, DeveloperToolsEnabled);
 
             _player.Stats.Died += OnPlayerDied;
             Zombie.Died += OnZombieKilled;
@@ -355,6 +365,7 @@ namespace MadVoxel.Core
             _horde = null;
             _save = null;
             _player = null;
+            _devTools = null;
             _store = null;
 
             Time.timeScale = 1f;

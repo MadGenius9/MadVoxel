@@ -78,6 +78,37 @@ resolve. **MadVoxel → Setup → Rebuild Scene** regenerates the scene if it is
 The inventory deliberately does **not** pause the game, so crafting during a horde
 night is still a risk.
 
+## Developer hotkeys
+
+A day is 20 real minutes and the first blood moon falls on day 7 at 22:00, so reaching
+it honestly takes over two hours. These shortcuts make the Phase 0 loop testable in a
+sitting. They are live whenever **Developer Tools** is ticked on the `MadVoxel` object
+(on by default; untick it for a release build), and the list is shown in the `F3` overlay.
+
+| Key | Action |
+| --- | --- |
+| `F4` | Toggle fly mode — `Space` up, `Ctrl` down, no gravity |
+| `F5` | Skip one hour |
+| `F6` | Skip to dawn |
+| `F7` | Jump the calendar to ten in-game minutes before the next blood moon |
+| `F8` | Spawn a shambler six metres in front of you |
+| `F9` | Refill health, stamina, food and water |
+| `F10` | Grant the test kit: iron tools, a wrench, stacks of building blocks, one of every snap piece, food and bandages |
+| `F11` | Toggle invulnerability |
+
+### Walking the Phase 0 success test in about ten minutes
+
+1. New world. Mine a few blocks and place them back — that is the voxel loop.
+2. `F10` for the kit, then place the claim stake, walls, a door and a storage box.
+   Put something in the box.
+3. `F7`, then wait out the blood moon behind your walls. The sky turns, waves spawn and
+   walk at the claim, and they will chew through anything in the way.
+4. Quit to the menu, then **Continue** the same world: the base, the box contents and
+   your inventory should all come back.
+
+`F11` and `F4` are there for when you want to watch the horde work on the base rather
+than fight it.
+
 ## Starting a new world
 
 Title screen → **NEW WORLD**:

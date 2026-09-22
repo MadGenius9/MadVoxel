@@ -86,8 +86,8 @@ namespace MadVoxel.UI
             _miningFill = UIKit.Image(miningBack.transform, "Fill", UIKit.Accent);
             _miningFill.rectTransform.anchorMin = Vector2.zero;
             _miningFill.rectTransform.anchorMax = new Vector2(0f, 1f);
-            _miningFill.rectTransform.offsetMin = new Vector2(1f, 1f);
-            _miningFill.rectTransform.offsetMax = new Vector2(-1f, -1f);
+            _miningFill.rectTransform.offsetMin = new Vector2(0f, 1f);
+            _miningFill.rectTransform.offsetMax = new Vector2(0f, -1f);
             _miningRoot.gameObject.SetActive(false);
         }
 

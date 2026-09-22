@@ -45,6 +45,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   contentOverride: {fileID: 0}
+  developerTools: 1
   quickStart: 0
   quickStartWorld: Playtest
   quickStartSeed: 133742

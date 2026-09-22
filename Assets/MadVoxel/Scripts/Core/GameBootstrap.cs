@@ -13,6 +13,9 @@ namespace MadVoxel.Core
         [Tooltip("Leave empty to load Resources/MadVoxel/ContentDatabase, or fall back to the code-defined content.")]
         public ContentDatabase contentOverride;
 
+        [Tooltip("Test-session hotkeys (fly, skip time, force a blood moon, grant a kit). Turn this off for a release build.")]
+        public bool developerTools = true;
+
         [Tooltip("Skip the title screen and drop straight into a scratch world. Handy while iterating.")]
         public bool quickStart;
         public string quickStartWorld = "Playtest";
@@ -39,6 +42,7 @@ namespace MadVoxel.Core
             sessionGo.transform.SetParent(transform, false);
             _session = sessionGo.AddComponent<GameSession>();
             _session.Init(_content, _ui);
+            _session.DeveloperToolsEnabled = developerTools;
 
             _ui.MainMenu.NewWorldRequested += _session.StartNewWorld;
             _ui.MainMenu.LoadWorldRequested += _session.LoadWorld;

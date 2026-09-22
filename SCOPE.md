@@ -122,6 +122,9 @@ These are real, and worth knowing before the first play session.
 - **Smelting happens at the campfire.** The forge is Phase 2, so iron and glass are
   campfire recipes for now.
 - **Audio.** There is none.
+- **Developer hotkeys ship enabled.** `Developer Tools` on the `MadVoxel` object is on
+  by default so the loop can be tested without a two-hour run-up. Untick it before
+  building a release, or the test kit and the blood-moon skip go out with the game.
 
 ---
 

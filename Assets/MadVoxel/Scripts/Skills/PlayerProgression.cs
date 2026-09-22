@@ -23,7 +23,7 @@ namespace MadVoxel.Skills
     /// </summary>
     public class PlayerProgression : MonoBehaviour
     {
-        public int Level { get; private set; }
+        public int Level { get; private set; } = 1;
         public float Xp { get; private set; }
         public int UnspentSkillPoints { get; private set; }
 
@@ -38,11 +38,6 @@ namespace MadVoxel.Skills
 
         [Tooltip("Skill points granted per level.")]
         public int pointsPerLevel = 1;
-
-        void Awake()
-        {
-            if (Level < 1) Level = 1;
-        }
 
         /// <summary>XP needed to go from the given level to the next.</summary>
         public static float XpForNextLevel(int level)

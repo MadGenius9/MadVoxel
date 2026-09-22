@@ -15,13 +15,15 @@ namespace MadVoxel.UI
         VoxelWorld _voxels;
         ChunkStreamer _streamer;
         int _seed;
+        bool _developerTools;
 
         float _fpsAccumulator;
         int _fpsFrames;
         float _fps;
 
-        public void Init(PlayerRig player, VoxelWorld voxels, ChunkStreamer streamer, int seed)
+        public void Init(PlayerRig player, VoxelWorld voxels, ChunkStreamer streamer, int seed, bool developerTools)
         {
+            _developerTools = developerTools;
             _player = player;
             _voxels = voxels;
             _streamer = streamer;
@@ -29,7 +31,7 @@ namespace MadVoxel.UI
 
             _canvas = UIKit.CreateCanvas("Debug", 20, transform);
             var panel = UIKit.Image(_canvas.transform, "Panel", new Color(0f, 0f, 0f, 0.55f));
-            UIKit.Place(panel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(26f, -60f), new Vector2(540f, 210f));
+            UIKit.Place(panel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(26f, -60f), new Vector2(560f, developerTools ? 268f : 210f));
 
             _text = UIKit.Label(panel.transform, "Text", "", 20, TextAnchor.UpperLeft, UIKit.TextMain);
             UIKit.Stretch(_text.rectTransform, 12f);
@@ -81,12 +83,13 @@ namespace MadVoxel.UI
                 "Pos {2:0.0} {3:0.0} {4:0.0}\n" +
                 "Chunk {5}\n" +
                 "Chunks loaded {6}   meshed {7}   jobs {8}\n" +
-                "Target {9}",
+                "Target {9}{10}",
                 _fps, _seed, p.x, p.y, p.z, chunk,
                 _voxels.LoadedChunkCount,
                 _streamer != null ? _streamer.VisibleChunks : 0,
                 _streamer != null ? _streamer.PendingJobs : 0,
-                targetName);
+                targetName,
+                _developerTools ? "\n\n" + MadVoxel.Core.DeveloperTools.KeyHelp : "");
         }
     }
 }

@@ -27,6 +27,7 @@ namespace MadVoxel.UI
                 {
                     _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
                     if (_font == null) _font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+                if (_font == null) Debug.LogWarning("MadVoxel: no built-in font found; UI text will not render.");
                 }
                 return _font;
             }
@@ -156,8 +157,10 @@ namespace MadVoxel.UI
             var fill = Image(back.transform, "Fill", fillColour);
             fill.rectTransform.anchorMin = Vector2.zero;
             fill.rectTransform.anchorMax = new Vector2(1f, 1f);
-            fill.rectTransform.offsetMin = new Vector2(2f, 2f);
-            fill.rectTransform.offsetMax = new Vector2(-2f, -2f);
+            // Inset vertically only: a horizontal inset makes the rect negative-width
+            // once the fill anchor collapses to zero.
+            fill.rectTransform.offsetMin = new Vector2(0f, 2f);
+            fill.rectTransform.offsetMax = new Vector2(0f, -2f);
 
             var label = Label(back.transform, "Label", "", 16, TextAnchor.MiddleCenter, TextMain);
             Stretch(label.rectTransform);
