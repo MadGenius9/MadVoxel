@@ -36,6 +36,19 @@ namespace MadVoxel.Core.Player
     /// Mine, place, hit and use. One raycast a frame decides what is under the
     /// crosshair; everything else keys off that.
     /// </summary>
+    /// <summary>The snap-placement state, published for the HUD's building layer.</summary>
+    public struct BuildReadout
+    {
+        /// <summary>True while a snap piece is in hand, whether or not it can be placed.</summary>
+        public bool Active;
+        public bool Resolved;
+        public bool Valid;
+        public string PieceName;
+        public string Tier;
+        /// <summary>Why it will not go there, when it will not.</summary>
+        public string Reason;
+    }
+
     public class PlayerInteraction : MonoBehaviour
     {
         const float HandMineSpeed = 0.45f;
@@ -73,6 +86,13 @@ namespace MadVoxel.Core.Player
 
         public InteractionTarget Target { get; private set; }
         public float MiningProgress01 { get; private set; }
+
+        /// <summary>
+        /// What the snap ghost is currently saying. The HUD reads this instead of
+        /// re-running the placement solver, so the readout and the ghost can never
+        /// disagree with each other.
+        /// </summary>
+        public BuildReadout Build { get; private set; }
 
         public event Action<Vector3Int, BlockDefinition> BlockMined;
 
@@ -208,18 +228,35 @@ namespace MadVoxel.Core.Player
 
             if (held != null && held.placeableBuildPiece != null)
             {
+                var piece = held.placeableBuildPiece;
+                var readout = new BuildReadout
+                {
+                    Active = true,
+                    PieceName = piece.displayName,
+                    Tier = piece.tier.ToString()
+                };
+
                 BuildAddress address;
-                if (TryResolvePiece(held.placeableBuildPiece, out address))
+                if (TryResolvePiece(piece, out address))
                 {
                     Vector3 centre, size;
-                    BuildPlacementSolver.GhostBounds(held.placeableBuildPiece, address, out centre, out size);
-                    bool valid = _buildings.CanPlace(held.placeableBuildPiece, address) == BuildingWorld.PlacementResult.Ok;
+                    BuildPlacementSolver.GhostBounds(piece, address, out centre, out size);
+
+                    var result = _buildings.CanPlace(piece, address);
+                    bool valid = result == BuildingWorld.PlacementResult.Ok;
                     _ghost.ShowBox(centre, size, valid);
+
+                    readout.Resolved = true;
+                    readout.Valid = valid;
+                    readout.Reason = valid ? "" : BuildingWorld.Describe(result);
                 }
                 else
                 {
                     _ghost.HidePlacement();
+                    readout.Reason = "No snap point in reach";
                 }
+
+                Build = readout;
             }
             else if (held != null && held.IsPlaceable && Target.Kind != TargetKind.None && Target.Kind != TargetKind.Entity)
             {
@@ -239,10 +276,12 @@ namespace MadVoxel.Core.Player
                 }
 
                 _ghost.ShowPlacement(cell, footprint, _placeRotation, valid);
+                Build = default(BuildReadout); // deployables and blocks are not the snap grid
             }
             else
             {
                 _ghost.HidePlacement();
+                Build = default(BuildReadout);
             }
 
             if (Target.Kind == TargetKind.Block) _ghost.ShowHighlight(Target.BlockCell, MiningProgress01);

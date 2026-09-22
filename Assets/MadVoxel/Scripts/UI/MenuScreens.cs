@@ -26,14 +26,26 @@ namespace MadVoxel.UI
         {
             _canvas = UIKit.CreateCanvas("MainMenu", 40, transform);
 
-            var backdrop = UIKit.Image(_canvas.transform, "Backdrop", new Color(0.05f, 0.05f, 0.055f, 1f));
-            UIKit.Stretch(backdrop.rectTransform);
+            var backdrop = ClaimSlate.Surface(_canvas.transform, "Backdrop", ClaimSlate.OilBlack);
+            ClaimSlate.Stretch(backdrop.rectTransform);
 
-            var title = UIKit.Label(_canvas.transform, "Title", "MADVOXEL", 92, TextAnchor.UpperCenter, UIKit.Accent);
-            UIKit.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -70f), new Vector2(1200f, 110f));
+            var title = ClaimSlate.Stencil(_canvas.transform, "Title", "MADVOXEL", 92, TextAnchor.UpperCenter, ClaimSlate.Bone);
+            ClaimSlate.Place(ClaimSlate.Holder(title), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -66f), new Vector2(1200f, 110f));
 
-            var tagline = UIKit.Label(_canvas.transform, "Tagline", "Dig in. Build up. Survive the blood moon.", 26, TextAnchor.UpperCenter, UIKit.TextDim);
-            UIKit.Place(tagline.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -180f), new Vector2(1200f, 36f));
+            var rule = ClaimSlate.Fill(_canvas.transform, "TitleRule", ClaimSlate.OxideRust);
+            ClaimSlate.Place(rule.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -166f), new Vector2(560f, 3f));
+
+            var tagline = ClaimSlate.Stencil(_canvas.transform, "Tagline",
+                "DIG IN.  BUILD UP.  SURVIVE THE BLOOD MOON.", 24, TextAnchor.UpperCenter, ClaimSlate.BoneDim, false);
+            ClaimSlate.Place(ClaimSlate.Holder(tagline), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -186f), new Vector2(1200f, 34f));
+
+            var stamp = ClaimSlate.Stencil(_canvas.transform, "Stamp", "MADGENIUS", 17, TextAnchor.UpperCenter,
+                ClaimSlate.Dim(ClaimSlate.Bone, 0.32f), false);
+            ClaimSlate.Place(ClaimSlate.Holder(stamp), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -224f), new Vector2(600f, 22f));
 
             BuildNewWorldPanel();
             BuildWorldListPanel();
@@ -48,11 +60,9 @@ namespace MadVoxel.UI
 
         void BuildNewWorldPanel()
         {
-            var panel = UIKit.Image(_canvas.transform, "NewWorld", UIKit.Panel);
-            UIKit.Place(panel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-30f, -20f), new Vector2(560f, 340f));
-
-            var heading = UIKit.Label(panel.transform, "Heading", "NEW WORLD", 30, TextAnchor.UpperLeft, UIKit.Accent);
-            UIKit.Place(heading.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(26f, -20f), new Vector2(400f, 34f));
+            var body = ClaimSlate.Plate(_canvas.transform, "NewWorld", "NEW WORLD",
+                new Vector2(0.5f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-30f, -20f), new Vector2(560f, 340f));
+            var panel = (RectTransform)body.parent;
 
             var nameLabel = UIKit.Label(panel.transform, "NameLabel", "World name", 22, TextAnchor.UpperLeft, UIKit.TextDim);
             UIKit.Place(nameLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(26f, -74f), new Vector2(400f, 26f));
@@ -73,11 +83,9 @@ namespace MadVoxel.UI
 
         void BuildWorldListPanel()
         {
-            var panel = UIKit.Image(_canvas.transform, "Worlds", UIKit.Panel);
-            UIKit.Place(panel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0f, 0.5f), new Vector2(30f, -20f), new Vector2(560f, 340f));
-
-            var heading = UIKit.Label(panel.transform, "Heading", "CONTINUE", 30, TextAnchor.UpperLeft, UIKit.Accent);
-            UIKit.Place(heading.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(26f, -20f), new Vector2(400f, 34f));
+            var body = ClaimSlate.Plate(_canvas.transform, "Worlds", "CONTINUE",
+                new Vector2(0.5f, 0.5f), new Vector2(0f, 0.5f), new Vector2(30f, -20f), new Vector2(560f, 340f));
+            var panel = (RectTransform)body.parent;
 
             _worldList = UIKit.Rect(panel.transform, "List");
             UIKit.Place(_worldList, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(26f, -70f), new Vector2(500f, 250f));
@@ -165,18 +173,23 @@ namespace MadVoxel.UI
             "WASD move    Shift sprint    Ctrl crouch    Space jump\n" +
             "Mouse look    LMB mine / attack    RMB place / use    E interact\n" +
             "Hammer: RMB upgrade a piece, LMB repair it\n" +
-            "R rotate deployable    1-9 hotbar    Scroll change slot\n" +
-            "Tab inventory & crafting    F3 debug    Esc pause";
+            "R rotate deployable    1-9 toolbelt    Scroll change slot\n" +
+            "Tab inventory & work orders    P skills    F3 debug    Esc pause";
 
         public void Init()
         {
             _canvas = UIKit.CreateCanvas("Pause", 30, transform);
 
-            var backdrop = UIKit.Image(_canvas.transform, "Backdrop", new Color(0f, 0f, 0f, 0.72f));
-            UIKit.Stretch(backdrop.rectTransform);
+            var backdrop = ClaimSlate.Surface(_canvas.transform, "Backdrop", ClaimSlate.Fade(ClaimSlate.OilBlack, 0.80f));
+            ClaimSlate.Stretch(backdrop.rectTransform);
 
-            var title = UIKit.Label(_canvas.transform, "Title", "PAUSED", 64, TextAnchor.UpperCenter, UIKit.Accent);
-            UIKit.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -110f), new Vector2(900f, 80f));
+            var title = ClaimSlate.Stencil(_canvas.transform, "Title", "PAUSED", 64, TextAnchor.UpperCenter, ClaimSlate.Bone);
+            ClaimSlate.Place(ClaimSlate.Holder(title), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -110f), new Vector2(900f, 80f));
+
+            var rule = ClaimSlate.Fill(_canvas.transform, "TitleRule", ClaimSlate.OxideRust);
+            ClaimSlate.Place(rule.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -196f), new Vector2(420f, 2f));
 
             var controls = UIKit.Label(_canvas.transform, "Controls", Controls, 24, TextAnchor.MiddleCenter, UIKit.TextDim);
             UIKit.Place(controls.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 150f), new Vector2(1100f, 160f));
@@ -214,11 +227,18 @@ namespace MadVoxel.UI
         {
             _canvas = UIKit.CreateCanvas("Death", 35, transform);
 
-            var backdrop = UIKit.Image(_canvas.transform, "Backdrop", new Color(0.25f, 0.03f, 0.03f, 0.72f));
-            UIKit.Stretch(backdrop.rectTransform);
+            // Blood is reserved for exactly two things. This is one of them.
+            var backdrop = ClaimSlate.Surface(_canvas.transform, "Backdrop",
+                new Color(ClaimSlate.Blood.r * 0.35f, ClaimSlate.Blood.g * 0.35f, ClaimSlate.Blood.b * 0.35f, 0.78f));
+            ClaimSlate.Stretch(backdrop.rectTransform);
 
-            var title = UIKit.Label(_canvas.transform, "Title", "YOU DIED", 78, TextAnchor.UpperCenter, new Color(0.92f, 0.30f, 0.25f));
-            UIKit.Place(title.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 120f), new Vector2(900f, 90f));
+            var title = ClaimSlate.Stencil(_canvas.transform, "Title", "YOU DIED", 78, TextAnchor.UpperCenter, ClaimSlate.Bone);
+            ClaimSlate.Place(ClaimSlate.Holder(title), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, 120f), new Vector2(900f, 90f));
+
+            var rule = ClaimSlate.Fill(_canvas.transform, "TitleRule", ClaimSlate.Blood);
+            ClaimSlate.Place(rule.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, 74f), new Vector2(360f, 3f));
 
             _detail = UIKit.Label(_canvas.transform, "Detail", "", 26, TextAnchor.UpperCenter, UIKit.TextMain);
             UIKit.Place(_detail.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 30f), new Vector2(1000f, 90f));

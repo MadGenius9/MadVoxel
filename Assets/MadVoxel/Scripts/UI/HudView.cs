@@ -1,54 +1,118 @@
 using System.Collections.Generic;
+using MadVoxel.AI;
+using MadVoxel.Building;
 using MadVoxel.Core;
 using MadVoxel.Core.Player;
+using MadVoxel.Farming.Plots;
+using MadVoxel.Farming.Crops;
 using MadVoxel.Horde;
+using MadVoxel.Inventory;
+using MadVoxel.World.Terrain;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace MadVoxel.UI
 {
+    /// <summary>What the player is doing, which decides what the HUD is allowed to show.</summary>
+    public enum HudMode
+    {
+        /// <summary>Almost nothing: compass, toolbelt, two short bars.</summary>
+        OnFoot,
+        /// <summary>A snap piece is in hand, so the placement readout earns its corner.</summary>
+        Building,
+        /// <summary>Phase 1. The gauge cluster exists but never switches on yet.</summary>
+        Tractor
+    }
+
     /// <summary>
-    /// The in-world readout: vitals, hotbar, clock, horde countdown, target prompt and
-    /// a short toast feed.
+    /// Claim Slate's in-world layer: a scratched visor, not a dashboard. The centre of
+    /// the screen stays the world - everything lives in a corner or on the compass, and
+    /// each layer only appears while the thing it describes is in front of you.
     /// </summary>
     public class HudView : MonoBehaviour
     {
         const int ToastLimit = 5;
         const float ToastSeconds = 4.5f;
-        const float SlotSize = 74f;
+        const float SlotSize = 64f;
+        const float SlotGap = 5f;
+
+        /// <summary>Food and water stay off the visor until they are worth acting on.</summary>
+        const float LowVitalFraction = 0.35f;
+
+        /// <summary>How far out a POI still earns a pip.</summary>
+        const float PoiRange = 900f;
+        const float ThreatRange = 60f;
 
         PlayerRig _player;
         WorldClock _clock;
         HordeDirector _horde;
+        StructureWorld _structures;
+        SpawnDirector _spawner;
+        TerrainWorld _voxels;
 
         Canvas _canvas;
-        UIKit.Bar _health, _stamina, _food, _water;
-        Text _clockLabel, _hordeLabel, _levelLabel, _promptLabel, _heldLabel;
+        CompassStrip _compass;
+
+        ClaimSlate.Gauge _health, _stamina, _food, _water;
+        Text _levelLabel;
+        Image _xpSliver;
+        Image _pointPip;
+
+        Text _lookLabel, _lookDetail;
         Image _miningFill;
         RectTransform _miningRoot;
+
+        RectTransform _buildPanel;
+        Text _buildName, _buildState, _buildCost;
+
+        RectTransform _hordeRim;
+        Text _hordeLabel;
+
+        TractorPanel _tractor;
+
         RectTransform _toastRoot;
-        readonly List<SlotView> _hotbar = new List<SlotView>();
+        Text _heldLabel;
+
+        readonly List<SlotView> _belt = new List<SlotView>();
+        readonly List<Image> _beltUnderlines = new List<Image>();
         readonly List<Text> _toasts = new List<Text>();
         readonly List<float> _toastExpiry = new List<float>();
 
-        public void Init(PlayerRig player, WorldClock clock, HordeDirector horde)
+        public HudMode Mode { get; private set; }
+
+        public void Init(PlayerRig player, WorldClock clock, HordeDirector horde,
+                         StructureWorld structures, SpawnDirector spawner, TerrainWorld voxels)
         {
             _player = player;
             _clock = clock;
             _horde = horde;
+            _structures = structures;
+            _spawner = spawner;
+            _voxels = voxels;
 
             _canvas = UIKit.CreateCanvas("HUD", 0, transform);
+
+            BuildVisorScratches();
+            BuildHordeRim();
+
+            _compass = gameObject.AddComponent<CompassStrip>();
+            _compass.Build(_canvas.transform);
+
             BuildCrosshair();
+            BuildLookReadout();
             BuildVitals();
-            BuildHotbar();
-            BuildTopRight();
-            BuildPrompt();
+            BuildToolbelt();
+            BuildBuildPanel();
+            BuildHordeLine();
             BuildToasts();
 
+            _tractor = gameObject.AddComponent<TractorPanel>();
+            _tractor.Build(_canvas.transform);
+
             Notifications.Posted += PushToast;
-            _player.Inventory.Bag.Changed += RefreshHotbar;
-            _player.Inventory.SelectionChanged += RefreshHotbar;
-            RefreshHotbar();
+            _player.Inventory.Bag.Changed += RefreshToolbelt;
+            _player.Inventory.SelectionChanged += RefreshToolbelt;
+            RefreshToolbelt();
         }
 
         void OnDestroy()
@@ -56,8 +120,8 @@ namespace MadVoxel.UI
             Notifications.Posted -= PushToast;
             if (_player != null && _player.Inventory != null)
             {
-                _player.Inventory.Bag.Changed -= RefreshHotbar;
-                _player.Inventory.SelectionChanged -= RefreshHotbar;
+                _player.Inventory.Bag.Changed -= RefreshToolbelt;
+                _player.Inventory.SelectionChanged -= RefreshToolbelt;
             }
         }
 
@@ -68,92 +132,217 @@ namespace MadVoxel.UI
 
         // ------------------------------------------------------------------- build
 
+        /// <summary>
+        /// Four faint scratches at the edges. Not decoration for its own sake: they give
+        /// the overlay a physical plane, so the readouts read as etched into a visor
+        /// rather than floating in front of the eye.
+        /// </summary>
+        void BuildVisorScratches()
+        {
+            Scratch(new Vector2(0f, 1f), new Vector2(180f, -90f), new Vector2(260f, 1f), -18f);
+            Scratch(new Vector2(0f, 1f), new Vector2(120f, -150f), new Vector2(150f, 1f), -32f);
+            Scratch(new Vector2(1f, 1f), new Vector2(-220f, -130f), new Vector2(320f, 1f), 12f);
+            Scratch(new Vector2(1f, 0f), new Vector2(-160f, 240f), new Vector2(200f, 1f), -7f);
+        }
+
+        void Scratch(Vector2 anchor, Vector2 offset, Vector2 size, float angle)
+        {
+            var line = ClaimSlate.Fill(_canvas.transform, "Scratch", ClaimSlate.Scratch);
+            ClaimSlate.Place(line.rectTransform, anchor, new Vector2(0.5f, 0.5f), offset, size);
+            line.rectTransform.localRotation = Quaternion.Euler(0f, 0f, angle);
+        }
+
+        /// <summary>
+        /// The horde layer, built once and left off. Four oxidised edges, not a full
+        /// screen wash - the world in the middle has to stay legible while it is on.
+        /// </summary>
+        void BuildHordeRim()
+        {
+            _hordeRim = ClaimSlate.Rect(_canvas.transform, "HordeRim");
+            ClaimSlate.Stretch(_hordeRim);
+
+            RimEdge("RimTop", new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 120f));
+            RimEdge("RimBottom", new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 120f));
+            RimEdge("RimLeft", new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(150f, 0f));
+            RimEdge("RimRight", new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(150f, 0f));
+
+            _hordeRim.gameObject.SetActive(false);
+        }
+
+        void RimEdge(string name, Vector2 min, Vector2 max, Vector2 size)
+        {
+            var edge = ClaimSlate.Fill(_hordeRim, name, ClaimSlate.Fade(ClaimSlate.Blood, 0.16f));
+            var rect = edge.rectTransform;
+            rect.anchorMin = min;
+            rect.anchorMax = max;
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = size;
+            rect.anchoredPosition = Vector2.zero;
+        }
+
         void BuildCrosshair()
         {
-            var root = UIKit.Rect(_canvas.transform, "Crosshair");
-            UIKit.Place(root, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(26f, 26f));
+            var root = ClaimSlate.Rect(_canvas.transform, "Crosshair");
+            ClaimSlate.Place(root, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(26f, 26f));
 
-            var horizontal = UIKit.Image(root, "H", new Color(1f, 1f, 1f, 0.72f));
-            UIKit.Place(horizontal.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(18f, 2f));
+            // A gap in the middle, so the crosshair never hides the block it is on.
+            Tick(root, "Left", new Vector2(-9f, 0f), new Vector2(8f, 2f));
+            Tick(root, "Right", new Vector2(9f, 0f), new Vector2(8f, 2f));
+            Tick(root, "Up", new Vector2(0f, 9f), new Vector2(2f, 8f));
+            Tick(root, "Down", new Vector2(0f, -9f), new Vector2(2f, 8f));
 
-            var vertical = UIKit.Image(root, "V", new Color(1f, 1f, 1f, 0.72f));
-            UIKit.Place(vertical.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(2f, 18f));
-
-            var miningBack = UIKit.Image(_canvas.transform, "MiningProgress", new Color(0f, 0f, 0f, 0.55f));
-            UIKit.Place(miningBack.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -34f), new Vector2(150f, 8f));
+            var miningBack = ClaimSlate.Fill(_canvas.transform, "MiningProgress", ClaimSlate.Fade(ClaimSlate.OilBlack, 0.7f));
+            ClaimSlate.Place(miningBack.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -30f), new Vector2(132f, 6f));
             _miningRoot = miningBack.rectTransform;
 
-            _miningFill = UIKit.Image(miningBack.transform, "Fill", UIKit.Accent);
+            _miningFill = ClaimSlate.Fill(miningBack.transform, "Fill", ClaimSlate.SodiumGold);
             _miningFill.rectTransform.anchorMin = Vector2.zero;
             _miningFill.rectTransform.anchorMax = new Vector2(0f, 1f);
-            _miningFill.rectTransform.offsetMin = new Vector2(0f, 1f);
-            _miningFill.rectTransform.offsetMax = new Vector2(0f, -1f);
+            _miningFill.rectTransform.offsetMin = Vector2.zero;
+            _miningFill.rectTransform.offsetMax = Vector2.zero;
             _miningRoot.gameObject.SetActive(false);
+        }
+
+        void Tick(Transform parent, string name, Vector2 offset, Vector2 size)
+        {
+            var tick = ClaimSlate.Fill(parent, name, ClaimSlate.Fade(ClaimSlate.Bone, 0.75f));
+            ClaimSlate.Place(tick.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), offset, size);
+        }
+
+        /// <summary>
+        /// Two lines under the crosshair and nothing else: what you are looking at, and
+        /// the one number that matters about it.
+        /// </summary>
+        void BuildLookReadout()
+        {
+            _lookLabel = ClaimSlate.Stencil(_canvas.transform, "LookAt", "", 22, TextAnchor.UpperCenter, ClaimSlate.Bone);
+            ClaimSlate.Place(ClaimSlate.Holder(_lookLabel), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -44f), new Vector2(820f, 26f));
+
+            _lookDetail = ClaimSlate.Stencil(_canvas.transform, "LookDetail", "", 18, TextAnchor.UpperCenter, ClaimSlate.BoneDim);
+            ClaimSlate.Place(ClaimSlate.Holder(_lookDetail), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -70f), new Vector2(820f, 22f));
         }
 
         void BuildVitals()
         {
-            var root = UIKit.Rect(_canvas.transform, "Vitals");
-            UIKit.Place(root, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(26f, 26f), new Vector2(320f, 120f));
+            var root = ClaimSlate.Rect(_canvas.transform, "Vitals");
+            ClaimSlate.Place(root, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(30f, 30f), new Vector2(200f, 130f));
 
-            _health = MakeBar(root, "Health", new Color(0.72f, 0.20f, 0.17f), 0);
-            _stamina = MakeBar(root, "Stamina", new Color(0.78f, 0.66f, 0.22f), 1);
-            _food = MakeBar(root, "Food", new Color(0.50f, 0.42f, 0.22f), 2);
-            _water = MakeBar(root, "Water", new Color(0.26f, 0.50f, 0.62f), 3);
+            _water = Gauge(root, "Water", ClaimSlate.Hex(0x4A6B7A), ClaimSlate.Tick.Drop, 3);
+            _food = Gauge(root, "Food", ClaimSlate.CropSage, ClaimSlate.Tick.Grain, 2);
+            _stamina = Gauge(root, "Stamina", ClaimSlate.SodiumGold, ClaimSlate.Tick.Bars, 1);
+            _health = Gauge(root, "Health", ClaimSlate.Bone, ClaimSlate.Tick.Plus, 0);
+
+            // Hidden from the first frame, not hidden after one frame of flashing.
+            _food.SetVisible(false);
+            _water.SetVisible(false);
+
+            // Level sits above the bars as a number and a thin gold sliver - no ring, no
+            // badge. The rust pip beside it is the only nag: a point is waiting.
+            _levelLabel = ClaimSlate.Stencil(root, "Level", "LV 1", 17, TextAnchor.LowerLeft, ClaimSlate.BoneDim);
+            ClaimSlate.Place(ClaimSlate.Holder(_levelLabel), new Vector2(0f, 0f), new Vector2(0f, 0f),
+                new Vector2(0f, 104f), new Vector2(120f, 20f));
+
+            var xpTrack = ClaimSlate.Fill(root, "XpTrack", ClaimSlate.Fade(ClaimSlate.OilBlack, 0.7f));
+            ClaimSlate.Place(xpTrack.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f),
+                new Vector2(0f, 100f), new Vector2(176f, 2f));
+
+            _xpSliver = ClaimSlate.Fill(xpTrack.transform, "XpFill", ClaimSlate.SodiumGold);
+            _xpSliver.rectTransform.anchorMin = Vector2.zero;
+            _xpSliver.rectTransform.anchorMax = new Vector2(0f, 1f);
+            _xpSliver.rectTransform.offsetMin = Vector2.zero;
+            _xpSliver.rectTransform.offsetMax = Vector2.zero;
+
+            _pointPip = ClaimSlate.Fill(root, "PointPip", ClaimSlate.OxideRust);
+            ClaimSlate.Place(_pointPip.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f),
+                new Vector2(168f, 106f), new Vector2(8f, 8f));
+            _pointPip.gameObject.SetActive(false);
         }
 
-        UIKit.Bar MakeBar(Transform parent, string name, Color colour, int row)
+        ClaimSlate.Gauge Gauge(Transform parent, string name, Color colour, ClaimSlate.Tick tick, int row)
         {
-            var bar = UIKit.CreateBar(parent, name, colour);
-            UIKit.Place(bar.Root, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(0f, row * 28f), new Vector2(300f, 22f));
-            return bar;
+            var gauge = ClaimSlate.CreateGauge(parent, name, colour, tick);
+            ClaimSlate.Place(gauge.Root, new Vector2(0f, 0f), new Vector2(0f, 0f),
+                new Vector2(0f, row * 22f), new Vector2(176f, 18f));
+            return gauge;
         }
 
-        void BuildHotbar()
+        void BuildToolbelt()
         {
-            var root = UIKit.Rect(_canvas.transform, "Hotbar");
-            float width = PlayerInventory.HotbarSize * (SlotSize + 6f);
-            UIKit.Place(root, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 26f), new Vector2(width, SlotSize));
+            var root = ClaimSlate.Rect(_canvas.transform, "Toolbelt");
+            float width = PlayerInventory.HotbarSize * (SlotSize + SlotGap);
+            ClaimSlate.Place(root, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(0f, 30f), new Vector2(width, SlotSize));
 
             for (int i = 0; i < PlayerInventory.HotbarSize; i++)
             {
-                var slot = SlotView.Create(root, "Slot" + i, i, SlotSize);
-                float x = (i - (PlayerInventory.HotbarSize - 1) * 0.5f) * (SlotSize + 6f);
-                UIKit.Place(slot.Background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                var slot = SlotView.Create(root, "Belt" + i, i, SlotSize);
+                float x = (i - (PlayerInventory.HotbarSize - 1) * 0.5f) * (SlotSize + SlotGap);
+                ClaimSlate.Place(slot.Background.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                     new Vector2(x, 0f), new Vector2(SlotSize, SlotSize));
 
-                var index = UIKit.Label(slot.transform, "Index", (i + 1).ToString(), 16, TextAnchor.UpperRight, UIKit.TextDim);
-                UIKit.Stretch(index.rectTransform, 4f);
+                slot.Background.color = ClaimSlate.Metal;
+                ClaimSlate.Frame(slot.Background.rectTransform, ClaimSlate.Dim(ClaimSlate.Bone, 0.16f), 1f);
 
-                _hotbar.Add(slot);
+                var index = ClaimSlate.Stencil(slot.transform, "Index", (i + 1).ToString(), 14,
+                    TextAnchor.UpperLeft, ClaimSlate.Dim(ClaimSlate.Bone, 0.42f), false);
+                ClaimSlate.Stretch(ClaimSlate.Holder(index), 5f);
+
+                // Selection is an underline, not a glow. Ten lit squares is icon soup.
+                var underline = ClaimSlate.Fill(slot.transform, "Underline", ClaimSlate.OxideRust);
+                ClaimSlate.Place(underline.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 1f),
+                    new Vector2(0f, -4f), new Vector2(SlotSize, 3f));
+                underline.gameObject.SetActive(false);
+
+                _belt.Add(slot);
+                _beltUnderlines.Add(underline);
             }
 
-            _heldLabel = UIKit.Label(_canvas.transform, "HeldItem", "", 24, TextAnchor.LowerCenter, UIKit.TextMain);
-            UIKit.Place(_heldLabel.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 26f + SlotSize + 8f), new Vector2(700f, 30f));
+            _heldLabel = ClaimSlate.Stencil(_canvas.transform, "Held", "", 20, TextAnchor.LowerCenter, ClaimSlate.Bone);
+            ClaimSlate.Place(ClaimSlate.Holder(_heldLabel), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(0f, 30f + SlotSize + 10f), new Vector2(700f, 24f));
         }
 
-        void BuildTopRight()
+        /// <summary>The building layer: one corner plate, only while a snap piece is held.</summary>
+        void BuildBuildPanel()
         {
-            _clockLabel = UIKit.Label(_canvas.transform, "Clock", "", 30, TextAnchor.UpperRight, UIKit.TextMain);
-            UIKit.Place(_clockLabel.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-26f, -22f), new Vector2(420f, 36f));
+            var plate = ClaimSlate.Fill(_canvas.transform, "BuildPanel", ClaimSlate.Fade(ClaimSlate.OilBlack, 0.72f));
+            ClaimSlate.Place(plate.rectTransform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
+                new Vector2(-30f, 40f), new Vector2(330f, 104f));
+            _buildPanel = plate.rectTransform;
 
-            _hordeLabel = UIKit.Label(_canvas.transform, "Horde", "", 22, TextAnchor.UpperRight, UIKit.TextDim);
-            UIKit.Place(_hordeLabel.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-26f, -60f), new Vector2(420f, 28f));
+            var rule = ClaimSlate.Fill(_buildPanel, "Rule", ClaimSlate.OxideRust);
+            ClaimSlate.Place(rule.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), Vector2.zero, new Vector2(330f, 2f));
 
-            _levelLabel = UIKit.Label(_canvas.transform, "Level", "", 22, TextAnchor.UpperLeft, UIKit.TextDim);
-            UIKit.Place(_levelLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(26f, -22f), new Vector2(420f, 28f));
+            _buildName = ClaimSlate.Stencil(_buildPanel, "Piece", "", 21, TextAnchor.UpperLeft, ClaimSlate.Bone);
+            ClaimSlate.Place(ClaimSlate.Holder(_buildName), new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(14f, -12f), new Vector2(304f, 24f));
+
+            _buildState = ClaimSlate.Stencil(_buildPanel, "State", "", 18, TextAnchor.UpperLeft, ClaimSlate.CropSage);
+            ClaimSlate.Place(ClaimSlate.Holder(_buildState), new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(14f, -40f), new Vector2(304f, 22f));
+
+            _buildCost = ClaimSlate.Stencil(_buildPanel, "Cost", "", 16, TextAnchor.UpperLeft, ClaimSlate.BoneDim);
+            ClaimSlate.Place(ClaimSlate.Holder(_buildCost), new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(14f, -66f), new Vector2(304f, 34f));
+
+            _buildPanel.gameObject.SetActive(false);
         }
 
-        void BuildPrompt()
+        /// <summary>One line. No title card, no skull.</summary>
+        void BuildHordeLine()
         {
-            _promptLabel = UIKit.Label(_canvas.transform, "Prompt", "", 24, TextAnchor.MiddleCenter, UIKit.TextMain);
-            UIKit.Place(_promptLabel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -70f), new Vector2(760f, 30f));
+            _hordeLabel = ClaimSlate.Stencil(_canvas.transform, "Horde", "", 22, TextAnchor.UpperRight, ClaimSlate.Blood);
+            ClaimSlate.Place(ClaimSlate.Holder(_hordeLabel), new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-30f, -26f), new Vector2(420f, 26f));
         }
 
         void BuildToasts()
         {
-            _toastRoot = UIKit.Rect(_canvas.transform, "Toasts");
-            UIKit.Place(_toastRoot, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-26f, 150f), new Vector2(460f, 180f));
+            _toastRoot = ClaimSlate.Rect(_canvas.transform, "Toasts");
+            ClaimSlate.Place(_toastRoot, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-30f, 150f), new Vector2(460f, 180f));
         }
 
         // ------------------------------------------------------------------ update
@@ -162,53 +351,337 @@ namespace MadVoxel.UI
         {
             if (_player == null) return;
 
-            var stats = _player.Stats;
-            _health.Set(stats.Health, stats.MaxHealth, "HP " + Mathf.CeilToInt(stats.Health));
-            _stamina.Set(stats.Stamina, stats.MaxStamina, "STAM " + Mathf.CeilToInt(stats.Stamina));
-            _food.Set(stats.Food, stats.MaxFood, "FOOD " + Mathf.CeilToInt(stats.Food));
-            _water.Set(stats.Water, stats.MaxWater, "WATER " + Mathf.CeilToInt(stats.Water));
+            Mode = ResolveMode();
 
-            if (_clock != null) _clockLabel.text = _clock.FormatClock();
-            if (_horde != null)
+            UpdateVitals();
+            UpdateCompass();
+            UpdateLookReadout();
+            UpdateBuildLayer();
+            UpdateHordeLayer();
+            UpdateToasts();
+
+            var held = _player.Inventory.SelectedStack;
+            _heldLabel.text = held.IsEmpty ? "" : held.Item.displayName.ToUpperInvariant();
+        }
+
+        HudMode ResolveMode()
+        {
+            if (_tractor != null && _tractor.IsDriving) return HudMode.Tractor;
+            return _player.Interaction != null && _player.Interaction.Build.Active ? HudMode.Building : HudMode.OnFoot;
+        }
+
+        void UpdateVitals()
+        {
+            var stats = _player.Stats;
+
+            float healthFraction = stats.MaxHealth > 0f ? stats.Health / stats.MaxHealth : 0f;
+            _health.Set(stats.Health, stats.MaxHealth, Mathf.CeilToInt(stats.Health).ToString(),
+                ClaimSlate.VitalColour(healthFraction));
+            _stamina.Set(stats.Stamina, stats.MaxStamina, Mathf.CeilToInt(stats.Stamina).ToString(), ClaimSlate.SodiumGold);
+
+            // Food and water are not standing information. They appear when they bite.
+            float foodFraction = stats.MaxFood > 0f ? stats.Food / stats.MaxFood : 1f;
+            float waterFraction = stats.MaxWater > 0f ? stats.Water / stats.MaxWater : 1f;
+
+            _food.SetVisible(foodFraction <= LowVitalFraction);
+            if (foodFraction <= LowVitalFraction)
             {
-                _hordeLabel.text = _horde.StatusLine;
-                _hordeLabel.color = _horde.IsBloodMoonActive ? new Color(0.9f, 0.3f, 0.25f) : UIKit.TextDim;
+                _food.Set(stats.Food, stats.MaxFood, Mathf.CeilToInt(stats.Food).ToString(),
+                    foodFraction <= 0.12f ? ClaimSlate.OxideRust : ClaimSlate.CropSage);
+            }
+
+            _water.SetVisible(waterFraction <= LowVitalFraction);
+            if (waterFraction <= LowVitalFraction)
+            {
+                _water.Set(stats.Water, stats.MaxWater, Mathf.CeilToInt(stats.Water).ToString(),
+                    waterFraction <= 0.12f ? ClaimSlate.OxideRust : ClaimSlate.Hex(0x4A6B7A));
             }
 
             var progression = _player.Progression;
-            _levelLabel.text = string.Format("Level {0}   XP {1}/{2}{3}",
-                progression.Level,
-                Mathf.FloorToInt(progression.Xp),
-                Mathf.FloorToInt(progression.XpToNext),
-                progression.UnspentPerkPoints > 0
-                    ? "   [" + progression.UnspentPerkPoints + " pts - press P]" : "");
-            _levelLabel.color = progression.UnspentPerkPoints > 0 ? UIKit.Accent : UIKit.TextDim;
+            _levelLabel.text = "LV " + progression.Level;
+            _xpSliver.rectTransform.anchorMax = new Vector2(Mathf.Clamp01(progression.XpProgress01), 1f);
 
-            var interaction = _player.Interaction;
-            _promptLabel.text = interaction != null ? interaction.TargetPrompt : "";
-
-            float mining = interaction != null ? interaction.MiningProgress01 : 0f;
-            _miningRoot.gameObject.SetActive(mining > 0.001f);
-            if (mining > 0.001f) _miningFill.rectTransform.anchorMax = new Vector2(Mathf.Clamp01(mining), 1f);
-
-            var held = _player.Inventory.SelectedStack;
-            _heldLabel.text = held.IsEmpty ? "" : held.Item.displayName;
-
-            UpdateToasts();
+            bool pointWaiting = progression.UnspentPerkPoints > 0;
+            if (_pointPip.gameObject.activeSelf != pointWaiting) _pointPip.gameObject.SetActive(pointWaiting);
         }
 
-        void RefreshHotbar()
+        void UpdateCompass()
         {
-            for (int i = 0; i < _hotbar.Count; i++)
+            if (_compass == null) return;
+
+            float yaw = _player.Look != null ? _player.Look.Yaw : _player.transform.eulerAngles.y;
+            _compass.SetHeading(yaw);
+
+            if (_clock != null)
             {
-                _hotbar[i].Bind(_player.Inventory.Bag[i], i == _player.Inventory.SelectedIndex);
+                _compass.SetClock(string.Format("DAY {0}   {1}", _clock.Day, _clock.FormatClock()), _clock.IsNight);
+            }
+
+            Vector3 eye = _player.transform.position;
+            _compass.BeginPips();
+
+            AddTraderPips(eye);
+            AddClaimPips(eye);
+
+            if (_player.HasRespawnPoint)
+            {
+                _compass.AddPip(CompassStrip.PipKind.Bed, CompassStrip.BearingTo(eye, _player.RespawnPoint));
+            }
+
+            // Threat ticks are a horde-night layer. On a quiet night the compass stays
+            // a compass.
+            if (_horde != null && _horde.IsBloodMoonActive) AddThreatPips(eye);
+
+            _compass.EndPips();
+        }
+
+        void AddTraderPips(Vector3 eye)
+        {
+            var pois = TraderOutposts();
+            if (pois == null) return;
+
+            for (int i = 0; i < pois.Count; i++)
+            {
+                var poi = pois[i];
+                var centre = new Vector3(poi.CentreX, eye.y, poi.CentreZ);
+                if ((centre - eye).sqrMagnitude > PoiRange * PoiRange) continue;
+
+                _compass.AddPip(CompassStrip.PipKind.Trader, CompassStrip.BearingTo(eye, centre));
+            }
+        }
+
+        IReadOnlyList<Poi> _traderCache;
+
+        /// <summary>
+        /// POI layout is deterministic from the seed and never moves, so this is resolved
+        /// once rather than walked every frame.
+        /// </summary>
+        IReadOnlyList<Poi> TraderOutposts()
+        {
+            if (_traderCache != null) return _traderCache;
+            if (_voxels == null || _voxels.Terrain == null || _voxels.Terrain.Pois == null) return null;
+
+            _traderCache = _voxels.Terrain.Pois.TraderOutposts;
+            return _traderCache;
+        }
+
+        void AddClaimPips(Vector3 eye)
+        {
+            if (_structures == null || _structures.Claims == null) return;
+
+            var claims = _structures.Claims.Claims;
+            for (int i = 0; i < claims.Count; i++)
+            {
+                var centre = claims[i].Centre;
+                if ((centre - eye).sqrMagnitude > PoiRange * PoiRange) continue;
+
+                _compass.AddPip(CompassStrip.PipKind.Claim, CompassStrip.BearingTo(eye, centre));
+            }
+        }
+
+        void AddThreatPips(Vector3 eye)
+        {
+            if (_spawner == null) return;
+
+            var alive = _spawner.Alive;
+            for (int i = 0; i < alive.Count; i++)
+            {
+                var zombie = alive[i];
+                if (zombie == null || !zombie.IsAlive) continue;
+
+                Vector3 position = zombie.transform.position;
+                if ((position - eye).sqrMagnitude > ThreatRange * ThreatRange) continue;
+
+                _compass.AddPip(CompassStrip.PipKind.Threat, CompassStrip.BearingTo(eye, position));
+            }
+        }
+
+        // ---------------------------------------------------------- look-at readout
+
+        void UpdateLookReadout()
+        {
+            var interaction = _player.Interaction;
+            if (interaction == null) return;
+
+            float mining = interaction.MiningProgress01;
+            bool showMining = mining > 0.001f;
+            if (_miningRoot.gameObject.activeSelf != showMining) _miningRoot.gameObject.SetActive(showMining);
+            if (showMining) _miningFill.rectTransform.anchorMax = new Vector2(Mathf.Clamp01(mining), 1f);
+
+            string title, detail;
+            Color colour;
+            DescribeTarget(interaction, out title, out detail, out colour);
+
+            _lookLabel.text = title;
+            _lookLabel.color = colour;
+            _lookDetail.text = detail;
+        }
+
+        void DescribeTarget(PlayerInteraction interaction, out string title, out string detail, out Color colour)
+        {
+            title = "";
+            detail = "";
+            colour = ClaimSlate.Bone;
+
+            var target = interaction.Target;
+
+            // A garden plot is the one look-at that gets its own grammar, because the
+            // number a farmer wants is hours, not a health bar.
+            var plot = target.Structure != null ? target.Structure.GetComponentInChildren<FarmPlotStructure>() : null;
+            if (plot != null)
+            {
+                DescribePlot(plot, out title, out detail);
+                colour = ClaimSlate.CropSage;
+                return;
+            }
+
+            if (target.Kind == TargetKind.BuildPiece && target.Piece != null)
+            {
+                DescribePiece(target.Piece, out title, out detail);
+                return;
+            }
+
+            // Everything else keeps the prompt the interaction layer already writes.
+            string prompt = interaction.TargetPrompt;
+            if (string.IsNullOrEmpty(prompt)) return;
+
+            title = prompt.ToUpperInvariant();
+            colour = ClaimSlate.Bone;
+        }
+
+        void DescribePlot(FarmPlotStructure plot, out string title, out string detail)
+        {
+            if (plot.IsEmpty)
+            {
+                title = "FARM PLOT";
+                detail = "EMPTY  -  [E] PLANT A SEED";
+                return;
+            }
+
+            var crop = plot.Crop;
+            var stage = plot.Stage;
+            int index = Mathf.Clamp((int)stage, 1, 4);
+
+            if (stage == CropStage.Ready)
+            {
+                title = crop.displayName.ToUpperInvariant() + "   READY";
+                detail = "[E] HARVEST";
+                return;
+            }
+
+            float remaining = Mathf.Max(0f, crop.HoursToMature - (float)plot.HoursGrown);
+            title = string.Format("{0}   STAGE {1}/4   {2}H",
+                crop.displayName.ToUpperInvariant(), index, Mathf.CeilToInt(remaining));
+            detail = "";
+        }
+
+        void DescribePiece(BuildPiece piece, out string title, out string detail)
+        {
+            var def = piece.Definition;
+            bool stable = piece.Owner != null && piece.Owner.IsStable(piece.Address);
+
+            title = string.Format("{0}   {1}   {2}%",
+                def.displayName.ToUpperInvariant(), def.tier.ToString().ToUpperInvariant(),
+                Mathf.RoundToInt(piece.HealthFraction * 100f));
+
+            // Stability is the number that decides whether the storey above survives, so
+            // it is said in words, not implied by a tint.
+            detail = stable ? "STABLE" : "UNSUPPORTED";
+
+            if (!def.IsTopTier)
+            {
+                string cost = DescribeCost(def.upgradeCost);
+                if (!string.IsNullOrEmpty(cost)) detail += "   -   RMB " + cost;
+            }
+        }
+
+        string DescribeCost(List<RecipeIngredient> cost)
+        {
+            if (cost == null || cost.Count == 0) return "";
+
+            var bag = _player.Inventory.Bag;
+            var sb = new System.Text.StringBuilder();
+
+            for (int i = 0; i < cost.Count; i++)
+            {
+                var ingredient = cost[i];
+                if (ingredient.item == null) continue;
+                if (sb.Length > 0) sb.Append(", ");
+
+                sb.Append(bag.CountOf(ingredient.item)).Append('/').Append(ingredient.count)
+                  .Append(' ').Append(ingredient.item.displayName.ToUpperInvariant());
+            }
+            return sb.ToString();
+        }
+
+        // ------------------------------------------------------------ mode layers
+
+        void UpdateBuildLayer()
+        {
+            bool building = Mode == HudMode.Building;
+            if (_buildPanel.gameObject.activeSelf != building) _buildPanel.gameObject.SetActive(building);
+            if (!building) return;
+
+            var readout = _player.Interaction.Build;
+
+            _buildName.text = string.Format("{0}   {1}",
+                readout.PieceName.ToUpperInvariant(), readout.Tier.ToUpperInvariant());
+
+            if (!readout.Resolved)
+            {
+                _buildState.text = "NO SNAP POINT";
+                _buildState.color = ClaimSlate.BoneDim;
+            }
+            else if (readout.Valid)
+            {
+                _buildState.text = "SNAP OK";
+                _buildState.color = ClaimSlate.CropSage;
+            }
+            else
+            {
+                _buildState.text = readout.Reason.ToUpperInvariant();
+                _buildState.color = ClaimSlate.OxideRust;
+            }
+
+            _buildCost.text = "R ROTATE   RMB UPGRADE   LMB REPAIR";
+        }
+
+        void UpdateHordeLayer()
+        {
+            if (_horde == null) return;
+
+            string line = _horde.CountdownLine;
+            _hordeLabel.text = line;
+
+            bool active = _horde.IsBloodMoonActive;
+            _hordeLabel.color = active ? ClaimSlate.Blood : ClaimSlate.OxideRust;
+
+            if (_hordeRim.gameObject.activeSelf != active) _hordeRim.gameObject.SetActive(active);
+        }
+
+        // ------------------------------------------------------------- belt, toasts
+
+        void RefreshToolbelt()
+        {
+            for (int i = 0; i < _belt.Count; i++)
+            {
+                bool selected = i == _player.Inventory.SelectedIndex;
+                _belt[i].Bind(_player.Inventory.Bag[i], selected);
+
+                // Bind() tints the background; Claim Slate keeps every slot the same
+                // quiet metal and marks the selection underneath instead.
+                _belt[i].Background.color = ClaimSlate.Metal;
+                if (_beltUnderlines[i].gameObject.activeSelf != selected)
+                {
+                    _beltUnderlines[i].gameObject.SetActive(selected);
+                }
             }
         }
 
         void PushToast(string message)
         {
-            var label = UIKit.Label(_toastRoot, "Toast", message, 22, TextAnchor.LowerRight, UIKit.TextMain);
-            UIKit.Place(label.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), Vector2.zero, new Vector2(460f, 26f));
+            var label = ClaimSlate.Stencil(_toastRoot, "Toast", message, 20, TextAnchor.LowerRight, ClaimSlate.Bone, false);
+            ClaimSlate.Place(ClaimSlate.Holder(label), new Vector2(1f, 0f), new Vector2(1f, 0f), Vector2.zero, new Vector2(460f, 24f));
 
             _toasts.Add(label);
             _toastExpiry.Add(Time.time + ToastSeconds);
@@ -239,7 +712,7 @@ namespace MadVoxel.UI
         void RemoveToast(int index)
         {
             if (index < 0 || index >= _toasts.Count) return;
-            if (_toasts[index] != null) Destroy(_toasts[index].gameObject);
+            if (_toasts[index] != null) Destroy(ClaimSlate.Holder(_toasts[index]).gameObject);
             _toasts.RemoveAt(index);
             _toastExpiry.RemoveAt(index);
         }
@@ -249,8 +722,8 @@ namespace MadVoxel.UI
             for (int i = 0; i < _toasts.Count; i++)
             {
                 int fromBottom = _toasts.Count - 1 - i;
-                UIKit.Place(_toasts[i].rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f),
-                    new Vector2(0f, fromBottom * 28f), new Vector2(460f, 26f));
+                ClaimSlate.Place(ClaimSlate.Holder(_toasts[i]), new Vector2(1f, 0f), new Vector2(1f, 0f),
+                    new Vector2(0f, fromBottom * 26f), new Vector2(460f, 24f));
             }
         }
     }

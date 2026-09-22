@@ -6,16 +6,21 @@ namespace MadVoxel.UI
     /// <summary>
     /// Small builders for the runtime uGUI. Everything is code-built so the project
     /// carries no prefab assets that have to be kept in sync with the scripts.
+    ///
+    /// The colours are Claim Slate's, named here only so the older screens keep
+    /// compiling. New work should reach for <see cref="ClaimSlate"/> directly.
     /// </summary>
     public static class UIKit
     {
-        public static readonly Color Panel = new Color(0.07f, 0.07f, 0.075f, 0.93f);
-        public static readonly Color PanelSoft = new Color(0.11f, 0.11f, 0.12f, 0.88f);
-        public static readonly Color Slot = new Color(0.17f, 0.17f, 0.18f, 0.95f);
-        public static readonly Color SlotHot = new Color(0.30f, 0.27f, 0.20f, 0.98f);
-        public static readonly Color Accent = new Color(0.88f, 0.55f, 0.20f);
-        public static readonly Color TextMain = new Color(0.89f, 0.88f, 0.85f);
-        public static readonly Color TextDim = new Color(0.62f, 0.61f, 0.58f);
+        public static readonly Color Panel = ClaimSlate.Slate;
+        public static readonly Color PanelSoft = ClaimSlate.SlateSoft;
+        public static readonly Color Slot = ClaimSlate.Metal;
+        public static readonly Color SlotHot = ClaimSlate.MetalLit;
+        public static readonly Color Accent = ClaimSlate.OxideRust;
+        public static readonly Color Gold = ClaimSlate.SodiumGold;
+        public static readonly Color Sage = ClaimSlate.CropSage;
+        public static readonly Color TextMain = ClaimSlate.Bone;
+        public static readonly Color TextDim = ClaimSlate.BoneDim;
 
         static Font _font;
 
@@ -83,16 +88,24 @@ namespace MadVoxel.UI
             return label;
         }
 
+        /// <summary>
+        /// A stamped plate, not a card: square corners, a thin bone edge, and a rust-lean
+        /// hover. The label stays a single Text so callers can still find it with
+        /// GetComponentInChildren.
+        /// </summary>
         public static Button Button(Transform parent, string name, string text, int fontSize = 26)
         {
-            var image = Image(parent, name, PanelSoft);
+            var image = Image(parent, name, ClaimSlate.Metal);
             var button = image.gameObject.AddComponent<Button>();
 
             var colours = button.colors;
             colours.normalColor = Color.white;
-            colours.highlightedColor = new Color(1.25f, 1.15f, 0.95f);
-            colours.pressedColor = new Color(0.8f, 0.7f, 0.5f);
+            colours.highlightedColor = new Color(1.35f, 1.10f, 0.92f);
+            colours.pressedColor = new Color(0.82f, 0.60f, 0.42f);
+            colours.disabledColor = new Color(0.55f, 0.55f, 0.55f, 0.6f);
             button.colors = colours;
+
+            ClaimSlate.Frame(image.rectTransform, ClaimSlate.Dim(ClaimSlate.Bone, 0.20f), 1f);
 
             var label = Label(image.transform, "Label", text, fontSize, TextAnchor.MiddleCenter, TextMain);
             Stretch(label.rectTransform);
@@ -101,8 +114,9 @@ namespace MadVoxel.UI
 
         public static InputField Input(Transform parent, string name, string placeholder, string value = "")
         {
-            var image = Image(parent, name, new Color(0.05f, 0.05f, 0.06f, 0.95f));
+            var image = Image(parent, name, ClaimSlate.Fade(ClaimSlate.OilBlack, 0.92f));
             var field = image.gameObject.AddComponent<InputField>();
+            ClaimSlate.Frame(image.rectTransform, ClaimSlate.Dim(ClaimSlate.Bone, 0.20f), 1f);
 
             var text = Label(image.transform, "Text", value, 24, TextAnchor.MiddleLeft, TextMain);
             Stretch(text.rectTransform, 12f);
@@ -152,7 +166,7 @@ namespace MadVoxel.UI
 
         public static Bar CreateBar(Transform parent, string name, Color fillColour)
         {
-            var back = Image(parent, name, new Color(0.06f, 0.06f, 0.07f, 0.85f));
+            var back = Image(parent, name, ClaimSlate.Fade(ClaimSlate.OilBlack, 0.80f));
 
             var fill = Image(back.transform, "Fill", fillColour);
             fill.rectTransform.anchorMin = Vector2.zero;

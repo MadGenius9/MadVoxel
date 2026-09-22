@@ -32,6 +32,7 @@
     <Compile Include="InventoryTests.cs" />
     <Compile Include="SaveTests.cs" />
     <Compile Include="PerkTests.cs" />
+    <Compile Include="UiTests.cs" />
   </ItemGroup>
 
   <ItemGroup Label="Game sources under test">
@@ -67,6 +68,9 @@
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Fields/FieldGrid.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/AI/ZombieDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Horde/HordeSchedule.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Horde/BloodMoonClock.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/UI/ClaimSlate.Palette.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/UI/CompassMath.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Perks/PerkDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Perks/PerkIds.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Perks/PerkEffects.cs" />

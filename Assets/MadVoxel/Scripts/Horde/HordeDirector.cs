@@ -62,22 +62,15 @@ namespace MadVoxel.Horde
 
         bool IsInBloodMoonWindow()
         {
-            int every = Mathf.Max(1, _schedule.everyNDays);
-            int day = _clock.Day;
-            float hour = _clock.HourOfDay;
-
-            bool tonight = day % every == 0 && hour >= _schedule.startHour;
-            bool tailOfLastNight = (day - 1) % every == 0 && (day - 1) > 0 && hour < _schedule.endHour;
-            return tonight || tailOfLastNight;
+            return BloodMoonClock.IsInWindow(_clock.Day, _clock.HourOfDay,
+                _schedule.everyNDays, _schedule.startHour, _schedule.endHour);
         }
 
         /// <summary>The next day number that carries a blood moon.</summary>
         public int NextBloodMoonDay()
         {
-            int every = Mathf.Max(1, _schedule.everyNDays);
-            int day = _clock.Day;
-            if (day % every == 0 && _clock.HourOfDay < _schedule.startHour) return day;
-            return ((day / every) + 1) * every;
+            return BloodMoonClock.NextDay(_clock.Day, _clock.HourOfDay,
+                _schedule.everyNDays, _schedule.startHour);
         }
 
         void WarnIfTonight()
@@ -184,15 +177,41 @@ namespace MadVoxel.Horde
             _hordeNumber = Mathf.Max(0, hordeNumber);
         }
 
+        /// <summary>
+        /// In-game hours until the blood moon window opens. Negative while one is
+        /// running, so the HUD can tell "soon" from "now" without a second call.
+        /// </summary>
+        public float HoursUntilBloodMoon
+        {
+            get
+            {
+                if (_schedule == null || _clock == null) return float.MaxValue;
+                if (_active) return -1f;
+
+                return BloodMoonClock.HoursUntil(_clock.Day, _clock.HourOfDay,
+                    _schedule.everyNDays, _schedule.startHour);
+            }
+        }
+
+        /// <summary>
+        /// The one line the HUD is allowed to show about the horde: "BLOOD MOON  00:18",
+        /// counting down in game time. Empty until it is close enough to matter.
+        /// </summary>
+        public string CountdownLine
+        {
+            get
+            {
+                if (_schedule == null || _clock == null) return "";
+                return BloodMoonClock.CountdownLine(HoursUntilBloodMoon, _active);
+            }
+        }
+
         public string StatusLine
         {
             get
             {
-                if (_active) return "BLOOD MOON";
-                int next = NextBloodMoonDay();
-                int days = next - _clock.Day;
-                if (days <= 0) return "Blood moon tonight";
-                return string.Format("Blood moon in {0} day{1}", days, days == 1 ? "" : "s");
+                if (_schedule == null || _clock == null) return "";
+                return BloodMoonClock.StatusLine(_clock.Day, NextBloodMoonDay(), _active);
             }
         }
     }

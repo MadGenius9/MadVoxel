@@ -181,6 +181,13 @@ executed. Worlds record which mods built them and warn on load if one is missing
 - **Developer hotkeys ship enabled.** Untick *Developer Tools* on the `MadVoxel` object
   before a release build.
 - **Audio.** There is none.
+- **The Claim Slate trader and silo screens are unbuilt.** Both are specified in
+  `UI.md`, and both wait on a runtime to sit behind them. The tractor cluster is
+  built but permanently switched off until something drives.
+- **The toolbelt is nine slots.** The inventory is 9 + 27 and the save stores 36
+  slots; ten would be a model and save change, not a UI change.
+- **The UI has never been rendered.** Every layout number in Claim Slate is a
+  considered guess at a 1920x1080 reference canvas. Nobody has seen it draw.
 - **Mods are data only.** A mod can add a crop or a zombie because the game already
   knows how to grow and fight; it cannot add new behaviour. Script mods are the next
   layer and the loader is shaped for them.

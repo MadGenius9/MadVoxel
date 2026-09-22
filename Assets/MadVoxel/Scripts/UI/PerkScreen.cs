@@ -10,15 +10,22 @@ using UnityEngine.UI;
 namespace MadVoxel.UI
 {
     /// <summary>
-    /// The skills screen. One column of categories, one scrolling list of perks, and a
-    /// buy button per row that says why it is disabled rather than just greying out.
+    /// The skills screen as a shop-manual wiring diagram. A rust trunk runs down the
+    /// category, each perk hangs off it on a lead, and the node at the junction says
+    /// whether the circuit is live: welded shut when you own a rank, drawn in grease
+    /// pencil when you do not. Rank pips repeat the same reading as filled or empty
+    /// boxes, so ownership never depends on colour alone.
     /// </summary>
     public class PerkScreen : MonoBehaviour
     {
         const float RowHeight = 104f;
-        const float RowGap = 6f;
-        const float ListWidth = 980f;
-        const float CategoryWidth = 240f;
+        const float RowGap = 8f;
+        const float ListWidth = 1000f;
+        const float CategoryWidth = 236f;
+
+        const float BusX = 22f;
+        const float NodeX = 44f;
+        const float CardX = 70f;
 
         PlayerRig _player;
         PerkTreeDefinition _tree;
@@ -26,13 +33,14 @@ namespace MadVoxel.UI
         Canvas _canvas;
         RectTransform _panel;
         RectTransform _listContent;
+        RectTransform _bus;
         Text _header;
         UIKit.Bar _xpBar;
 
         PerkCategory _category = PerkCategory.Mining;
 
         readonly List<CategoryTab> _tabs = new List<CategoryTab>();
-        readonly List<PerkRow> _rows = new List<PerkRow>();
+        readonly List<PerkNode> _nodes = new List<PerkNode>();
 
         public bool IsOpen { get { return _canvas != null && _canvas.enabled; } }
 
@@ -40,19 +48,26 @@ namespace MadVoxel.UI
         {
             public PerkCategory Category;
             public Image Background;
+            public Image Marker;
             public Text Label;
         }
 
-        class PerkRow
+        /// <summary>One perk: its junction on the trunk, and the card hanging off it.</summary>
+        class PerkNode
         {
             public PerkDefinition Perk;
-            public Image Background;
+            public Image Card;
+            public Image Lead;
+            public Image Junction;
+            public Image JunctionCore;
             public Text Title;
             public Text Description;
             public Text Effects;
             public Button Buy;
             public Text BuyLabel;
             public Image BuyBackground;
+            public readonly List<Image> RankPips = new List<Image>();
+            public readonly List<Image> RankFills = new List<Image>();
         }
 
         public void Init(PlayerRig player, ContentDatabase content)
@@ -61,8 +76,9 @@ namespace MadVoxel.UI
             _tree = content != null ? content.perkTree : null;
 
             _canvas = UIKit.CreateCanvas("PerkScreen", 11, transform);
-            var backdrop = UIKit.Image(_canvas.transform, "Backdrop", new Color(0f, 0f, 0f, 0.7f));
-            UIKit.Stretch(backdrop.rectTransform);
+
+            var backdrop = ClaimSlate.Surface(_canvas.transform, "Backdrop", ClaimSlate.Fade(ClaimSlate.OilBlack, 0.82f));
+            ClaimSlate.Stretch(backdrop.rectTransform);
 
             BuildFrame();
             BuildCategories();
@@ -85,58 +101,91 @@ namespace MadVoxel.UI
 
         void BuildFrame()
         {
-            var panel = UIKit.Image(_canvas.transform, "Panel", UIKit.Panel);
-            UIKit.Place(panel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                Vector2.zero, new Vector2(1320f, 820f));
-            _panel = panel.rectTransform;
+            var plate = ClaimSlate.Surface(_canvas.transform, "Panel", ClaimSlate.SlateDeep);
+            ClaimSlate.Place(plate.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(1340f, 830f));
+            _panel = plate.rectTransform;
+            ClaimSlate.Frame(_panel, ClaimSlate.Dim(ClaimSlate.Bone, 0.24f));
+            ClaimSlate.Rivets(_panel, 16f, 6f);
 
-            var title = UIKit.Label(panel.transform, "Title", "SKILLS", 34, TextAnchor.UpperLeft, UIKit.Accent);
-            UIKit.Place(title.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -18f), new Vector2(400f, 40f));
+            var title = ClaimSlate.Stencil(_panel, "Title", "SKILLS", 34, TextAnchor.UpperLeft, ClaimSlate.Bone);
+            ClaimSlate.Place(ClaimSlate.Holder(title), new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(32f, -20f), new Vector2(400f, 40f));
 
-            _header = UIKit.Label(panel.transform, "Header", "", 24, TextAnchor.UpperRight, UIKit.TextMain);
-            UIKit.Place(_header.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-28f, -22f), new Vector2(700f, 32f));
+            var stamp = ClaimSlate.Stencil(_panel, "Stamp", "MADGENIUS  -  FIELD MANUAL", 15,
+                TextAnchor.UpperLeft, ClaimSlate.Dim(ClaimSlate.Bone, 0.34f), false);
+            ClaimSlate.Place(ClaimSlate.Holder(stamp), new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(34f, -58f), new Vector2(400f, 20f));
 
-            _xpBar = UIKit.CreateBar(panel.transform, "XpBar", new Color(0.35f, 0.62f, 0.85f));
-            UIKit.Place(_xpBar.Root, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -62f), new Vector2(1264f, 18f));
+            _header = ClaimSlate.Stencil(_panel, "Header", "", 22, TextAnchor.UpperRight, ClaimSlate.Bone);
+            ClaimSlate.Place(ClaimSlate.Holder(_header), new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-32f, -26f), new Vector2(700f, 28f));
 
-            var hint = UIKit.Label(panel.transform, "Hint", "P or Esc to close", 18, TextAnchor.LowerRight, UIKit.TextDim);
-            UIKit.Place(hint.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-28f, 14f), new Vector2(400f, 24f));
+            _xpBar = UIKit.CreateBar(_panel, "XpBar", ClaimSlate.SodiumGold);
+            ClaimSlate.Place(_xpBar.Root, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(32f, -86f), new Vector2(1276f, 14f));
 
-            var viewport = UIKit.Image(panel.transform, "Viewport", new Color(0f, 0f, 0f, 0.25f));
-            UIKit.Place(viewport.rectTransform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                new Vector2(-28f, -28f), new Vector2(ListWidth, 660f));
+            var hint = ClaimSlate.Stencil(_panel, "Hint", "P OR ESC TO CLOSE", 16,
+                TextAnchor.LowerRight, ClaimSlate.BoneDim, false);
+            ClaimSlate.Place(ClaimSlate.Holder(hint), new Vector2(1f, 0f), new Vector2(1f, 0f),
+                new Vector2(-32f, 16f), new Vector2(400f, 22f));
+
+            var viewport = ClaimSlate.Surface(_panel, "Viewport", ClaimSlate.Fade(ClaimSlate.OilBlack, 0.35f));
+            ClaimSlate.Place(viewport.rectTransform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
+                new Vector2(-30f, -34f), new Vector2(ListWidth, 646f));
             viewport.gameObject.AddComponent<RectMask2D>();
 
-            _listContent = UIKit.Rect(viewport.transform, "Content");
+            _listContent = ClaimSlate.Rect(viewport.transform, "Content");
             _listContent.anchorMin = new Vector2(0f, 1f);
             _listContent.anchorMax = new Vector2(1f, 1f);
             _listContent.pivot = new Vector2(0.5f, 1f);
             _listContent.anchoredPosition = Vector2.zero;
             _listContent.sizeDelta = Vector2.zero;
 
+            // The trunk. Everything in the category hangs off this one line.
+            var bus = ClaimSlate.Fill(_listContent, "Bus", ClaimSlate.OxideRust);
+            bus.rectTransform.anchorMin = new Vector2(0f, 1f);
+            bus.rectTransform.anchorMax = new Vector2(0f, 1f);
+            bus.rectTransform.pivot = new Vector2(0.5f, 1f);
+            bus.rectTransform.anchoredPosition = new Vector2(BusX, 0f);
+            _bus = bus.rectTransform;
+
             var scroll = viewport.gameObject.AddComponent<ScrollRect>();
             scroll.content = _listContent;
             scroll.viewport = viewport.rectTransform;
             scroll.horizontal = false;
             scroll.movementType = ScrollRect.MovementType.Clamped;
-            scroll.scrollSensitivity = 34f;
+            scroll.scrollSensitivity = 36f;
         }
 
         void BuildCategories()
         {
-            var panel = _panel;
             var categories = (PerkCategory[])Enum.GetValues(typeof(PerkCategory));
 
             for (int i = 0; i < categories.Length; i++)
             {
                 var category = categories[i];
-                var button = UIKit.Button(panel, "Tab" + category, category.ToString(), 24);
-                UIKit.Place(button.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(28f, -92f - i * 58f), new Vector2(CategoryWidth, 50f));
+                var card = ClaimSlate.Surface(_panel, "Tab" + category, ClaimSlate.Metal);
+                ClaimSlate.Place(card.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(32f, -114f - i * 58f), new Vector2(CategoryWidth, 50f));
+                ClaimSlate.Frame(card.rectTransform, ClaimSlate.Dim(ClaimSlate.Bone, 0.18f), 1f);
 
-                var label = button.GetComponentInChildren<Text>();
-                label.alignment = TextAnchor.MiddleLeft;
-                label.rectTransform.offsetMin = new Vector2(16f, 0f);
+                var button = card.gameObject.AddComponent<Button>();
+                var colours = button.colors;
+                colours.normalColor = Color.white;
+                colours.highlightedColor = new Color(1.30f, 1.10f, 0.94f);
+                colours.pressedColor = new Color(0.82f, 0.60f, 0.42f);
+                button.colors = colours;
+
+                // A rust spine on the selected tab, mirroring the trunk in the list.
+                var marker = ClaimSlate.Fill(card.transform, "Marker", ClaimSlate.OxideRust);
+                ClaimSlate.Place(marker.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
+                    Vector2.zero, new Vector2(4f, 50f));
+
+                var label = ClaimSlate.Stencil(card.transform, "Label", category.ToString().ToUpperInvariant(), 22,
+                    TextAnchor.MiddleLeft, ClaimSlate.Bone);
+                ClaimSlate.Place(ClaimSlate.Holder(label), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
+                    new Vector2(20f, 0f), new Vector2(CategoryWidth - 30f, 26f));
 
                 var captured = category;
                 button.onClick.AddListener(() => SelectCategory(captured));
@@ -144,7 +193,8 @@ namespace MadVoxel.UI
                 _tabs.Add(new CategoryTab
                 {
                     Category = category,
-                    Background = button.GetComponent<Image>(),
+                    Background = card,
+                    Marker = marker,
                     Label = label
                 });
             }
@@ -155,7 +205,7 @@ namespace MadVoxel.UI
         public void Open()
         {
             _canvas.enabled = true;
-            RebuildRows();
+            RebuildNodes();
             Refresh();
         }
 
@@ -167,23 +217,26 @@ namespace MadVoxel.UI
         void SelectCategory(PerkCategory category)
         {
             _category = category;
-            RebuildRows();
+            RebuildNodes();
             Refresh();
         }
 
-        // -------------------------------------------------------------------- rows
+        // ------------------------------------------------------------------- nodes
 
-        void RebuildRows()
+        void RebuildNodes()
         {
-            for (int i = 0; i < _rows.Count; i++)
+            for (int i = 0; i < _nodes.Count; i++)
             {
-                if (_rows[i].Background != null) Destroy(_rows[i].Background.gameObject);
+                if (_nodes[i].Card != null) Destroy(_nodes[i].Card.gameObject);
+                if (_nodes[i].Lead != null) Destroy(_nodes[i].Lead.gameObject);
+                if (_nodes[i].Junction != null) Destroy(_nodes[i].Junction.gameObject);
             }
-            _rows.Clear();
+            _nodes.Clear();
 
             if (_tree == null)
             {
                 _listContent.sizeDelta = Vector2.zero;
+                _bus.sizeDelta = new Vector2(2f, 0f);
                 return;
             }
 
@@ -193,46 +246,116 @@ namespace MadVoxel.UI
                 var perk = _tree.perks[i];
                 if (perk == null || perk.category != _category) continue;
 
-                _rows.Add(BuildRow(perk, row));
+                _nodes.Add(BuildNode(perk, row));
                 row++;
             }
 
-            _listContent.sizeDelta = new Vector2(0f, row * (RowHeight + RowGap) + 12f);
+            float height = row * (RowHeight + RowGap) + 12f;
+            _listContent.sizeDelta = new Vector2(0f, height);
+
+            // The trunk stops at the last junction rather than running off the page.
+            float busLength = row > 0 ? (row - 1) * (RowHeight + RowGap) + RowHeight * 0.5f + 8f : 0f;
+            _bus.sizeDelta = new Vector2(2f, busLength);
         }
 
-        PerkRow BuildRow(PerkDefinition perk, int index)
+        PerkNode BuildNode(PerkDefinition perk, int index)
         {
-            var background = UIKit.Image(_listContent, "Perk_" + perk.stringId, UIKit.PanelSoft);
-            UIKit.Place(background.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(8f, -(index * (RowHeight + RowGap)) - 8f), new Vector2(ListWidth - 32f, RowHeight));
+            float top = -(index * (RowHeight + RowGap)) - 8f;
+            float centre = top - RowHeight * 0.5f;
 
-            var title = UIKit.Label(background.transform, "Title", perk.displayName, 26, TextAnchor.UpperLeft, UIKit.TextMain);
-            UIKit.Place(title.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(18f, -12f), new Vector2(640f, 30f));
+            var node = new PerkNode { Perk = perk };
 
-            var description = UIKit.Label(background.transform, "Desc", perk.description, 19, TextAnchor.UpperLeft, UIKit.TextDim);
-            UIKit.Place(description.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(18f, -44f), new Vector2(700f, 24f));
+            // Lead: the wire from the trunk out to the card.
+            var lead = ClaimSlate.Fill(_listContent, "Lead_" + perk.stringId, ClaimSlate.Pencil);
+            lead.rectTransform.anchorMin = new Vector2(0f, 1f);
+            lead.rectTransform.anchorMax = new Vector2(0f, 1f);
+            lead.rectTransform.pivot = new Vector2(0f, 0.5f);
+            lead.rectTransform.anchoredPosition = new Vector2(BusX, centre);
+            lead.rectTransform.sizeDelta = new Vector2(CardX - BusX, 2f);
+            node.Lead = lead;
 
-            var effects = UIKit.Label(background.transform, "Effects", "", 18, TextAnchor.UpperLeft, UIKit.Accent);
-            UIKit.Place(effects.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(18f, -72f), new Vector2(760f, 24f));
+            // Junction: welded shut once a rank is owned, an empty pencil box until then.
+            var junction = ClaimSlate.Fill(_listContent, "Node_" + perk.stringId, Color.clear);
+            junction.rectTransform.anchorMin = new Vector2(0f, 1f);
+            junction.rectTransform.anchorMax = new Vector2(0f, 1f);
+            junction.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            junction.rectTransform.anchoredPosition = new Vector2(NodeX, centre);
+            junction.rectTransform.sizeDelta = new Vector2(16f, 16f);
+            ClaimSlate.Frame(junction.rectTransform, ClaimSlate.Pencil, 2f);
+            node.Junction = junction;
 
-            var buy = UIKit.Button(background.transform, "Buy", "", 20);
-            UIKit.Place(buy.GetComponent<RectTransform>(), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                new Vector2(-16f, 0f), new Vector2(200f, 56f));
+            var core = ClaimSlate.Fill(junction.transform, "Core", ClaimSlate.OxideRust);
+            ClaimSlate.Stretch(core.rectTransform, 4f);
+            core.gameObject.SetActive(false);
+            node.JunctionCore = core;
+
+            // Card.
+            float cardWidth = ListWidth - CardX - 24f;
+            var card = ClaimSlate.Surface(_listContent, "Card_" + perk.stringId, ClaimSlate.Metal);
+            card.rectTransform.anchorMin = new Vector2(0f, 1f);
+            card.rectTransform.anchorMax = new Vector2(0f, 1f);
+            card.rectTransform.pivot = new Vector2(0f, 1f);
+            card.rectTransform.anchoredPosition = new Vector2(CardX, top);
+            card.rectTransform.sizeDelta = new Vector2(cardWidth, RowHeight);
+            ClaimSlate.Frame(card.rectTransform, ClaimSlate.Dim(ClaimSlate.Bone, 0.18f), 1f);
+            node.Card = card;
+
+            node.Title = ClaimSlate.Stencil(card.transform, "Title", perk.displayName.ToUpperInvariant(), 24,
+                TextAnchor.UpperLeft, ClaimSlate.Bone);
+            ClaimSlate.Place(ClaimSlate.Holder(node.Title), new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(18f, -10f), new Vector2(520f, 28f));
+
+            node.Description = ClaimSlate.Stencil(card.transform, "Desc", perk.description, 17,
+                TextAnchor.UpperLeft, ClaimSlate.BoneDim, false);
+            ClaimSlate.Place(ClaimSlate.Holder(node.Description), new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(18f, -42f), new Vector2(cardWidth - 260f, 22f));
+
+            node.Effects = ClaimSlate.Stencil(card.transform, "Effects", "", 16,
+                TextAnchor.UpperLeft, ClaimSlate.SodiumGold, false);
+            ClaimSlate.Place(ClaimSlate.Holder(node.Effects), new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(18f, -68f), new Vector2(cardWidth - 260f, 22f));
+
+            BuildRankPips(node, card.transform, perk);
+
+            var buy = UIKit.Button(card.transform, "Buy", "", 18);
+            ClaimSlate.Place(buy.GetComponent<RectTransform>(), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
+                new Vector2(-16f, -8f), new Vector2(200f, 46f));
+            node.Buy = buy;
+            node.BuyLabel = buy.GetComponentInChildren<Text>();
+            node.BuyBackground = buy.GetComponent<Image>();
 
             var captured = perk;
             buy.onClick.AddListener(() => Buy(captured));
 
-            return new PerkRow
+            return node;
+        }
+
+        /// <summary>
+        /// One box per rank. Filled means welded on; an outline means still penciled in.
+        /// This is the colourblind half of the contract - the fill is a shape change.
+        /// </summary>
+        void BuildRankPips(PerkNode node, Transform parent, PerkDefinition perk)
+        {
+            const float PipWidth = 18f;
+            const float PipGap = 4f;
+
+            float total = perk.maxRank * (PipWidth + PipGap) - PipGap;
+
+            for (int i = 0; i < perk.maxRank; i++)
             {
-                Perk = perk,
-                Background = background,
-                Title = title,
-                Description = description,
-                Effects = effects,
-                Buy = buy,
-                BuyLabel = buy.GetComponentInChildren<Text>(),
-                BuyBackground = buy.GetComponent<Image>()
-            };
+                var pip = ClaimSlate.Fill(parent, "Pip" + i, Color.clear);
+                ClaimSlate.Place(pip.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f),
+                    new Vector2(-16f - (total - (i * (PipWidth + PipGap)) - PipWidth), -14f),
+                    new Vector2(PipWidth, 12f));
+                ClaimSlate.Frame(pip.rectTransform, ClaimSlate.Pencil, 1f);
+
+                var fill = ClaimSlate.Fill(pip.transform, "Fill", ClaimSlate.OxideRust);
+                ClaimSlate.Stretch(fill.rectTransform, 2f);
+                fill.gameObject.SetActive(false);
+
+                node.RankPips.Add(pip);
+                node.RankFills.Add(fill);
+            }
         }
 
         void Buy(PerkDefinition perk)
@@ -255,38 +378,55 @@ namespace MadVoxel.UI
 
             var progression = _player.Progression;
 
-            _header.text = string.Format("Level {0}    {1} point(s) unspent", progression.Level, progression.UnspentPerkPoints);
+            _header.text = string.Format("LEVEL {0}    {1} POINT(S) UNSPENT",
+                progression.Level, progression.UnspentPerkPoints);
+            _header.color = progression.UnspentPerkPoints > 0 ? ClaimSlate.OxideRust : ClaimSlate.Bone;
+
             _xpBar.Set(progression.Xp, progression.XpToNext,
                 string.Format("XP {0} / {1}", Mathf.FloorToInt(progression.Xp), Mathf.FloorToInt(progression.XpToNext)));
 
             for (int i = 0; i < _tabs.Count; i++)
             {
                 bool active = _tabs[i].Category == _category;
-                _tabs[i].Background.color = active ? UIKit.SlotHot : UIKit.PanelSoft;
-                _tabs[i].Label.color = active ? UIKit.Accent : UIKit.TextMain;
+                _tabs[i].Background.color = active ? ClaimSlate.MetalLit : ClaimSlate.Metal;
+                _tabs[i].Marker.color = active ? ClaimSlate.OxideRust : ClaimSlate.Fade(ClaimSlate.OxideRust, 0.18f);
+                _tabs[i].Label.color = active ? ClaimSlate.Bone : ClaimSlate.BoneDim;
             }
 
-            for (int i = 0; i < _rows.Count; i++)
+            for (int i = 0; i < _nodes.Count; i++) RefreshNode(_nodes[i], progression);
+        }
+
+        void RefreshNode(PerkNode node, PlayerProgression progression)
+        {
+            var perk = node.Perk;
+            int rank = progression.GetRank(perk.stringId);
+            bool owned = rank > 0;
+
+            // Welded or penciled: the lead and the junction both change, so the wiring
+            // reads at a glance from the trunk outwards.
+            node.Lead.color = owned ? ClaimSlate.Bone : ClaimSlate.Pencil;
+            node.JunctionCore.gameObject.SetActive(owned);
+            node.Card.color = owned ? ClaimSlate.MetalLit : ClaimSlate.Metal;
+            node.Title.color = owned ? ClaimSlate.Bone : ClaimSlate.Pencil;
+
+            for (int i = 0; i < node.RankFills.Count; i++)
             {
-                var row = _rows[i];
-                var perk = row.Perk;
-                int rank = progression.GetRank(perk.stringId);
-
-                row.Title.text = string.Format("{0}   rank {1}/{2}", perk.displayName, rank, perk.maxRank);
-                row.Title.color = rank > 0 ? UIKit.Accent : UIKit.TextMain;
-                row.Effects.text = PerkService.DescribeEffects(perk, rank);
-
-                var verdict = PerkService.Evaluate(perk, rank, progression.Level,
-                    progression.UnspentPerkPoints, progression.GetRank);
-
-                bool buyable = verdict == PerkPurchase.Ok;
-                row.Buy.interactable = buyable;
-                row.BuyLabel.text = buyable
-                    ? string.Format("Buy  ({0} pt)", PerkService.CostOfNextRank(perk))
-                    : PerkService.Explain(verdict, perk, _tree);
-                row.BuyLabel.color = buyable ? UIKit.TextMain : UIKit.TextDim;
-                row.BuyBackground.color = buyable ? UIKit.SlotHot : new Color(0.09f, 0.09f, 0.1f, 0.9f);
+                bool filled = i < rank;
+                if (node.RankFills[i].gameObject.activeSelf != filled) node.RankFills[i].gameObject.SetActive(filled);
             }
+
+            node.Effects.text = PerkService.DescribeEffects(perk, rank);
+
+            var verdict = PerkService.Evaluate(perk, rank, progression.Level,
+                progression.UnspentPerkPoints, progression.GetRank);
+
+            bool buyable = verdict == PerkPurchase.Ok;
+            node.Buy.interactable = buyable;
+            node.BuyLabel.text = buyable
+                ? string.Format("WELD RANK {0}  ({1} PT)", rank + 1, PerkService.CostOfNextRank(perk))
+                : PerkService.Explain(verdict, perk, _tree).ToUpperInvariant();
+            node.BuyLabel.color = buyable ? ClaimSlate.Bone : ClaimSlate.BoneDim;
+            node.BuyBackground.color = buyable ? ClaimSlate.OxideRust : ClaimSlate.Fade(ClaimSlate.OilBlack, 0.55f);
         }
     }
 }

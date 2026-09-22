@@ -92,6 +92,23 @@ namespace UnityEngine
         public static Color white { get { return new Color(1f, 1f, 1f); } }
         public static Color clear { get { return new Color(0f, 0f, 0f, 0f); } }
         public static Color operator *(Color c, float f) { return new Color(c.r * f, c.g * f, c.b * f, c.a); }
+
+        // Unity compares colours approximately, so the shim does too - an exact float
+        // compare here would make a palette check pass or fail on rounding noise.
+        public static bool operator ==(Color a, Color b)
+        {
+            return Mathf.Abs(a.r - b.r) < 0.0001f && Mathf.Abs(a.g - b.g) < 0.0001f
+                && Mathf.Abs(a.b - b.b) < 0.0001f && Mathf.Abs(a.a - b.a) < 0.0001f;
+        }
+
+        public static bool operator !=(Color a, Color b) { return !(a == b); }
+        public override bool Equals(object o) { return o is Color && this == (Color)o; }
+        public override int GetHashCode()
+        {
+            return Mathf.RoundToInt(r * 255f) << 24 ^ Mathf.RoundToInt(g * 255f) << 16
+                 ^ Mathf.RoundToInt(b * 255f) << 8 ^ Mathf.RoundToInt(a * 255f);
+        }
+        public override string ToString() { return string.Format("RGBA({0:0.###},{1:0.###},{2:0.###},{3:0.###})", r, g, b, a); }
         public static Color Lerp(Color x, Color y, float t)
         {
             t = Mathf.Clamp01(t);
@@ -185,6 +202,22 @@ namespace UnityEngine
         public static int Abs(int f) { return Math.Abs(f); }
         public static float Sin(float f) { return (float)Math.Sin(f); }
         public static float Cos(float f) { return (float)Math.Cos(f); }
+        public static float Atan2(float y, float x) { return (float)Math.Atan2(y, x); }
+        public const float Rad2Deg = 57.29578f;
+        public const float Deg2Rad = 0.01745329f;
+
+        /// <summary>Shortest signed difference between two angles, in (-180, 180].</summary>
+        public static float DeltaAngle(float current, float target)
+        {
+            float delta = Repeat(target - current, 360f);
+            if (delta > 180f) delta -= 360f;
+            return delta;
+        }
+
+        public static float Repeat(float t, float length)
+        {
+            return Clamp(t - (float)Math.Floor(t / length) * length, 0f, length);
+        }
         public static float Pow(float a, float b) { return (float)Math.Pow(a, b); }
         public static float Sqrt(float f) { return (float)Math.Sqrt(f); }
         public static float Min(float a, float b) { return Math.Min(a, b); }

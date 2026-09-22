@@ -2,6 +2,7 @@ using MadVoxel.Building;
 using MadVoxel.Content;
 using MadVoxel.Core;
 using MadVoxel.Core.Player;
+using MadVoxel.AI;
 using MadVoxel.Horde;
 using MadVoxel.Inventory;
 using MadVoxel.Modding;
@@ -101,6 +102,7 @@ namespace MadVoxel.UI
 
         public void CreateGameplayUi(PlayerRig player, WorldClock clock, HordeDirector horde,
                                      ContentDatabase content, TerrainWorld voxels, ChunkStreamer streamer,
+                                     StructureWorld structures, SpawnDirector spawner,
                                      int seed, bool developerTools)
         {
             DestroyGameplayUi();
@@ -109,7 +111,7 @@ namespace MadVoxel.UI
             _gameplayUi.transform.SetParent(transform, false);
 
             Hud = _gameplayUi.AddComponent<HudView>();
-            Hud.Init(player, clock, horde);
+            Hud.Init(player, clock, horde, structures, spawner, voxels);
 
             Inventory = _gameplayUi.AddComponent<InventoryScreen>();
             Inventory.Init(player, content);

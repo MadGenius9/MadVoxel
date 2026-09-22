@@ -186,7 +186,14 @@ namespace MadVoxel.Core
                 _devTools.Init(_content, _clock, _horde, _content.hordeSchedule, _spawner, _structures, _voxels, _player);
             }
 
-            _ui.CreateGameplayUi(_player, _clock, _horde, _content, _voxels, _streamer, _seed, DeveloperToolsEnabled);
+            _ui.CreateGameplayUi(_player, _clock, _horde, _content, _voxels, _streamer,
+                                 _structures, _spawner, _seed, DeveloperToolsEnabled);
+
+            // The claim ring lives in the world, not on the visor, so it hangs off the
+            // world root and dies with it.
+            var ringGo = new GameObject("ClaimRing");
+            ringGo.transform.SetParent(_worldRoot.transform, false);
+            ringGo.AddComponent<ClaimRangeRing>().Init(_structures, _player);
 
             _player.Stats.Died += OnPlayerDied;
             Zombie.Died += OnZombieKilled;

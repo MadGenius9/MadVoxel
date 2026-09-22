@@ -75,13 +75,19 @@ resolve. **MadVoxel → Setup → Rebuild Scene** regenerates the scene if it is
 | `E` | Interact — open a door, a crate, a workbench, a campfire, a bedroll |
 | `R` | Rotate the deployable about to be placed |
 | `1`–`9` / scroll | Select hotbar slot |
-| `Tab` / `I` | Inventory and crafting |
+| `Tab` / `I` | Inventory, container and the work-order strip |
 | `P` | Skills — spend perk points |
 | `Esc` | Pause (this is the only thing that stops the world) |
 | `F3` | Debug overlay — FPS, position, chunk, streaming state, seed |
 
 The inventory deliberately does **not** pause the game, so crafting during a horde
 night is still a risk.
+
+The UI is **Claim Slate** — a mode-aware overlay that keeps the centre of the screen
+clear and shows a layer only while the thing it describes is in front of you. On foot
+that is a compass tape, a toolbelt and two short bars; a snap piece in hand adds the
+build plate; a blood moon adds an oxidised rim and one countdown line. There is no
+minimap. See [`UI.md`](UI.md).
 
 ## Building
 
@@ -337,6 +343,7 @@ Assets/MadVoxel/
     Building/        snap grid and pieces, stability, deployables, cupboard, build ghost
     Inventory/       items, stacks, containers, recipes, crafting
     Perks/           XP and levelling, perk tree definitions, effect resolution and buy rules
+    UI/              Claim Slate: palette, compass, visor, inventory, perk diagram, menus
     Traders/         trader definitions and stock
     Quests/          quest definitions
     Vehicles/        vehicle definitions
@@ -381,12 +388,13 @@ cd Tests/Headless
 dotnet run
 ```
 
-**411 checks, all passing.** They compile the real gameplay sources against a small
+**468 checks, all passing.** They compile the real gameplay sources against a small
 executable `UnityEngine` shim and actually run them, covering content wiring, the build
 grid and its connection graph, chunk storage and coordinates, the greedy mesher,
 terrain generation, POI layout, crop growth timing, the field tillage state machine and
-its yield, inventory, crafting, the perk buy rules and effect maths, the chunk-file save
-round-trip, and the whole mod pipeline — including loading the example mod that ships in
+its yield, inventory, crafting, the perk buy rules and effect maths, the Claim Slate
+palette, compass bearings and the blood-moon schedule, the chunk-file save round-trip,
+and the whole mod pipeline — including loading the example mod that ships in
 this repository.
 See [`Tests/Headless/README.md`](Tests/Headless/README.md) for the full list and for
 what is deliberately out of reach.

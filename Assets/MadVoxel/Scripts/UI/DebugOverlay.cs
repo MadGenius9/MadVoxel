@@ -30,8 +30,10 @@ namespace MadVoxel.UI
             _seed = seed;
 
             _canvas = UIKit.CreateCanvas("Debug", 20, transform);
-            var panel = UIKit.Image(_canvas.transform, "Panel", new Color(0f, 0f, 0f, 0.55f));
-            UIKit.Place(panel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(26f, -60f), new Vector2(560f, developerTools ? 268f : 210f));
+            var panel = UIKit.Image(_canvas.transform, "Panel", ClaimSlate.Fade(ClaimSlate.OilBlack, 0.72f));
+            UIKit.Place(panel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(30f, -100f), new Vector2(560f, developerTools ? 268f : 210f));
+            ClaimSlate.Frame(panel.rectTransform, ClaimSlate.Dim(ClaimSlate.Bone, 0.20f), 1f);
+            ClaimSlate.Rivets(panel.rectTransform, 10f, 4f);
 
             _text = UIKit.Label(panel.transform, "Text", "", 20, TextAnchor.UpperLeft, UIKit.TextMain);
             UIKit.Stretch(_text.rectTransform, 12f);
