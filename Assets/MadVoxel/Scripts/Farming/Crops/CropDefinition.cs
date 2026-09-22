@@ -1,4 +1,6 @@
 using MadVoxel.Inventory;
+using System.Collections.Generic;
+using MadVoxel.World.Biomes;
 using UnityEngine;
 
 namespace MadVoxel.Farming.Crops
@@ -61,6 +63,37 @@ namespace MadVoxel.Farming.Crops
 
         [Header("Reward")]
         public float xpPerHarvest = 8f;
+
+        [Header("Where it grows")]
+        [Tooltip("Per-region opinion. A region left out simply uses the biome's own multiplier.")]
+        public List<CropBiomeYield> biomeYields = new List<CropBiomeYield>();
+
+        /// <summary>The seed will not go in the ground here at all.</summary>
+        public bool IsBlockedIn(BiomeId biome)
+        {
+            for (int i = 0; i < biomeYields.Count; i++)
+            {
+                if (biomeYields[i].biome == biome) return biomeYields[i].blocked;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// This crop's own multiplier for a region, or 1 when it has no opinion. The
+        /// biome's blanket multiplier is applied on top of this by the caller, so a
+        /// crop that is merely unhappy stacks with ground that is merely poor.
+        /// </summary>
+        public float YieldIn(BiomeId biome)
+        {
+            for (int i = 0; i < biomeYields.Count; i++)
+            {
+                if (biomeYields[i].biome == biome)
+                {
+                    return biomeYields[i].blocked ? 0f : Mathf.Max(0f, biomeYields[i].multiplier);
+                }
+            }
+            return 1f;
+        }
 
         /// <summary>In-game hours from planting to harvestable.</summary>
         public float HoursToMature { get { return Mathf.Max(0.1f, daysToMature) * 24f; } }

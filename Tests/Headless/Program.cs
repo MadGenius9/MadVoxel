@@ -31,6 +31,8 @@ namespace MadVoxel.Headless
             SaveTests.Run(db);
             PerkTests.Run(db);
             UiTests.Run();
+            PowerTests.Run();
+            FluidTests.Run();
 
             if (UnityEngine.Debug.Warnings.Count > 0)
             {

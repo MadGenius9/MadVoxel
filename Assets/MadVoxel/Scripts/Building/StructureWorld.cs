@@ -20,6 +20,9 @@ namespace MadVoxel.Building
         TerrainWorld _voxels;
         Transform _root;
 
+        /// <summary>The terrain these pieces sit on. Plots and pumps ask it where they are.</summary>
+        public TerrainWorld Voxels { get { return _voxels; } }
+
         public LandClaimRegistry Claims { get; private set; }
 
         /// <summary>Crops grow on the world clock, so plots need it.</summary>

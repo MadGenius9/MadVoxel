@@ -1,4 +1,5 @@
 using System;
+using MadVoxel.World.Biomes;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -33,14 +34,29 @@ namespace MadVoxel.World.Terrain
 
         public ushort AirId { get; private set; }
 
-        public void Init(BlockRegistry registry, int seed, int radiusChunks)
+        public void Init(BlockRegistry registry, int seed, int radiusChunks, BiomeTable biomes = null)
         {
             RadiusChunks = Mathf.Max(4, radiusChunks);
             Registry = registry;
             Registry.Build();
             Seed = seed;
             AirId = 0;
-            Terrain = new TerrainGenerator(seed, registry, RadiusChunks * Chunk.Size);
+            Terrain = new TerrainGenerator(seed, registry, RadiusChunks * Chunk.Size, biomes);
+        }
+
+        /// <summary>
+        /// The region a world column belongs to. Everything outside terrain generation -
+        /// farming, weather, the pump, claim heat - asks here rather than keeping its
+        /// own copy of the paint.
+        /// </summary>
+        public BiomeId BiomeAt(int wx, int wz)
+        {
+            return Terrain != null ? Terrain.BiomeAt(wx, wz) : BiomeId.Farmland;
+        }
+
+        public BiomeId BiomeAt(Vector3 world)
+        {
+            return BiomeAt(Mathf.FloorToInt(world.x), Mathf.FloorToInt(world.z));
         }
 
         public IEnumerable<Chunk> LoadedChunks { get { return _chunks.Values; } }
@@ -86,6 +102,9 @@ namespace MadVoxel.World.Terrain
             if (!_chunks.TryGetValue(coord, out chunk))
             {
                 chunk = new Chunk(coord);
+                // Paint is deterministic from the seed, so it is resolved the moment the
+                // chunk exists rather than waiting on generation or a load.
+                if (Terrain != null) chunk.Biome = Terrain.BiomeOfChunk(coord);
                 _chunks.Add(coord, chunk);
             }
             return chunk;

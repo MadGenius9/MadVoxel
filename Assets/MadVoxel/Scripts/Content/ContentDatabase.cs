@@ -9,7 +9,9 @@ using MadVoxel.Quests;
 using MadVoxel.Perks;
 using MadVoxel.Traders;
 using MadVoxel.Vehicles;
+using MadVoxel.World.Biomes;
 using MadVoxel.World.Terrain;
+using MadVoxel.World.Weather;
 using UnityEngine;
 
 namespace MadVoxel.Content
@@ -32,6 +34,10 @@ namespace MadVoxel.Content
         public List<CropDefinition> crops = new List<CropDefinition>();
         public List<ZombieDefinition> zombies = new List<ZombieDefinition>();
         public HordeSchedule hordeSchedule;
+
+        [Header("World")]
+        public BiomeTable biomes;
+        public WeatherTable weather;
 
         [Header("Phase 1 content")]
         public PerkTreeDefinition perkTree;

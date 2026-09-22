@@ -247,6 +247,7 @@ namespace UnityEngine
     public class HeaderAttribute : PropertyAttribute { public HeaderAttribute(string header) { } }
     public class TooltipAttribute : PropertyAttribute { public TooltipAttribute(string tooltip) { } }
     public class RangeAttribute : PropertyAttribute { public RangeAttribute(float min, float max) { } }
+    public class MinAttribute : PropertyAttribute { public MinAttribute(float min) { } }
     public class TextAreaAttribute : PropertyAttribute { public TextAreaAttribute() { } public TextAreaAttribute(int min, int max) { } }
     public class SerializeFieldAttribute : Attribute { }
     public class HideInInspectorAttribute : Attribute { }

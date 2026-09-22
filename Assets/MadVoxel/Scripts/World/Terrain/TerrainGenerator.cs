@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using MadVoxel.Core;
+using MadVoxel.World.Biomes;
 using UnityEngine;
 
 namespace MadVoxel.World.Terrain
@@ -25,7 +26,32 @@ namespace MadVoxel.World.Terrain
         /// <summary>Points of interest. Read-only after construction, so workers can use it.</summary>
         public PoiPlanner Pois { get; private set; }
 
-        public TerrainGenerator(int seed, BlockRegistry registry, int worldExtentMetres = 1536)
+        /// <summary>Which of the five regions a column belongs to. Pure and thread-safe.</summary>
+        public BiomeMap Biomes { get; private set; }
+
+        /// <summary>
+        /// A biome's terrain numbers flattened to plain values. The definitions are
+        /// ScriptableObjects and the chunk workers must not touch Unity objects, so
+        /// everything the generator needs is copied out on the main thread, once.
+        /// </summary>
+        struct BiomeProfile
+        {
+            public ushort Surface;
+            public ushort SubSurface;
+            public float ClayChance;
+            public float BareDirtChance;
+            public int SoilDepth;
+            public float OreDensity;
+            public int OreDepthBonus;
+            public float TreeDensity;
+            public float ForageDensity;
+            public float ScrapDensity;
+        }
+
+        readonly BiomeProfile[] _profiles = new BiomeProfile[BiomeIds.Count];
+
+        public TerrainGenerator(int seed, BlockRegistry registry, int worldExtentMetres = 1536,
+                                BiomeTable biomes = null)
         {
             _seed = seed;
             registry.Build();
@@ -50,9 +76,77 @@ namespace MadVoxel.World.Terrain
             _wildGrain = registry.IdOf(BlockIds.WildGrain);
             _wildCorn = registry.IdOf(BlockIds.WildCorn);
 
+            Biomes = new BiomeMap(seed, worldExtentMetres);
+            BuildBiomeProfiles(registry, biomes);
+
             // The planner samples the raw height field, so it must be built from
             // BaseSurfaceHeight rather than the pad-aware SurfaceHeight below.
-            Pois = new PoiPlanner(seed, worldExtentMetres, BaseSurfaceHeight);
+            // It also needs the biome map: the two trader outposts are placed in
+            // different regions on purpose.
+            Pois = new PoiPlanner(seed, worldExtentMetres, BaseSurfaceHeight, Biomes);
+        }
+
+        /// <summary>
+        /// Flattens the biome table into plain values. Without a table every region
+        /// falls back to the pre-biome behaviour, which is what keeps the headless
+        /// terrain checks and any mod-free boot working unchanged.
+        /// </summary>
+        void BuildBiomeProfiles(BlockRegistry registry, BiomeTable table)
+        {
+            for (int i = 0; i < _profiles.Length; i++)
+            {
+                _profiles[i] = new BiomeProfile
+                {
+                    Surface = _grass,
+                    SubSurface = _dirt,
+                    ClayChance = 0.035f,
+                    BareDirtChance = 0.15f,
+                    SoilDepth = 4,
+                    OreDensity = 1f,
+                    OreDepthBonus = 0,
+                    TreeDensity = 1f,
+                    ForageDensity = 1f,
+                    ScrapDensity = 1f
+                };
+            }
+
+            if (table == null) return;
+
+            for (int i = 0; i < table.biomes.Count; i++)
+            {
+                var def = table.biomes[i];
+                if (def == null) continue;
+
+                int index = (int)def.id;
+                if (index < 0 || index >= _profiles.Length) continue;
+
+                _profiles[index] = new BiomeProfile
+                {
+                    Surface = registry.IdOf(def.surfaceBlockId),
+                    SubSurface = registry.IdOf(def.subSurfaceBlockId),
+                    ClayChance = def.clayChance,
+                    BareDirtChance = def.bareDirtChance,
+                    SoilDepth = Mathf.Max(1, def.soilDepth),
+                    OreDensity = Mathf.Max(0f, def.oreDensityMultiplier),
+                    OreDepthBonus = def.oreDepthBonus,
+                    TreeDensity = Mathf.Max(0f, def.treeDensityMultiplier),
+                    ForageDensity = Mathf.Max(0f, def.forageDensityMultiplier),
+                    ScrapDensity = Mathf.Max(0f, def.scrapDensityMultiplier)
+                };
+            }
+        }
+
+        /// <summary>The biome a column belongs to. Cheap enough to call per column.</summary>
+        public BiomeId BiomeAt(int wx, int wz)
+        {
+            return Biomes.At(wx, wz);
+        }
+
+        /// <summary>The biome of a chunk, taken at its centre. This is what gets saved.</summary>
+        public BiomeId BiomeOfChunk(ChunkCoord coord)
+        {
+            var origin = coord.Origin;
+            return Biomes.At(origin.x + Chunk.Size / 2, origin.z + Chunk.Size / 2);
         }
 
         /// <summary>0 = ruined farmland (flat, tilled, few trees), 1 = pine scrub (hilly, wooded).</summary>
@@ -106,7 +200,21 @@ namespace MadVoxel.World.Terrain
                     int wx = ox + lx;
                     int surface = SurfaceHeight(wx, wz);
                     float scrub = ScrubFactor(wx, wz);
-                    int soilDepth = 3 + (int)(Noise.Hash01(wx, 7, wz, _seed + 61) * 3f);
+
+                    // The biome decides the palette; the fade decides how sharply. Two
+                    // biomes meeting blend their surface blocks over the border band
+                    // rather than drawing a line you could follow on a map.
+                    BiomeId fadeInto;
+                    float ownWeight;
+                    var biome = Biomes.Sample(wx, wz, out fadeInto, out ownWeight);
+
+                    var profile = _profiles[(int)biome];
+                    if (fadeInto != biome && Noise.Hash01(wx, 11, wz, _seed + 7717) > ownWeight)
+                    {
+                        profile = _profiles[(int)fadeInto];
+                    }
+
+                    int soilDepth = profile.SoilDepth - 1 + (int)(Noise.Hash01(wx, 7, wz, _seed + 61) * 3f);
 
                     for (int ly = 0; ly < Chunk.Size; ly++)
                     {
@@ -132,25 +240,41 @@ namespace MadVoxel.World.Terrain
                             }
                             else
                             {
-                                id = surface <= SeaLevel - 10 ? _sand : _grass;
-                                // Ruined farmland shows bare tilled dirt in wide patches.
-                                if (scrub < 0.35f && Noise.Fbm2D(wx * 0.06f, wz * 0.06f, _seed + 771, 2) > 0.58f)
-                                    id = _dirt;
+                                // A shoreline still beats the biome: sand where the land
+                                // dips under the water line, whatever region it is in.
+                                id = surface <= SeaLevel - 10 ? _sand : profile.Surface;
+
+                                // Worked or weathered ground shows through in patches.
+                                if (id == profile.Surface && profile.BareDirtChance > 0f
+                                    && Noise.Fbm2D(wx * 0.06f, wz * 0.06f, _seed + 771, 2) > 1f - profile.BareDirtChance)
+                                {
+                                    id = profile.SubSurface;
+                                }
                             }
                         }
                         else if (wy > surface - soilDepth)
                         {
-                            id = surface <= SeaLevel - 10 ? _sand : _dirt;
-                            if (Noise.Hash01(wx, wy, wz, _seed + 88) > 0.965f) id = _clay;
+                            id = surface <= SeaLevel - 10 ? _sand : profile.SubSurface;
+                            if (Noise.Hash01(wx, wy, wz, _seed + 88) > 1f - profile.ClayChance) id = _clay;
                         }
                         else
                         {
                             id = _stone;
                             if (Noise.Hash01(wx, wy, wz, _seed + 121) > 0.985f) id = _gravel;
 
-                            if (wy < 74 && Noise.Fbm3D(wx * 0.055f, wy * 0.075f, wz * 0.055f, _seed + 313, 2) > 0.795f)
+                            // A denser biome lowers the threshold rather than sampling
+                            // more noise, so ore stays in the same veins and only their
+                            // thickness changes. Dry flats also lift the whole band, which
+                            // is what "ore at the surface" means here.
+                            int coalCeiling = 74 + profile.OreDepthBonus;
+                            int ironCeiling = 46 + profile.OreDepthBonus;
+
+                            float coalCut = 1f - (1f - 0.795f) * profile.OreDensity;
+                            float ironCut = 1f - (1f - 0.820f) * profile.OreDensity;
+
+                            if (wy < coalCeiling && Noise.Fbm3D(wx * 0.055f, wy * 0.075f, wz * 0.055f, _seed + 313, 2) > coalCut)
                                 id = _coalOre;
-                            if (wy < 46 && Noise.Fbm3D(wx * 0.062f, wy * 0.080f, wz * 0.062f, _seed + 509, 2) > 0.820f)
+                            if (wy < ironCeiling && Noise.Fbm3D(wx * 0.062f, wy * 0.080f, wz * 0.062f, _seed + 509, 2) > ironCut)
                                 id = _ironOre;
                         }
 
@@ -184,7 +308,9 @@ namespace MadVoxel.World.Terrain
                 for (int lx = 0; lx < Chunk.Size; lx++)
                 {
                     int wx = origin.x + lx;
-                    if (Noise.Hash01(wx, 3, wz, _seed + 4409) < 0.9955f) continue;
+
+                    float scrapCut = 1f - (1f - 0.9955f) * _profiles[(int)Biomes.At(wx, wz)].ScrapDensity;
+                    if (Noise.Hash01(wx, 3, wz, _seed + 4409) < scrapCut) continue;
 
                     Poi ignored;
                     if (Pois != null && Pois.TryGetAt(wx, wz, out ignored)) continue;
@@ -219,7 +345,8 @@ namespace MadVoxel.World.Terrain
                     if (Pois != null && Pois.TryGetAt(tx, tz, out onPoi)) continue;
 
                     float scrub = ScrubFactor(tx, tz);
-                    float density = Mathf.Lerp(0.06f, 0.55f, scrub);
+                    float density = Mathf.Lerp(0.06f, 0.55f, scrub)
+                                  * _profiles[(int)Biomes.At(tx, tz)].TreeDensity;
                     if (Noise.Hash01(tx, 6, tz, _seed + 6608) > density) continue;
 
                     int surface = SurfaceHeight(tx, tz);
@@ -292,7 +419,8 @@ namespace MadVoxel.World.Terrain
 
                     float scrub = ScrubFactor(wx, wz);
                     // Old fields grow food; deep pine scrub mostly does not.
-                    float density = Mathf.Lerp(0.030f, 0.006f, scrub);
+                    float density = Mathf.Lerp(0.030f, 0.006f, scrub)
+                                  * _profiles[(int)Biomes.At(wx, wz)].ForageDensity;
                     if (Noise.Hash01(wx, 9, wz, _seed + 5107) > density) continue;
 
                     int surface = SurfaceHeight(wx, wz);

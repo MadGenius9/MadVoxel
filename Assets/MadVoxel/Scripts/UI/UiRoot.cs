@@ -7,6 +7,7 @@ using MadVoxel.Horde;
 using MadVoxel.Inventory;
 using MadVoxel.Modding;
 using MadVoxel.World.Terrain;
+using MadVoxel.World.Weather;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -103,7 +104,7 @@ namespace MadVoxel.UI
         public void CreateGameplayUi(PlayerRig player, WorldClock clock, HordeDirector horde,
                                      ContentDatabase content, TerrainWorld voxels, ChunkStreamer streamer,
                                      StructureWorld structures, SpawnDirector spawner,
-                                     int seed, bool developerTools)
+                                     WeatherDirector weather, int seed, bool developerTools)
         {
             DestroyGameplayUi();
 
@@ -111,7 +112,7 @@ namespace MadVoxel.UI
             _gameplayUi.transform.SetParent(transform, false);
 
             Hud = _gameplayUi.AddComponent<HudView>();
-            Hud.Init(player, clock, horde, structures, spawner, voxels);
+            Hud.Init(player, clock, horde, structures, spawner, voxels, weather);
 
             Inventory = _gameplayUi.AddComponent<InventoryScreen>();
             Inventory.Init(player, content);

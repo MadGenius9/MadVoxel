@@ -3,6 +3,7 @@ using MadVoxel.Core;
 using MadVoxel.Core.Player;
 using MadVoxel.Farming.Crops;
 using MadVoxel.Perks;
+using MadVoxel.World.Biomes;
 using UnityEngine;
 
 namespace MadVoxel.Farming.Plots
@@ -28,13 +29,34 @@ namespace MadVoxel.Farming.Plots
 
         public bool IsEmpty { get { return Crop == null; } }
 
+        /// <summary>
+        /// Growth is derived from the planting hour rather than ticked, so it survives a
+        /// save and a reload untouched. The biome scales the elapsed hours rather than
+        /// the crop's maturity time, which keeps that property: the same plot, planted
+        /// at the same hour, always reads the same stage on the same ground.
+        /// </summary>
         public double HoursGrown
         {
             get
             {
                 var clock = Structure != null && Structure.Owner != null ? Structure.Owner.Clock : null;
                 if (clock == null || Crop == null) return 0.0;
-                return System.Math.Max(0.0, clock.TotalHours - PlantedAtHours);
+
+                double raw = System.Math.Max(0.0, clock.TotalHours - PlantedAtHours);
+                return raw * GrowthRate;
+            }
+        }
+
+        /// <summary>How fast this ground brings a crop on. 1 is farmland.</summary>
+        public float GrowthRate
+        {
+            get
+            {
+                var owner = Structure != null ? Structure.Owner : null;
+                if (owner == null || owner.Voxels == null || owner.Content == null || owner.Content.biomes == null) return 1f;
+
+                var def = owner.Content.biomes.Find(owner.Voxels.BiomeAt(Structure.Cell.x, Structure.Cell.z));
+                return def != null ? Mathf.Max(0.05f, def.plotGrowthMultiplier) : 1f;
             }
         }
 
@@ -141,6 +163,15 @@ namespace MadVoxel.Farming.Plots
                 return;
             }
 
+            // Some ground simply refuses a crop. Saying so at planting time is kinder
+            // than letting it sit in the bed for two days and yield nothing.
+            var here = Biome;
+            if (crop.IsBlockedIn(here))
+            {
+                Notifications.PostFormat("{0} will not take in {1}", crop.displayName, BiomeIds.DisplayName(here));
+                return;
+            }
+
             var clock = Structure.Owner.Clock;
             Plant(crop, clock != null ? clock.TotalHours : 0.0);
             inventory.ConsumeSelected(1);
@@ -155,6 +186,18 @@ namespace MadVoxel.Farming.Plots
             if (crop == null || crop.harvestItem == null) return;
 
             int yield = Random.Range(crop.harvestMin, crop.harvestMax + 1);
+
+            // Where the plot stands matters as much as what is in it: the biome's own
+            // multiplier and the crop's opinion of that biome stack, so wheat on the dry
+            // flats is poor twice over.
+            float ground = GroundMultiplier(crop);
+            if (ground < 0.999f || ground > 1.001f)
+            {
+                yield = Mathf.Max(ground > 0f ? 1 : 0, Mathf.RoundToInt(yield * ground));
+            }
+
+            // A sprinkler keeping this bed wet pays for its copper here.
+            yield = Mathf.RoundToInt(yield * (1f + WaterBonus));
 
             // The Farming perk is what makes a garden worth expanding.
             if (progression != null)
@@ -183,6 +226,36 @@ namespace MadVoxel.Farming.Plots
             }
 
             if (progression != null) progression.AddXp(crop.xpPerHarvest, XpSource.Harvest);
+        }
+
+        /// <summary>
+        /// Set by a sprinkler that is reaching this bed, and by the weather when a
+        /// drought is biting. Zero is "nobody has watered this and nothing is wrong".
+        /// </summary>
+        public float WaterBonus { get; set; }
+
+        /// <summary>The biome this plot stands on, and the crop's opinion of it.</summary>
+        public BiomeId Biome
+        {
+            get
+            {
+                var owner = Structure != null ? Structure.Owner : null;
+                var voxels = owner != null ? owner.Voxels : null;
+                return voxels != null ? voxels.BiomeAt(Structure.Cell.x, Structure.Cell.z) : BiomeId.Farmland;
+            }
+        }
+
+        float GroundMultiplier(CropDefinition crop)
+        {
+            var owner = Structure != null ? Structure.Owner : null;
+            var voxels = owner != null ? owner.Voxels : null;
+            if (voxels == null || owner.Content == null || owner.Content.biomes == null) return 1f;
+
+            var biome = voxels.BiomeAt(Structure.Cell.x, Structure.Cell.z);
+            var def = owner.Content.biomes.Find(biome);
+
+            float blanket = def != null ? def.cropYieldMultiplier : 1f;
+            return Mathf.Max(0f, blanket * crop.YieldIn(biome));
         }
 
         float SeedReturnChance(PlayerProgression progression)

@@ -1,3 +1,5 @@
+using MadVoxel.World.Biomes;
+
 namespace MadVoxel.World.Terrain
 {
     /// <summary>
@@ -25,6 +27,13 @@ namespace MadVoxel.World.Terrain
         public bool MeshDirty = true;
         /// <summary>Loaded from a save file rather than generated, so never regenerate it.</summary>
         public bool FromDisk;
+
+        /// <summary>
+        /// Which region this chunk sits in, taken at its centre. Not written to the
+        /// chunk file: the paint is a pure function of the seed, so recomputing it on
+        /// load is both cheaper and impossible to desync from a saved copy.
+        /// </summary>
+        public BiomeId Biome;
 
         public Chunk(ChunkCoord coord)
         {

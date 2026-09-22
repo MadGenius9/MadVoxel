@@ -33,6 +33,8 @@
     <Compile Include="SaveTests.cs" />
     <Compile Include="PerkTests.cs" />
     <Compile Include="UiTests.cs" />
+    <Compile Include="PowerTests.cs" />
+    <Compile Include="FluidTests.cs" />
   </ItemGroup>
 
   <ItemGroup Label="Game sources under test">
@@ -42,6 +44,9 @@
     <Compile Include="../../Assets/MadVoxel/Scripts/Core/GameConfig.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Core/Notifications.cs" />
 
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Biomes/BiomeId.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Biomes/BiomeMap.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Weather/WeatherDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/BlockIds.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/BlockDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/BlockRegistry.cs" />
@@ -63,7 +68,14 @@
     <Compile Include="../../Assets/MadVoxel/Scripts/Building/StructureDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Building/BuildGrid.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Building/BuildPieceDefinition.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Power/PowerDeviceDefinition.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Power/PowerNode.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Power/PowerGraph.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Fluid/FluidDeviceDefinition.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Fluid/FluidNode.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Fluid/FluidGraph.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Farming/Crops/CropDefinition.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Biomes/BiomeDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Fields/FieldCell.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Fields/FieldGrid.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/AI/ZombieDefinition.cs" />
@@ -83,6 +95,7 @@
     <Compile Include="../../Assets/MadVoxel/Scripts/Content/ItemIds.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Content/ContentDatabase.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Content/ContentLibrary.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Content/ContentLibrary.World.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Modding/Json.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Modding/JsonReader.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Modding/ModLog.cs" />

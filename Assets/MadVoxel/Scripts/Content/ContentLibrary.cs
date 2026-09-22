@@ -9,6 +9,7 @@ using MadVoxel.Quests;
 using MadVoxel.Perks;
 using MadVoxel.Traders;
 using MadVoxel.Vehicles;
+using MadVoxel.World.Biomes;
 using MadVoxel.World.Terrain;
 using UnityEngine;
 
@@ -19,7 +20,7 @@ namespace MadVoxel.Content
     /// fresh clone. "MadVoxel &gt; Content &gt; Generate ScriptableObject Assets" writes the
     /// very same data out as .asset files for designers to edit by hand.
     /// </summary>
-    public static class ContentLibrary
+    public static partial class ContentLibrary
     {
         // Grimy survival palette: mud, wet stone, rust, bleached cloth.
         static readonly Color ColDirt = new Color(0.36f, 0.27f, 0.19f);
@@ -67,6 +68,9 @@ namespace MadVoxel.Content
             db.items = new List<ItemDefinition>(itemMap.Values);
             db.zombies = BuildZombies(itemMap);
             db.hordeSchedule = BuildHordeSchedule(db.zombies);
+
+            db.biomes = BuildBiomes();
+            db.weather = BuildWeather();
 
             db.crops = BuildCrops(itemMap);
             db.perkTree = BuildPerkTree();
@@ -1002,12 +1006,24 @@ namespace MadVoxel.Content
                 1.5f, false, false, new Color(0.30f, 0.46f, 0.22f), 0.55f, 2, 4, 0f);
             potato.seedReturnChance = 0.75f;
             potato.xpPerHarvest = 8f;
+            // Hardy. It sulks on the shelf and on hardpan but it will not refuse.
+            potato.biomeYields.Add(BiomeYield(BiomeId.Farmland, 1.15f));
+            potato.biomeYields.Add(BiomeYield(BiomeId.PineScrub, 1.0f));
+            potato.biomeYields.Add(BiomeYield(BiomeId.ClayHills, 0.8f));
+            potato.biomeYields.Add(BiomeYield(BiomeId.DryFlats, 0.7f));
+            potato.biomeYields.Add(BiomeYield(BiomeId.FrostShelf, 0.8f));
             list.Add(potato);
 
             // Corn: slower, taller, keeps growing after a pick, and scales to a field.
             var corn = Crop("madvoxel:crop_corn", "Corn", it[ItemIds.SeedCorn], it[ItemIds.CornEar],
                 2.5f, true, true, new Color(0.34f, 0.50f, 0.20f), 1.35f, 1, 3, 14f);
             corn.xpPerHarvest = 11f;
+            // Thirsty and tall. The flats and the shelf are simply not corn country.
+            corn.biomeYields.Add(BiomeYield(BiomeId.Farmland, 1.2f));
+            corn.biomeYields.Add(BiomeYield(BiomeId.PineScrub, 0.8f));
+            corn.biomeYields.Add(BiomeYield(BiomeId.ClayHills, 0.7f));
+            corn.biomeYields.Add(BiomeYield(BiomeId.DryFlats, 0.4f));
+            corn.biomeYields.Add(Blocked(BiomeId.FrostShelf));
             list.Add(corn);
 
             // Wheat: the bulk crop. Modest in a plot, the point of an acre.
@@ -1016,6 +1032,13 @@ namespace MadVoxel.Content
             wheat.seedReturnChance = 0.8f;
             wheat.seedReturnMax = 3;
             wheat.xpPerHarvest = 9f;
+            // The bulk crop, and the one that makes the dry flats a water problem: it
+            // grows there, badly, until you put a sprinkler on it.
+            wheat.biomeYields.Add(BiomeYield(BiomeId.Farmland, 1.25f));
+            wheat.biomeYields.Add(BiomeYield(BiomeId.PineScrub, 0.75f));
+            wheat.biomeYields.Add(BiomeYield(BiomeId.ClayHills, 0.7f));
+            wheat.biomeYields.Add(BiomeYield(BiomeId.DryFlats, 0.5f));
+            wheat.biomeYields.Add(BiomeYield(BiomeId.FrostShelf, 0.45f));
             list.Add(wheat);
 
             return list;

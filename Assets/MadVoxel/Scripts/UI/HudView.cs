@@ -7,7 +7,9 @@ using MadVoxel.Farming.Plots;
 using MadVoxel.Farming.Crops;
 using MadVoxel.Horde;
 using MadVoxel.Inventory;
+using MadVoxel.World.Biomes;
 using MadVoxel.World.Terrain;
+using MadVoxel.World.Weather;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -43,12 +45,23 @@ namespace MadVoxel.UI
         const float PoiRange = 900f;
         const float ThreatRange = 60f;
 
+        /// <summary>How long a new region must hold before the visor announces it.</summary>
+        const float BiomeSettleSeconds = 2.5f;
+
         PlayerRig _player;
         WorldClock _clock;
         HordeDirector _horde;
         StructureWorld _structures;
         SpawnDirector _spawner;
         TerrainWorld _voxels;
+        WeatherDirector _weather;
+
+        // The biome toast: one line on a crossing, then silence. A border that wanders
+        // must not be able to chatter, so a new region has to hold before it counts.
+        BiomeId _shownBiome = BiomeId.Farmland;
+        BiomeId _candidateBiome = BiomeId.Farmland;
+        float _candidateSince;
+        bool _biomeKnown;
 
         Canvas _canvas;
         CompassStrip _compass;
@@ -81,7 +94,8 @@ namespace MadVoxel.UI
         public HudMode Mode { get; private set; }
 
         public void Init(PlayerRig player, WorldClock clock, HordeDirector horde,
-                         StructureWorld structures, SpawnDirector spawner, TerrainWorld voxels)
+                         StructureWorld structures, SpawnDirector spawner, TerrainWorld voxels,
+                         WeatherDirector weather)
         {
             _player = player;
             _clock = clock;
@@ -89,6 +103,7 @@ namespace MadVoxel.UI
             _structures = structures;
             _spawner = spawner;
             _voxels = voxels;
+            _weather = weather;
 
             _canvas = UIKit.CreateCanvas("HUD", 0, transform);
 
@@ -358,6 +373,7 @@ namespace MadVoxel.UI
             UpdateLookReadout();
             UpdateBuildLayer();
             UpdateHordeLayer();
+            UpdateBiomeCrossing();
             UpdateToasts();
 
             var held = _player.Inventory.SelectedStack;
@@ -414,7 +430,13 @@ namespace MadVoxel.UI
 
             if (_clock != null)
             {
-                _compass.SetClock(string.Format("DAY {0}   {1}", _clock.Day, _clock.FormatClock()), _clock.IsNight);
+                // The weather owns the clock line, so one word can ride along with the
+                // day and the time instead of earning a widget of its own.
+                string line = _weather != null
+                    ? _weather.ClockLine()
+                    : string.Format("DAY {0}   {1}", _clock.Day, _clock.FormatClock());
+
+                _compass.SetClock(line, _clock.IsNight);
             }
 
             Vector3 eye = _player.transform.position;
@@ -494,6 +516,39 @@ namespace MadVoxel.UI
 
                 _compass.AddPip(CompassStrip.PipKind.Threat, CompassStrip.BearingTo(eye, position));
             }
+        }
+
+        /// <summary>
+        /// One line when you cross a fade, then nothing. The candidate has to hold for
+        /// a beat before it counts, so walking the wiggle of a border does not chatter.
+        /// </summary>
+        void UpdateBiomeCrossing()
+        {
+            if (_voxels == null) return;
+
+            var here = _voxels.BiomeAt(_player.transform.position);
+
+            if (!_biomeKnown)
+            {
+                // The first sample is where you woke up, not a crossing.
+                _biomeKnown = true;
+                _shownBiome = here;
+                _candidateBiome = here;
+                return;
+            }
+
+            if (here != _candidateBiome)
+            {
+                _candidateBiome = here;
+                _candidateSince = Time.time;
+                return;
+            }
+
+            if (_candidateBiome == _shownBiome) return;
+            if (Time.time - _candidateSince < BiomeSettleSeconds) return;
+
+            _shownBiome = _candidateBiome;
+            Notifications.Post("ENTERING  " + BiomeIds.DisplayName(_shownBiome).ToUpperInvariant());
         }
 
         // ---------------------------------------------------------- look-at readout

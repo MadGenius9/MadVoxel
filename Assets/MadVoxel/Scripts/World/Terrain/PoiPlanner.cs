@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using MadVoxel.Core;
+using MadVoxel.World.Biomes;
 using UnityEngine;
 
 namespace MadVoxel.World.Terrain
@@ -57,12 +58,13 @@ namespace MadVoxel.World.Terrain
         public IReadOnlyList<Poi> All { get { return _all; } }
         public IReadOnlyList<Poi> TraderOutposts { get { return _traders; } }
 
-        public PoiPlanner(int seed, int worldExtentMetres, System.Func<int, int, int> baseHeight)
+        public PoiPlanner(int seed, int worldExtentMetres, System.Func<int, int, int> baseHeight,
+                          BiomeMap biomes = null)
         {
             int cells = Mathf.Max(1, worldExtentMetres / CellSize);
 
             // Two trader outposts, placed first so nothing else can take their cells.
-            PlaceTraders(seed, cells, baseHeight);
+            PlaceTraders(seed, cells, baseHeight, biomes);
 
             for (int cz = -cells; cz < cells; cz++)
             {
@@ -84,29 +86,80 @@ namespace MadVoxel.World.Terrain
             }
         }
 
-        void PlaceTraders(int seed, int cells, System.Func<int, int, int> baseHeight)
+        /// <summary>
+        /// Two outposts, on opposite sides of spawn and far enough out to be a trip.
+        ///
+        /// When a biome map is available they are also pushed into different regions -
+        /// one on farmland, one in the rust belt - because the two of them carry
+        /// different stock and a pair of identical outposts on the same dirt is a
+        /// wasted trip. The search walks outward from the ideal cell and gives up
+        /// gracefully: a seed whose map has no clay hills in range still gets its
+        /// second trader, just not where we would have liked it.
+        /// </summary>
+        void PlaceTraders(int seed, int cells, System.Func<int, int, int> baseHeight, BiomeMap biomes)
         {
-            // Two outposts, on opposite sides of spawn and far enough out to be a trip.
+            var wanted = new[] { BiomeId.Farmland, BiomeId.ClayHills };
+
             for (int i = 0; i < 2; i++)
             {
                 uint h = Noise.Hash(i * 31, 991, i * 17, seed + 7717);
                 float angle = (i * Mathf.PI) + (h % 1000u) / 1000f * 1.2f - 0.6f;
 
                 int ringCells = Mathf.Clamp(cells / 2, 1, Mathf.Max(1, cells - 1));
-                int cx = Mathf.RoundToInt(Mathf.Cos(angle) * ringCells);
-                int cz = Mathf.RoundToInt(Mathf.Sin(angle) * ringCells);
+                int idealX = Mathf.RoundToInt(Mathf.Cos(angle) * ringCells);
+                int idealZ = Mathf.RoundToInt(Mathf.Sin(angle) * ringCells);
 
-                // Never sit on spawn.
-                if (cx == 0 && cz == 0) cx = 1;
-
-                long key = Key(cx, cz);
-                if (_byCell.ContainsKey(key)) continue;
+                int cx, cz;
+                if (!TryFindCell(idealX, idealZ, cells, biomes, wanted[i], seed, baseHeight, out cx, out cz))
+                {
+                    if (!TryFindCell(idealX, idealZ, cells, null, wanted[i], seed, baseHeight, out cx, out cz)) continue;
+                }
 
                 var poi = Make(PoiKind.TraderOutpost, cx, cz, seed, baseHeight);
-                _byCell.Add(key, poi);
+                _byCell.Add(Key(cx, cz), poi);
                 _all.Add(poi);
                 _traders.Add(poi);
             }
+        }
+
+        /// <summary>
+        /// Spirals out from a cell looking for one that is free, inside the map, and -
+        /// when a biome is asked for - in the right region.
+        /// </summary>
+        bool TryFindCell(int idealX, int idealZ, int cells, BiomeMap biomes, BiomeId wanted,
+                         int seed, System.Func<int, int, int> baseHeight, out int cellX, out int cellZ)
+        {
+            for (int radius = 0; radius <= 4; radius++)
+            {
+                for (int dz = -radius; dz <= radius; dz++)
+                {
+                    for (int dx = -radius; dx <= radius; dx++)
+                    {
+                        // Only the ring, not the filled square, so nearer cells win.
+                        if (radius > 0 && Mathf.Abs(dx) != radius && Mathf.Abs(dz) != radius) continue;
+
+                        int cx = idealX + dx, cz = idealZ + dz;
+                        if (cx == 0 && cz == 0) continue;          // never sit on spawn
+                        if (cx < -cells || cx >= cells || cz < -cells || cz >= cells) continue;
+                        if (_byCell.ContainsKey(Key(cx, cz))) continue;
+
+                        if (biomes != null)
+                        {
+                            int centreX = cx * CellSize + CellSize / 2;
+                            int centreZ = cz * CellSize + CellSize / 2;
+                            if (biomes.At(centreX, centreZ) != wanted) continue;
+                        }
+
+                        cellX = cx;
+                        cellZ = cz;
+                        return true;
+                    }
+                }
+            }
+
+            cellX = 0;
+            cellZ = 0;
+            return false;
         }
 
         Poi Make(PoiKind kind, int cellX, int cellZ, int seed, System.Func<int, int, int> baseHeight)

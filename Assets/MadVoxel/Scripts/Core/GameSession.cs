@@ -6,7 +6,9 @@ using MadVoxel.Core.Player;
 using MadVoxel.Horde;
 using MadVoxel.Modding;
 using MadVoxel.Save;
+using MadVoxel.World.Biomes;
 using MadVoxel.World.Fields;
+using MadVoxel.World.Weather;
 using MadVoxel.UI;
 using MadVoxel.World.Terrain;
 using UnityEngine;
@@ -32,6 +34,7 @@ namespace MadVoxel.Core
         BlockDamageTracker _blockDamage;
         WorldClock _clock;
         SkyController _sky;
+        WeatherDirector _weather;
         SpawnDirector _spawner;
         HordeDirector _horde;
         SaveService _save;
@@ -137,7 +140,7 @@ namespace MadVoxel.Core
             _worldRoot = new GameObject("World");
 
             _voxels = _worldRoot.AddComponent<TerrainWorld>();
-            _voxels.Init(_content.blocks, _seed, _content.config.worldRadiusChunks);
+            _voxels.Init(_content.blocks, _seed, _content.config.worldRadiusChunks, _content.biomes);
 
             _store = new ChunkFileStore(_worldName, _content.blocks);
 
@@ -159,10 +162,15 @@ namespace MadVoxel.Core
             _sky = _worldRoot.AddComponent<SkyController>();
             _sky.Init(_clock);
 
+            // The sky rolls from wherever the player is standing, so it is created here
+            // and pointed at the rig once that exists.
+            _weather = _worldRoot.AddComponent<WeatherDirector>();
+
             _worldSpawn = FindSurfaceSpawn(0, 0);
             _player = PlayerFactory.Create(_content.config, _voxels, _structures, _buildings, _fields, _worldSpawn);
             _player.transform.SetParent(_worldRoot.transform, true);
             _player.Progression.BindPerkTree(_content.perkTree);
+            _weather.Init(_clock, _content, () => _voxels.BiomeAt(_player.transform.position));
 
             _streamer = _worldRoot.AddComponent<ChunkStreamer>();
             _streamer.Init(_voxels, _content.config, _store, _player.transform);
@@ -187,7 +195,7 @@ namespace MadVoxel.Core
             }
 
             _ui.CreateGameplayUi(_player, _clock, _horde, _content, _voxels, _streamer,
-                                 _structures, _spawner, _seed, DeveloperToolsEnabled);
+                                 _structures, _spawner, _weather, _seed, DeveloperToolsEnabled);
 
             // The claim ring lives in the world, not on the visor, so it hangs off the
             // world root and dies with it.
