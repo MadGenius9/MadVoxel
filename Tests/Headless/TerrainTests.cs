@@ -17,6 +17,100 @@ namespace MadVoxel.Headless
             ChunkStorage();
             Mesher();
             Terrain(db);
+            Pois(db);
+        }
+
+        static void Pois(ContentDatabase db)
+        {
+            Harness.Section("terrain: points of interest");
+
+            const int extent = 1536;
+            var gen = new TerrainGenerator(133742, db.blocks, extent);
+            var planner = gen.Pois;
+
+            Harness.Check(planner != null && planner.All.Count > 0,
+                planner != null ? string.Format("{0} POIs across the map", planner.All.Count) : "planner exists");
+            if (planner == null) return;
+
+            Harness.Equal(planner.TraderOutposts.Count, 2, "exactly two trader outposts");
+
+            // Outposts must be reachable but not on top of spawn.
+            var tooClose = new List<string>();
+            for (int i = 0; i < planner.TraderOutposts.Count; i++)
+            {
+                var t = planner.TraderOutposts[i];
+                float distance = Mathf.Sqrt(t.CentreX * (float)t.CentreX + t.CentreZ * (float)t.CentreZ);
+                if (distance < 120f) tooClose.Add(string.Format("outpost at {0}m", Mathf.RoundToInt(distance)));
+                if (Mathf.Abs(t.CentreX) > extent || Mathf.Abs(t.CentreZ) > extent) tooClose.Add("outpost outside the map");
+            }
+            Harness.Check(tooClose.Count == 0, "outposts are off spawn and inside the map"
+                + (tooClose.Count > 0 ? ": " + string.Join(", ", tooClose) : ""));
+
+            // No two POIs may overlap, or their stamps would fight.
+            var overlaps = new List<string>();
+            for (int i = 0; i < planner.All.Count; i++)
+            {
+                for (int j = i + 1; j < planner.All.Count; j++)
+                {
+                    var a = planner.All[i];
+                    var b = planner.All[j];
+                    bool apart = a.MaxX + PoiPlanner.PadMargin < b.MinX - PoiPlanner.PadMargin
+                              || b.MaxX + PoiPlanner.PadMargin < a.MinX - PoiPlanner.PadMargin
+                              || a.MaxZ + PoiPlanner.PadMargin < b.MinZ - PoiPlanner.PadMargin
+                              || b.MaxZ + PoiPlanner.PadMargin < a.MinZ - PoiPlanner.PadMargin;
+                    if (!apart) overlaps.Add(a.Kind + " overlaps " + b.Kind);
+                }
+            }
+            Harness.Check(overlaps.Count == 0, "no two POIs overlap"
+                + (overlaps.Count > 0 ? ": " + string.Join(", ", overlaps) : ""));
+
+            // The pad must actually be flat, or foundations cannot be placed on it.
+            var outpost = planner.TraderOutposts[0];
+            bool flat = true;
+            for (int wz = outpost.MinZ; wz <= outpost.MaxZ; wz += 2)
+            {
+                for (int wx = outpost.MinX; wx <= outpost.MaxX; wx += 2)
+                {
+                    if (gen.SurfaceHeight(wx, wz) != outpost.PadY) flat = false;
+                }
+            }
+            Harness.Check(flat, "the outpost pad is level, so snap foundations fit it");
+
+            // Lookup must agree with the footprint.
+            Poi found;
+            Harness.Check(planner.TryGetAt(outpost.CentreX, outpost.CentreZ, out found)
+                          && found.Kind == PoiKind.TraderOutpost, "the planner finds the outpost at its centre");
+            Harness.Check(!planner.TryGetAt(outpost.CentreX + 4000, outpost.CentreZ + 4000, out found),
+                "and finds nothing far away");
+
+            // Determinism: the same seed lays out the same POIs.
+            var again = new TerrainGenerator(133742, db.blocks, extent).Pois;
+            bool same = again.All.Count == planner.All.Count;
+            for (int i = 0; same && i < again.All.Count; i++)
+            {
+                if (again.All[i].CentreX != planner.All[i].CentreX ||
+                    again.All[i].CentreZ != planner.All[i].CentreZ ||
+                    again.All[i].Kind != planner.All[i].Kind) same = false;
+            }
+            Harness.Check(same, "the same seed lays out the same POIs");
+
+            // And the stamp has to put real blocks in the chunk.
+            int concreteOrIron = 0;
+            var concrete = db.blocks.IdOf(BlockIds.Concrete);
+            var iron = db.blocks.IdOf(BlockIds.IronBlock);
+
+            int chunkX = Mathf.FloorToInt(outpost.CentreX / (float)Chunk.Size);
+            int chunkZ = Mathf.FloorToInt(outpost.CentreZ / (float)Chunk.Size);
+            for (int cy = 0; cy < TerrainWorld.WorldHeightChunks; cy++)
+            {
+                var blocks = new ushort[Chunk.Volume];
+                gen.Generate(new ChunkCoord(chunkX, cy, chunkZ), blocks);
+                for (int i = 0; i < blocks.Length; i++)
+                {
+                    if (blocks[i] == concrete || blocks[i] == iron) concreteOrIron++;
+                }
+            }
+            Harness.Check(concreteOrIron > 0, string.Format("the outpost stamps built blocks into the world ({0} voxels)", concreteOrIron));
         }
 
         static void Coordinates()

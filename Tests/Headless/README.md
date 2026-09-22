@@ -26,6 +26,9 @@ never collide with the real engine.
 | Area | What is checked |
 | --- | --- |
 | **Content wiring** | The whole `ContentLibrary` is built. Every block, item, recipe, structure, skill, quest, trader and vehicle resolves; no null or dangling cross-reference; ids are unique. Locked recipes are reachable through the skill tree and skill unlocks point at real recipes. Every mineable block drops something, no block demands a tool tier above the best craftable one, and the workbench and campfire are hand-craftable so there is no bootstrap deadlock. |
+| **Build grid** | Cell maths including negative coordinates; shared-edge canonicalisation, so the wall between two cells is one slot however it is addressed; and that the connection graph the stability flood fill walks is **symmetric**, self-free, and links floors to the walls under them. |
+| **Snap content** | Every piece kind has a complete Twig→Armored chain that climbs in health and resistance, every upgrade costs real materials, perk gates name perks that exist and are reachable, wood and stone stay ungated, and only twig is placeable from an item. |
+| **POIs** | Two trader outposts, off spawn and inside the map; no two POIs overlap; pads are genuinely level so foundations fit; layout is deterministic per seed; and the stamp puts real blocks into the chunk. |
 | **Coordinates** | Floor division and modulo for negative world coordinates, world↔chunk mapping, and hash distribution across neighbouring chunks. |
 | **Chunk storage** | Uniform-chunk compression, materialisation on first write, index packing over all 4096 cells, compaction, and the copy the save writer takes. |
 | **Greedy mesher** | Coplanar faces merge, hidden faces are culled, fully buried and fully empty chunks emit nothing, different block types do not merge, normals face outward, triangle winding agrees with the normals, and index/normal/UV buffers stay in lockstep. |
@@ -40,6 +43,12 @@ Anything that needs the engine: rendering, physics and collision, the character
 controller, chunk streaming across threads, AI behaviour, the UI, and the feel of
 any of it. Those need a Unity editor and a person.
 
-Two real bugs were caught here that a compile could not: a steel block that
-demanded a tool tier no craftable tool reached (so a steel wall could never be
-mined back), and a chunk hash that collided structurally for neighbouring chunks.
+Bugs caught here that a compile could not see:
+
+- A steel block that demanded a tool tier no craftable tool reached, so a steel
+  wall could never be mined back.
+- A chunk hash that collided structurally for neighbouring chunks.
+- An asymmetric connection graph: ceilings listed the walls under them but walls
+  did not list ceilings, and stairs listed the floor above but not the reverse.
+  The stability flood fill walks connections in both directions, so roofs and
+  upper storeys would have silently collapsed.

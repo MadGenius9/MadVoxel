@@ -40,7 +40,7 @@ namespace MadVoxel.World.Terrain
             Registry.Build();
             Seed = seed;
             AirId = 0;
-            Terrain = new TerrainGenerator(seed, registry);
+            Terrain = new TerrainGenerator(seed, registry, RadiusChunks * Chunk.Size);
         }
 
         public IEnumerable<Chunk> LoadedChunks { get { return _chunks.Values; } }

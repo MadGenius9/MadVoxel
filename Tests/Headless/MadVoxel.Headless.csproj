@@ -44,6 +44,7 @@
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/ChunkCoord.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/ChunkMeshData.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/ChunkMesher.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/PoiPlanner.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/TerrainGenerator.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/TerrainWorld.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/IChunkStore.cs" />

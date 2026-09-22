@@ -202,6 +202,7 @@ namespace MadVoxel.Core
             _player.Motor.Teleport(target);
             _player.Stats.GrantInvulnerability(5f);
             Notifications.Post("Wake up. Find wood, find stone, get inside before dark.");
+            AnnounceNearestOutpost();
         }
 
         /// <summary>
@@ -234,6 +235,32 @@ namespace MadVoxel.Core
             if (!Physics.Raycast(position + Vector3.up * 2f, Vector3.down, out hit, 60f, ~0, QueryTriggerInteraction.Ignore))
                 return false;
             return hit.collider.GetComponentInParent<ChunkView>() != null;
+        }
+
+        /// <summary>
+        /// There is no map or compass yet, so the one navigational hint the player gets
+        /// is a bearing to the nearest trader.
+        /// </summary>
+        void AnnounceNearestOutpost()
+        {
+            if (_voxels == null || _voxels.Terrain == null || _voxels.Terrain.Pois == null) return;
+
+            World.Terrain.Poi outpost;
+            if (!_voxels.Terrain.Pois.TryFindNearestTrader(_player.transform.position, out outpost)) return;
+
+            Vector3 delta = new Vector3(outpost.CentreX, 0f, outpost.CentreZ) - _player.transform.position;
+            float distance = delta.magnitude;
+            Notifications.PostFormat("Trader outpost about {0}m {1}", Mathf.RoundToInt(distance), Compass(delta));
+        }
+
+        static string Compass(Vector3 delta)
+        {
+            float angle = Mathf.Atan2(delta.x, delta.z) * Mathf.Rad2Deg;
+            if (angle < 0f) angle += 360f;
+
+            string[] points = { "north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west" };
+            int index = Mathf.RoundToInt(angle / 45f) % 8;
+            return points[index];
         }
 
         void GrantStartingKit()

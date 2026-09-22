@@ -1,8 +1,11 @@
 # MadVoxel
 
-A single-player survival sandbox on an infinite voxel planet, built in **Unity 6 (URP)**.
-Minecraft's mine/build loop, 7 Days to Die's skills, traders, quests and blood-moon
-horde nights, Rust's raidable crafted bases.
+A single-player survival game in **Unity 6 (URP)**: Rust's modular building and worn
+industrial look on top of 7 Days to Die's diggable terrain, perks, traders and
+blood-moon hordes. You cut the shape of your base out of the ground, then armour it
+with snap pieces.
+
+Large but finite map. Not an endless cartoon-cube planet.
 
 **Status: Phase 0 complete and playable.** See [`SCOPE.md`](SCOPE.md) for what is
 implemented, what is data-only, and what is deliberately deferred.
@@ -66,10 +69,10 @@ resolve. **MadVoxel → Setup → Rebuild Scene** regenerates the scene if it is
 | `Shift` | Sprint (drains stamina) |
 | `Ctrl` / `C` | Crouch |
 | `Space` | Jump; climb while on a ladder |
-| Left mouse (hold) | Mine a block, salvage with a wrench, or attack |
-| Right mouse | Place the held block or piece; eat or drink a consumable |
+| Left mouse (hold) | Dig a block, salvage with a wrench, attack — or **repair** a snap piece with the hammer |
+| Right mouse | Place the held block or piece; **upgrade** a snap piece with the hammer; eat or drink |
 | `E` | Interact — open a door, a crate, a workbench, a campfire, a bedroll |
-| `R` | Rotate the piece about to be placed |
+| `R` | Rotate the deployable about to be placed |
 | `1`–`9` / scroll | Select hotbar slot |
 | `Tab` / `I` | Inventory and crafting |
 | `Esc` | Pause (this is the only thing that stops the world) |
@@ -77,6 +80,47 @@ resolve. **MadVoxel → Setup → Rebuild Scene** regenerates the scene if it is
 
 The inventory deliberately does **not** pause the game, so crafting during a horde
 night is still a risk.
+
+## Building
+
+Two systems, on purpose.
+
+**Terrain** is a block volume. Dig it with a pick, shovel or hatchet: trenches, pits,
+ramps, rooms, ore shafts. Hardness and tool tier decide what you can cut and how fast,
+so a stone pick will not open iron ore and nothing but time opens concrete. You can
+place dirt and stone back, which is how you flatten a pad.
+
+**Snap pieces** are Rust-style modular parts on a 3 m grid: foundation, floor, wall,
+window wall, doorway, door, half wall, stairs, roof, ladder, hatch. They snap to each
+other and sit on the terrain you flattened. Craft them from planks and place them from
+the hotbar — they always go up as **twig**, which is nearly free and nearly useless.
+
+The **hammer** is what makes it a base:
+
+- **Right mouse** upgrades the piece you are looking at one tier:
+  twig → wood → stone → metal → armored. Each tier costs materials and takes
+  proportionally less damage.
+- **Left mouse** repairs it.
+
+Metal and armored need Construction perk ranks; wood and stone do not.
+
+**Nothing floats.** A piece only stands if it chains back to a foundation resting on
+solid ground. Dig the dirt out from under a wall and everything it was holding up comes
+down — which is also how a horde gets in.
+
+Plant the **tool cupboard** to claim the area. Wandering zombies avoid claimed ground;
+the horde walks straight at it.
+
+## The world
+
+A finite map, 3072 m square by default (`worldRadiusChunks` in the game config), all of
+it deterministic from the seed. Walk to the edge and the land runs out.
+
+Scattered through it: **two trader outposts** with concrete perimeter walls, corner
+towers and an iron strongroom; **farm ruins** with collapsing plank walls and salvage;
+**town fragments** of concrete shells along a cobble road. Their ground is levelled, so
+they double as ready-made building pads. You get a bearing to the nearest outpost when
+you wake up.
 
 ## Developer hotkeys
 
@@ -93,18 +137,23 @@ sitting. They are live whenever **Developer Tools** is ticked on the `MadVoxel` 
 | `F7` | Jump the calendar to ten in-game minutes before the next blood moon |
 | `F8` | Spawn a shambler six metres in front of you |
 | `F9` | Refill health, stamina, food and water |
-| `F10` | Grant the test kit: iron tools, a wrench, stacks of building blocks, one of every snap piece, food and bandages |
+| `F10` | Grant the test kit: iron tools, hammer, wrench, terrain blocks, the full snap set, deployables, food and bandages |
 | `F11` | Toggle invulnerability |
 
 ### Walking the Phase 0 success test in about ten minutes
 
-1. New world. Mine a few blocks and place them back — that is the voxel loop.
-2. `F10` for the kit, then place the claim stake, walls, a door and a storage box.
-   Put something in the box.
-3. `F7`, then wait out the blood moon behind your walls. The sky turns, waves spawn and
-   walk at the claim, and they will chew through anything in the way.
-4. Quit to the menu, then **Continue** the same world: the base, the box contents and
-   your inventory should all come back.
+1. New world. Dig a pit and a ramp out of it with the shovel, and flatten a pad beside
+   it — that is the 7DTD half.
+2. `F10` for the kit. Lay foundations on the pad, then walls, a doorway, a door and a
+   roof. Put a storage box inside and something in the box.
+3. Plant the tool cupboard. Point the hammer at one wall and right-click twice:
+   twig → wood → stone. Watch the piece change material and get tougher.
+4. Try undermining your own foundation with the shovel — the wall above it should come
+   down. Rebuild it.
+5. `F7`, then hold the shack through the blood moon. They walk the ramp, fall in the
+   pit, and chew whatever is in front of them.
+6. Quit to the menu, then **Continue**: the hole, the base, the box contents and your
+   inventory should all come back.
 
 `F11` and `F4` are there for when you want to watch the horde work on the base rather
 than fight it.
@@ -163,11 +212,11 @@ Assets/MadVoxel/
   Scenes/            the single bootstrap scene
   Scripts/
     Core/            bootstrap, session, clock, sky, noise, materials, input, damage
-    Core/Player/     first-person motor, look, vitals, inventory, mine/place/interact
-    World/Voxel/     chunks, terrain generation, greedy mesher, streaming, raycast
-    Building/        snap pieces, structure world, land claims, build ghost
+    Core/Player/     first-person motor, look, vitals, inventory, dig/place/interact
+    World/Terrain/   chunks, terrain generation, POIs, greedy mesher, streaming, raycast
+    Building/        snap grid and pieces, stability, deployables, cupboard, build ghost
     Inventory/       items, stacks, containers, recipes, crafting
-    Skills/          XP and levelling, skill tree definitions
+    Perks/           XP and levelling, perk tree definitions
     Traders/         trader definitions and stock
     Quests/          quest definitions
     Vehicles/        vehicle definitions
@@ -191,6 +240,11 @@ Assets/MadVoxel/
 - **Chunks are 16³.** A chunk that is entirely one block type keeps no array at all,
   and a uniform chunk surrounded by chunks of the same opacity is never meshed. That
   is what makes a 192-block-tall streamed world affordable.
+- **The build grid is 3 m in X/Z but free metres in Y.** Rust's foundation size makes
+  walls and doorways read at the right scale; leaving Y at 1 m means a foundation can
+  sit on any height you dig or flatten to, instead of only on multiples of three.
+- **Stability is reachability, not physics.** A flood fill from grounded foundations
+  decides what stands. Cheap, predictable, and it makes undermining a real attack.
 - **Stable ids on disk.** Chunk files store a palette of block *string* ids, so
   reordering the block registry cannot corrupt an existing save. Unknown blocks
   degrade to air rather than shifting every other block.
@@ -207,11 +261,12 @@ cd Tests/Headless
 dotnet run
 ```
 
-**171 checks, all passing.** They compile the real gameplay sources against a small
-executable `UnityEngine` shim and actually run them, covering content wiring, chunk
-storage and coordinates, the greedy mesher, terrain generation, inventory, crafting
-and the chunk-file save round-trip. See [`Tests/Headless/README.md`](Tests/Headless/README.md)
-for the full list and for what is deliberately out of reach.
+**218 checks, all passing.** They compile the real gameplay sources against a small
+executable `UnityEngine` shim and actually run them, covering content wiring, the build
+grid and its connection graph, chunk storage and coordinates, the greedy mesher,
+terrain generation, POI layout, inventory, crafting and the chunk-file save round-trip.
+See [`Tests/Headless/README.md`](Tests/Headless/README.md) for the full list and for
+what is deliberately out of reach.
 
 What they cannot cover is anything that needs the engine: rendering, physics, the
 character controller, chunk streaming, AI behaviour, the UI, and how any of it feels.

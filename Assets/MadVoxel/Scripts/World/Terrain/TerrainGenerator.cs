@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using MadVoxel.Core;
 using UnityEngine;
 
@@ -18,8 +19,12 @@ namespace MadVoxel.World.Terrain
         // Block ids are resolved once, on the main thread, so the worker touches no Unity objects.
         readonly ushort _air, _bedrock, _stone, _dirt, _grass, _sand, _gravel;
         readonly ushort _coalOre, _ironOre, _log, _leaves, _scrap, _clay;
+        readonly ushort _concrete, _planks, _ironBlock, _cobble;
 
-        public TerrainGenerator(int seed, BlockRegistry registry)
+        /// <summary>Points of interest. Read-only after construction, so workers can use it.</summary>
+        public PoiPlanner Pois { get; private set; }
+
+        public TerrainGenerator(int seed, BlockRegistry registry, int worldExtentMetres = 1536)
         {
             _seed = seed;
             registry.Build();
@@ -36,6 +41,14 @@ namespace MadVoxel.World.Terrain
             _leaves = registry.IdOf(BlockIds.PineNeedles);
             _scrap = registry.IdOf(BlockIds.ScrapHeap);
             _clay = registry.IdOf(BlockIds.Clay);
+            _concrete = registry.IdOf(BlockIds.Concrete);
+            _planks = registry.IdOf(BlockIds.Planks);
+            _ironBlock = registry.IdOf(BlockIds.IronBlock);
+            _cobble = registry.IdOf(BlockIds.Cobblestone);
+
+            // The planner samples the raw height field, so it must be built from
+            // BaseSurfaceHeight rather than the pad-aware SurfaceHeight below.
+            Pois = new PoiPlanner(seed, worldExtentMetres, BaseSurfaceHeight);
         }
 
         /// <summary>0 = ruined farmland (flat, tilled, few trees), 1 = pine scrub (hilly, wooded).</summary>
@@ -45,7 +58,19 @@ namespace MadVoxel.World.Terrain
                 Noise.Fbm2D(wx * 0.0021f, wz * 0.0021f, _seed + 991, 3)));
         }
 
+        /// <summary>
+        /// Ground height including any flattened POI pad. Everything outside terrain
+        /// generation should use this.
+        /// </summary>
         public int SurfaceHeight(int wx, int wz)
+        {
+            Poi poi;
+            if (Pois != null && Pois.TryGetAt(wx, wz, out poi)) return poi.PadY;
+            return BaseSurfaceHeight(wx, wz);
+        }
+
+        /// <summary>The raw noise height, before POIs level anything.</summary>
+        public int BaseSurfaceHeight(int wx, int wz)
         {
             float continent = Noise.Fbm2D(wx * 0.0026f, wz * 0.0026f, _seed + 17, 4);
             float hills = Noise.Fbm2D(wx * 0.0130f, wz * 0.0130f, _seed + 233, 4);
@@ -94,10 +119,20 @@ namespace MadVoxel.World.Terrain
                         }
                         else if (wy == surface)
                         {
-                            id = surface <= SeaLevel - 10 ? _sand : _grass;
-                            // Ruined farmland shows bare tilled dirt in wide patches.
-                            if (scrub < 0.35f && Noise.Fbm2D(wx * 0.06f, wz * 0.06f, _seed + 771, 2) > 0.58f)
-                                id = _dirt;
+                            Poi pad;
+                            if (Pois != null && Pois.TryGetAt(wx, wz, out pad))
+                            {
+                                // Made ground: concrete hardstanding at built-up sites,
+                                // beaten dirt around the farm ruins.
+                                id = pad.Kind == PoiKind.FarmRuin ? _dirt : _concrete;
+                            }
+                            else
+                            {
+                                id = surface <= SeaLevel - 10 ? _sand : _grass;
+                                // Ruined farmland shows bare tilled dirt in wide patches.
+                                if (scrub < 0.35f && Noise.Fbm2D(wx * 0.06f, wz * 0.06f, _seed + 771, 2) > 0.58f)
+                                    id = _dirt;
+                            }
                         }
                         else if (wy > surface - soilDepth)
                         {
@@ -130,6 +165,7 @@ namespace MadVoxel.World.Terrain
             }
 
             ApplySurfaceScrap(coord, blocks);
+            ApplyPois(coord, blocks);
             ApplyTrees(coord, blocks);
         }
 
@@ -144,6 +180,9 @@ namespace MadVoxel.World.Terrain
                 {
                     int wx = origin.x + lx;
                     if (Noise.Hash01(wx, 3, wz, _seed + 4409) < 0.9955f) continue;
+
+                    Poi ignored;
+                    if (Pois != null && Pois.TryGetAt(wx, wz, out ignored)) continue;
 
                     int surface = SurfaceHeight(wx, wz);
                     int height = 1 + (int)(Noise.Hash01(wx, 4, wz, _seed + 4410) * 2.99f);
@@ -170,6 +209,9 @@ namespace MadVoxel.World.Terrain
                     uint h = Noise.Hash(cx, 5, cz, _seed + 6607);
                     int tx = cx * TreeCell + (int)(h % TreeCell);
                     int tz = cz * TreeCell + (int)((h >> 8) % TreeCell);
+
+                    Poi onPoi;
+                    if (Pois != null && Pois.TryGetAt(tx, tz, out onPoi)) continue;
 
                     float scrub = ScrubFactor(tx, tz);
                     float density = Mathf.Lerp(0.06f, 0.55f, scrub);
@@ -211,6 +253,197 @@ namespace MadVoxel.World.Terrain
                 }
             }
             Put(blocks, coord, wx, top + 1, wz, _leaves, true);
+        }
+
+
+        // ------------------------------------------------------------------- POIs
+
+        [System.ThreadStatic] static List<Poi> _poiScratch;
+
+        /// <summary>
+        /// Stamps any point of interest overlapping this chunk. The surface under a POI
+        /// is already flat because SurfaceHeight returns the pad level there, so these
+        /// only have to build upward.
+        /// </summary>
+        void ApplyPois(ChunkCoord coord, ushort[] blocks)
+        {
+            if (Pois == null) return;
+
+            if (_poiScratch == null) _poiScratch = new List<Poi>(4);
+            _poiScratch.Clear();
+
+            var origin = coord.Origin;
+            Pois.Overlapping(origin.x, origin.z, origin.x + Chunk.Size - 1, origin.z + Chunk.Size - 1, _poiScratch);
+            if (_poiScratch.Count == 0) return;
+
+            for (int i = 0; i < _poiScratch.Count; i++)
+            {
+                var poi = _poiScratch[i];
+                switch (poi.Kind)
+                {
+                    case PoiKind.FarmRuin: StampFarmRuin(coord, blocks, poi); break;
+                    case PoiKind.TownFragment: StampTownFragment(coord, blocks, poi); break;
+                    case PoiKind.TraderOutpost: StampTraderOutpost(coord, blocks, poi); break;
+                }
+            }
+        }
+
+        /// <summary>A collapsed barn: plank walls with holes, a scrap pile, salvage.</summary>
+        void StampFarmRuin(ChunkCoord coord, ushort[] blocks, Poi poi)
+        {
+            int y = poi.PadY;
+
+            // Perimeter, eaten away so it reads as ruined rather than built.
+            for (int wz = poi.MinZ; wz <= poi.MaxZ; wz++)
+            {
+                for (int wx = poi.MinX; wx <= poi.MaxX; wx++)
+                {
+                    bool edge = wx == poi.MinX || wx == poi.MaxX || wz == poi.MinZ || wz == poi.MaxZ;
+                    if (!edge) continue;
+
+                    int height = 4;
+                    for (int h = 1; h <= height; h++)
+                    {
+                        // Higher courses fall away first.
+                        float survive = 1f - h * 0.16f;
+                        if (Noise.Hash01(wx, h, wz, _seed + 3301) > survive) continue;
+                        Put(blocks, coord, wx, y + h, wz, _planks, false);
+                    }
+                }
+            }
+
+            // Corner posts hold the silhouette together.
+            PutColumn(coord, blocks, poi.MinX, y + 1, poi.MinZ, 5, _log);
+            PutColumn(coord, blocks, poi.MaxX, y + 1, poi.MinZ, 5, _log);
+            PutColumn(coord, blocks, poi.MinX, y + 1, poi.MaxZ, 5, _log);
+            PutColumn(coord, blocks, poi.MaxX, y + 1, poi.MaxZ, 5, _log);
+
+            // Salvage worth the walk.
+            for (int i = 0; i < 6; i++)
+            {
+                uint h = Noise.Hash(poi.CentreX + i, 41, poi.CentreZ - i, _seed + 3307);
+                int sx = poi.MinX + 2 + (int)(h % (uint)Mathf.Max(1, poi.HalfX * 2 - 3));
+                int sz = poi.MinZ + 2 + (int)((h >> 8) % (uint)Mathf.Max(1, poi.HalfZ * 2 - 3));
+                PutColumn(coord, blocks, sx, y + 1, sz, 1 + (int)((h >> 16) % 2u), _scrap);
+            }
+        }
+
+        /// <summary>Three concrete shells and a strip of road.</summary>
+        void StampTownFragment(ChunkCoord coord, ushort[] blocks, Poi poi)
+        {
+            int y = poi.PadY;
+
+            // Road down the middle, one block proud so it reads from a distance.
+            for (int wz = poi.MinZ; wz <= poi.MaxZ; wz++)
+            {
+                for (int wx = poi.CentreX - 3; wx <= poi.CentreX + 3; wx++)
+                {
+                    Put(blocks, coord, wx, y, wz, _cobble, false);
+                }
+            }
+
+            // Shells either side of the road.
+            StampShell(coord, blocks, poi, poi.CentreX - 13, poi.CentreZ - 12, 9, 9, 7, y, 0);
+            StampShell(coord, blocks, poi, poi.CentreX + 5, poi.CentreZ - 8, 10, 11, 9, y, 1);
+            StampShell(coord, blocks, poi, poi.CentreX - 12, poi.CentreZ + 3, 11, 10, 6, y, 2);
+
+            // Rubble.
+            for (int i = 0; i < 14; i++)
+            {
+                uint h = Noise.Hash(poi.CentreX - i, 57, poi.CentreZ + i, _seed + 3407);
+                int sx = poi.MinX + (int)(h % (uint)(poi.HalfX * 2));
+                int sz = poi.MinZ + (int)((h >> 8) % (uint)(poi.HalfZ * 2));
+                Put(blocks, coord, sx, y + 1, sz, (h >> 16) % 3u == 0u ? _scrap : _gravel, true);
+            }
+        }
+
+        /// <summary>A walled compound with a gate and a strongroom. Phase 1 puts a trader inside.</summary>
+        void StampTraderOutpost(ChunkCoord coord, ushort[] blocks, Poi poi)
+        {
+            int y = poi.PadY;
+            const int wallHeight = 5;
+
+            for (int wz = poi.MinZ; wz <= poi.MaxZ; wz++)
+            {
+                for (int wx = poi.MinX; wx <= poi.MaxX; wx++)
+                {
+                    bool edge = wx == poi.MinX || wx == poi.MaxX || wz == poi.MinZ || wz == poi.MaxZ;
+                    if (!edge) continue;
+
+                    // Gate on the south wall.
+                    bool gate = wz == poi.MaxZ && wx >= poi.CentreX - 2 && wx <= poi.CentreX + 2;
+                    int height = gate ? 0 : wallHeight;
+                    for (int h = 1; h <= height; h++) Put(blocks, coord, wx, y + h, wz, _concrete, false);
+                }
+            }
+
+            // Corner towers, so the outpost is visible over the treeline.
+            PutColumn(coord, blocks, poi.MinX, y + 1, poi.MinZ, wallHeight + 4, _concrete);
+            PutColumn(coord, blocks, poi.MaxX, y + 1, poi.MinZ, wallHeight + 4, _concrete);
+            PutColumn(coord, blocks, poi.MinX, y + 1, poi.MaxZ, wallHeight + 4, _concrete);
+            PutColumn(coord, blocks, poi.MaxX, y + 1, poi.MaxZ, wallHeight + 4, _concrete);
+
+            // Strongroom: iron walls, a door gap facing the gate.
+            int hx = 5, hz = 4;
+            for (int wz = poi.CentreZ - hz; wz <= poi.CentreZ + hz; wz++)
+            {
+                for (int wx = poi.CentreX - hx; wx <= poi.CentreX + hx; wx++)
+                {
+                    bool edge = wx == poi.CentreX - hx || wx == poi.CentreX + hx
+                             || wz == poi.CentreZ - hz || wz == poi.CentreZ + hz;
+                    if (!edge) continue;
+
+                    bool doorway = wz == poi.CentreZ + hz && wx >= poi.CentreX - 1 && wx <= poi.CentreX + 1;
+                    int height = doorway ? 0 : 4;
+                    for (int h = 1; h <= height; h++) Put(blocks, coord, wx, y + h, wz, _ironBlock, false);
+                }
+            }
+
+            // Roof over the strongroom.
+            for (int wz = poi.CentreZ - hz; wz <= poi.CentreZ + hz; wz++)
+            {
+                for (int wx = poi.CentreX - hx; wx <= poi.CentreX + hx; wx++)
+                {
+                    Put(blocks, coord, wx, y + 5, wz, _ironBlock, false);
+                }
+            }
+        }
+
+        /// <summary>A hollow building shell with one doorway.</summary>
+        void StampShell(ChunkCoord coord, ushort[] blocks, Poi poi,
+                        int minX, int minZ, int sizeX, int sizeZ, int height, int y, int variant)
+        {
+            int maxX = minX + sizeX;
+            int maxZ = minZ + sizeZ;
+            int doorX = minX + sizeX / 2;
+
+            for (int wz = minZ; wz <= maxZ; wz++)
+            {
+                for (int wx = minX; wx <= maxX; wx++)
+                {
+                    bool edge = wx == minX || wx == maxX || wz == minZ || wz == maxZ;
+                    if (!edge) continue;
+
+                    for (int h = 1; h <= height; h++)
+                    {
+                        // Doorway on the south face.
+                        if (wz == maxZ && wx >= doorX - 1 && wx <= doorX + 1 && h <= 3) continue;
+
+                        // Window band, punched every third block.
+                        if (h == 3 && wx % 3 == 0 && !(wx == minX || wx == maxX)) continue;
+
+                        // The top courses are partly collapsed.
+                        if (h > height - 2 && Noise.Hash01(wx, h, wz, _seed + 3511 + variant) > 0.55f) continue;
+
+                        Put(blocks, coord, wx, y + h, wz, _concrete, false);
+                    }
+                }
+            }
+        }
+
+        void PutColumn(ChunkCoord coord, ushort[] blocks, int wx, int y, int wz, int height, ushort id)
+        {
+            for (int i = 0; i < height; i++) Put(blocks, coord, wx, y + i, wz, id, false);
         }
 
         void Put(ushort[] blocks, ChunkCoord coord, int wx, int wy, int wz, ushort id, bool onlyReplaceAir)
