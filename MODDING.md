@@ -201,6 +201,15 @@ Medicine, Vehicles, Farming)*, `maxRank`, `pointCostPerRank`, `requiredPlayerLev
 `RangedDamageMultiplier`, `LootQuantityMultiplier`, `HealingMultiplier`,
 `VehicleFuelEfficiency`, `RepairSpeedMultiplier`, `FieldYieldMultiplier`.
 
+Effects of the same type sum across every perk that grants them, and a modded perk
+appears on the skills screen and is applied in play without any code. Three types are
+authored but not yet read by the game — `RangedDamageMultiplier`,
+`VehicleFuelEfficiency` and `FieldYieldMultiplier` — so a perk built on those will show
+its numbers and change nothing until the Phase 1 system that reads them lands.
+
+Your perk's `category` must be one of the seven above; there is no way to add a new
+category from JSON, because the screen builds its column from the enum.
+
 ### quests
 
 `title`, `description`, `kind` *(Fetch, Clear, SurviveNights, Deliver, DeliverLitres)*,

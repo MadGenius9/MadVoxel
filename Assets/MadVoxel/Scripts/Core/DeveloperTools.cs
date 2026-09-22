@@ -2,6 +2,7 @@ using MadVoxel.AI;
 using MadVoxel.Content;
 using MadVoxel.Core.Player;
 using MadVoxel.Horde;
+using MadVoxel.Perks;
 using MadVoxel.World.Terrain;
 using UnityEngine;
 
@@ -18,7 +19,7 @@ namespace MadVoxel.Core
     public class DeveloperTools : MonoBehaviour
     {
         public const string KeyHelp =
-            "F4 fly   F5 +1h   F6 dawn   F7 blood moon   F8 spawn zombie\n" +
+            "F2 +1 level   F4 fly   F5 +1h   F6 dawn   F7 blood moon   F8 spawn zombie\n" +
             "F9 refill   F10 test kit   F11 invulnerable   F12 ripen crops";
 
         ContentDatabase _content;
@@ -48,6 +49,7 @@ namespace MadVoxel.Core
         {
             if (_player == null) return;
 
+            if (Input.GetKeyDown(KeyCode.F2)) GrantLevel();
             if (Input.GetKeyDown(KeyCode.F4)) ToggleFly();
             if (Input.GetKeyDown(KeyCode.F5)) SkipHours(1f);
             if (Input.GetKeyDown(KeyCode.F6)) SkipToDawn();
@@ -147,6 +149,17 @@ namespace MadVoxel.Core
             var stats = _player.Stats;
             stats.Invulnerable = !stats.Invulnerable;
             Notifications.Post(stats.Invulnerable ? "Invulnerable ON" : "Invulnerable OFF");
+        }
+
+        /// <summary>One level's worth of XP, so the skills screen can be exercised at once.</summary>
+        void GrantLevel()
+        {
+            var progression = _player != null ? _player.Progression : null;
+            if (progression == null) return;
+
+            progression.AddXp(progression.XpToNext - progression.Xp + 1f, XpSource.Discovery);
+            Notifications.PostFormat("Level {0}  -  {1} point(s) to spend (press P)",
+                progression.Level, progression.UnspentPerkPoints);
         }
 
         /// <summary>

@@ -301,6 +301,19 @@ namespace MadVoxel.Save
             _player.Motor.Teleport(new Vector3(data.posX, data.posY, data.posZ));
             if (_player.Look != null) _player.Look.SetRotation(data.yaw, data.pitch);
 
+            // Perks first: Iron Lungs raises the stamina ceiling, and restoring vitals
+            // before the ranks are back would clamp a full bar down to the base pool.
+            var ranks = new Dictionary<string, int>();
+            for (int i = 0; i < data.perkRanks.Count; i++)
+            {
+                ranks[data.perkRanks[i].perkId] = data.perkRanks[i].rank;
+            }
+            _player.Progression.LoadState(data.level, data.xp, data.perkPoints, ranks, data.unlockedRecipes);
+
+            // A save written before a perk gained an unlock would otherwise come back
+            // with the rank but not the recipe.
+            MadVoxel.Perks.PerkService.ReapplyUnlocks(_content.perkTree, _player.Progression);
+
             _player.Stats.LoadState(data.health, data.stamina, data.food, data.water);
             _player.Stats.GrantInvulnerability(3f);
 
@@ -321,13 +334,6 @@ namespace MadVoxel.Save
                 bag.SetSlot(i, new ItemStack(item, slot.count, slot.durability));
             }
             _player.Inventory.Select(Mathf.Clamp(data.selectedHotbar, 0, PlayerInventory.HotbarSize - 1));
-
-            var ranks = new Dictionary<string, int>();
-            for (int i = 0; i < data.perkRanks.Count; i++)
-            {
-                ranks[data.perkRanks[i].perkId] = data.perkRanks[i].rank;
-            }
-            _player.Progression.LoadState(data.level, data.xp, data.perkPoints, ranks, data.unlockedRecipes);
 
             _player.HasRespawnPoint = data.hasRespawn;
             _player.RespawnPoint = new Vector3(data.respawnX, data.respawnY, data.respawnZ);

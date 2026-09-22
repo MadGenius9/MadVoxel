@@ -76,6 +76,7 @@ resolve. **MadVoxel → Setup → Rebuild Scene** regenerates the scene if it is
 | `R` | Rotate the deployable about to be placed |
 | `1`–`9` / scroll | Select hotbar slot |
 | `Tab` / `I` | Inventory and crafting |
+| `P` | Skills — spend perk points |
 | `Esc` | Pause (this is the only thing that stops the world) |
 | `F3` | Debug overlay — FPS, position, chunk, streaming state, seed |
 
@@ -151,6 +152,43 @@ tested today. What Phase 1 adds is the tractor and implements that work a swath 
 time. You can already break ground by hand: hold the **hoe** and right-click open
 ground to plow one cell — the block turns to tilled soil and stays that way.
 
+## Skills
+
+Everything you do pays XP — digging a block you did not place yourself, crafting,
+killing, harvesting a crop. Each level hands over a perk point, and the HUD's level
+line turns orange when one is waiting. Press **`P`**.
+
+Fourteen perks across seven categories: Mining, Construction, Combat, Scavenging,
+Medicine, Vehicles and Farming. Pick a category on the left, buy ranks on the right.
+Every row shows what the next rank costs and, when it cannot be bought, why — "Needs
+level 6", "Needs 1 point(s)", "Maxed" — rather than just greying out.
+
+What a rank actually changes:
+
+| Perk | Effect |
+| --- | --- |
+| Miner 69er | Dig faster |
+| Motherlode | More ore and scrap per block |
+| Carpenter | Unlocks cobblestone, iron and steel blocks, and the Metal and Armored snap tiers |
+| Handyman | The hammer repairs more per swing |
+| Heavy Hitter | More melee damage |
+| Iron Lungs | A bigger stamina pool and slower drain |
+| Scrapper | More out of a salvaged wreck |
+| Pack Mule | Slower stamina drain |
+| Field Medic / Physician | Food, water and bandages do more; Physician unlocks the bandage recipe |
+| Living Off The Land | Bigger garden harvests and more seeds back |
+| Grease Monkey | Repair speed, and the buggy kit recipe |
+| Agronomist | Unlocks the grain bin; field yield lands with the tractor |
+| Economiser | Fuel economy, once there is something to drive |
+
+Ranked perks apply immediately — no re-equip, no reload. Ranks and unlocked recipes
+are saved, and loading re-grants every recipe your ranks have earned, so a save made
+before a perk gained an unlock is repaired rather than silently short.
+
+Three effect types are authored but not yet read by anything: ranged damage, vehicle
+fuel economy and field yield. They wait on the weapon, the drivable buggy and the
+harvester. The test suite asserts that list, so a fourth cannot creep in unnoticed.
+
 ## The world
 
 A finite map, 3072 m square by default (`worldRadiusChunks` in the game config), all of
@@ -171,6 +209,7 @@ sitting. They are live whenever **Developer Tools** is ticked on the `MadVoxel` 
 
 | Key | Action |
 | --- | --- |
+| `F2` | Grant one level, so the skills screen can be exercised straight away |
 | `F4` | Toggle fly mode — `Space` up, `Ctrl` down, no gravity |
 | `F5` | Skip one hour |
 | `F6` | Skip to dawn |
@@ -192,6 +231,8 @@ sitting. They are live whenever **Developer Tools** is ticked on the `MadVoxel` 
    and eat one — watch stamina come back, not just hunger.
 4. Plant the tool cupboard. Point the hammer at one wall and right-click twice:
    twig → wood → stone. Watch the piece change material and get tougher.
+   Press `F2` a few times, then `P`, and put the points into **Carpenter** — the metal
+   tier appears on the same wall, and **Miner 69er** is the one you will feel in step 5.
 5. Try undermining your own foundation with the shovel — the wall above it should come
    down. Rebuild it.
 6. Hold the hoe and right-click open ground: it turns to tilled soil. That is the field
@@ -295,7 +336,7 @@ Assets/MadVoxel/
     Modding/         JSON parser, mod manifest, loader, content applier
     Building/        snap grid and pieces, stability, deployables, cupboard, build ghost
     Inventory/       items, stacks, containers, recipes, crafting
-    Perks/           XP and levelling, perk tree definitions
+    Perks/           XP and levelling, perk tree definitions, effect resolution and buy rules
     Traders/         trader definitions and stock
     Quests/          quest definitions
     Vehicles/        vehicle definitions
@@ -340,12 +381,13 @@ cd Tests/Headless
 dotnet run
 ```
 
-**358 checks, all passing.** They compile the real gameplay sources against a small
+**411 checks, all passing.** They compile the real gameplay sources against a small
 executable `UnityEngine` shim and actually run them, covering content wiring, the build
 grid and its connection graph, chunk storage and coordinates, the greedy mesher,
 terrain generation, POI layout, crop growth timing, the field tillage state machine and
-its yield, inventory, crafting, the chunk-file save round-trip, and the whole mod
-pipeline — including loading the example mod that ships in this repository.
+its yield, inventory, crafting, the perk buy rules and effect maths, the chunk-file save
+round-trip, and the whole mod pipeline — including loading the example mod that ships in
+this repository.
 See [`Tests/Headless/README.md`](Tests/Headless/README.md) for the full list and for
 what is deliberately out of reach.
 

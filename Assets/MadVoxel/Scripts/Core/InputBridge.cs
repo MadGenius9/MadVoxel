@@ -50,6 +50,7 @@ namespace MadVoxel.Core
 
         // Menu keys stay live even when gameplay input is suppressed.
         public static bool InventoryDown { get { return Input.GetKeyDown(KeyCode.Tab) || Input.GetKeyDown(KeyCode.I); } }
+        public static bool PerksDown { get { return Input.GetKeyDown(KeyCode.P); } }
         public static bool PauseDown { get { return Input.GetKeyDown(KeyCode.Escape); } }
         public static bool DebugDown { get { return Input.GetKeyDown(KeyCode.F3); } }
 

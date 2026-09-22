@@ -52,6 +52,11 @@ namespace MadVoxel.Core.Player
         PlayerProgression _progression;
         Camera _camera;
 
+        static readonly PerkEffects NoPerks = new PerkEffects();
+
+        /// <summary>The player's summed perk numbers, or an empty set before Init.</summary>
+        PerkEffects Perks { get { return _progression != null ? _progression.Effects : NoPerks; } }
+
         readonly BuildGhost _ghost = new BuildGhost();
 
         // Blocks the player put down this session earn no harvest XP when mined again.
@@ -292,7 +297,7 @@ namespace MadVoxel.Core.Player
             if (def.hardness < 0f) { ResetMining(); return; } // indestructible, e.g. bedrock
 
             var held = _inventory.SelectedStack;
-            float speed = MineSpeed(def, held.Item);
+            float speed = MineSpeed(def, held.Item) * Perks.Multiplier(PerkEffectType.MiningSpeedMultiplier);
             if (speed <= 0f)
             {
                 MiningProgress01 = 0f;
@@ -328,6 +333,7 @@ namespace MadVoxel.Core.Player
             if (def.dropItem != null)
             {
                 int count = UnityEngine.Random.Range(def.dropMin, def.dropMax + 1);
+                count = Perks.ScaleCount(PerkEffectType.HarvestYieldMultiplier, count);
                 if (count > 0) _inventory.Collect(def.dropItem, count);
             }
 
@@ -380,7 +386,11 @@ namespace MadVoxel.Core.Player
                 if (_salvageProgress < StructureSalvageSeconds) return;
 
                 var def = structure.Definition;
-                if (def.salvageItem != null) _inventory.Collect(def.salvageItem, def.salvageCount);
+                if (def.salvageItem != null)
+                {
+                    _inventory.Collect(def.salvageItem,
+                        Perks.ScaleCount(PerkEffectType.LootQuantityMultiplier, def.salvageCount));
+                }
                 _structures.Destroy(structure, true);
                 ResetMining();
                 return;
@@ -406,7 +416,8 @@ namespace MadVoxel.Core.Player
                     Notifications.PostFormat("{0} is undamaged", piece.Definition.displayName);
                     return;
                 }
-                piece.Repair(piece.Definition.maxHealth * 0.2f);
+                piece.Repair(piece.Definition.maxHealth * 0.2f
+                             * Perks.Multiplier(PerkEffectType.RepairSpeedMultiplier));
                 Notifications.PostFormat("Repaired {0} ({1}%)", piece.Definition.displayName,
                     Mathf.RoundToInt(piece.HealthFraction * 100f));
                 return;
@@ -422,6 +433,7 @@ namespace MadVoxel.Core.Player
 
             var held = _inventory.SelectedStack;
             float damage = held.Item != null && held.Item.meleeDamage > 0f ? held.Item.meleeDamage : 4f;
+            damage *= Perks.Multiplier(PerkEffectType.MeleeDamageMultiplier);
             float cooldown = held.Item != null ? Mathf.Max(0.2f, held.Item.attackCooldown) : 0.6f;
             _nextAttackTime = Time.time + cooldown;
 

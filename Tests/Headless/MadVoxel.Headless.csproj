@@ -31,6 +31,7 @@
     <Compile Include="ModTests.cs" />
     <Compile Include="InventoryTests.cs" />
     <Compile Include="SaveTests.cs" />
+    <Compile Include="PerkTests.cs" />
   </ItemGroup>
 
   <ItemGroup Label="Game sources under test">
@@ -38,6 +39,7 @@
     <Compile Include="../../Assets/MadVoxel/Scripts/Core/XorRng.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Core/SurfaceFamily.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Core/GameConfig.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Core/Notifications.cs" />
 
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/BlockIds.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/BlockDefinition.cs" />
@@ -67,6 +69,9 @@
     <Compile Include="../../Assets/MadVoxel/Scripts/Horde/HordeSchedule.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Perks/PerkDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Perks/PerkIds.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Perks/PerkEffects.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Perks/PerkService.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Perks/PlayerProgression.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Traders/TraderDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Quests/QuestDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Vehicles/VehicleDefinition.cs" />

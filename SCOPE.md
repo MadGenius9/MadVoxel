@@ -96,9 +96,14 @@ its tier, health and open/closed state.
 All Phase 1 content is authored and loadable and its hooks exist; the runtime systems
 are deliberately unwritten until Phase 0 passes its success test.
 
+The one exception is the **skills screen**, pulled forward. Points accrued with nowhere
+to spend them is a dead end a tester walks into within the first hour, and it left
+fourteen authored perks as data nothing read. It is self-contained — a screen, a pure
+resolver and nine call sites — and changes nothing about the Phase 0 loop.
+
 | Area | Shipped | Still to write |
 | --- | --- | --- |
-| **Perks** | 14 perks across Mining, Construction, Combat, Scavenging, Medicine, Vehicles and Farming — including Living Off The Land for garden yield and seed returns, and Agronomist for field yield and the grain bin, with per-rank effects, level gates and recipe unlocks. XP, levelling and point accrual **are live** and scale the horde. Metal and Armored building tiers are already gated on Construction rank. | The perk screen; applying effect values to dig speed, yield, stamina, melee and healing. |
+| **Perks** | 14 perks across Mining, Construction, Combat, Scavenging, Medicine, Vehicles and Farming. XP, levelling, point accrual, **the skills screen** (`P`) and the buy rules are live, and nine of the twelve effect types are applied in play: dig speed, block and crop yield, salvage, building tier, stamina pool and drain, melee damage, healing and repair. Ranks and unlocked recipes save and reload. | Ranged damage, vehicle fuel economy and field yield — each waiting on the system that would read it. |
 | **Traders** | 2 outposts standing in the world, with stock lists, price multipliers, reputation gates, restock interval and currency. | Trader NPC, shop UI, buy/sell, restock, reputation. |
 | **Quests** | 3 contracts (fetch 20 scrap, clear 12 shamblers, survive 2 nights) with XP, reputation and item rewards. | Accept/track/turn-in, the journal, and a mining contract. |
 | **Vehicles** | Scrap Buggy: speed, acceleration, climb height, fuel economy, seats, storage, health, parts and a perk-gated recipe. | Driving, fuel burn, seats and storage, collision against edited terrain and foundations. |
@@ -165,7 +170,10 @@ executed. Worlds record which mods built them and warn on load if one is missing
 - **Farm snap pieces are limited to the fence.** Barn, shed, pen and greenhouse frame
   are Phase 1; the grain bin ships as a deployable rather than a snap piece.
 - **The seed bag is just the seed stack.** No dedicated seeding container.
-- **Perk points accrue but cannot be spent** until the Phase 1 perk screen exists.
+- **Three perk effects are inert.** Ranged damage, vehicle fuel economy and field yield
+  are authored and shown on the skills screen but nothing reads them yet: there is no
+  ranged weapon, no drivable buggy and no harvester. A headless test asserts exactly
+  that list, so a fourth cannot join it quietly.
 - **XP farming guard is session-only.** Blocks you placed are remembered in memory and
   pay no XP when re-mined, but the set is not saved. Crafted building blocks pay no
   harvest XP at all, which covers the common case.
@@ -192,12 +200,13 @@ Every step has an implementation behind it. The test itself needs a Unity editor
 ## Next milestone
 
 1. **Field machines** — tractor, plow and seeder or harvester; fuel, hitch, working
-   width and a hopper that tips litres into the grain bin.
-2. **Perk screen** — spend points, apply Mining, Construction and Farming effects.
-3. **Trader runtime** — NPC in the strongroom, shop UI, restock, reputation.
-4. **Quest flow** — accept, track, turn in; add the mining contract.
-5. **Furnace** — a proper smelter, and the iron economy that feeds metal tier.
-6. **Vehicle** — drive the buggy over edited terrain without falling through it.
-7. **Script mods** — a sandboxed hook layer on top of the data loader.
-8. **Horde that reads the dig** — prefer an open ramp or an unfinished wall over chewing
+   width and a hopper that tips litres into the grain bin. Agronomist's field-yield
+   perk lands with it.
+2. **Trader runtime** — NPC in the strongroom, shop UI, restock, reputation.
+3. **Quest flow** — accept, track, turn in; add the mining contract.
+4. **Furnace** — a proper smelter, and the iron economy that feeds metal tier.
+5. **Vehicle** — drive the buggy over edited terrain without falling through it, and
+   burn fuel at the rate Economiser claims to change.
+6. **Script mods** — a sandboxed hook layer on top of the data loader.
+7. **Horde that reads the dig** — prefer an open ramp or an unfinished wall over chewing
    the strongest face.

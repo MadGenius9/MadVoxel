@@ -241,8 +241,8 @@ namespace MadVoxel.Headless
             Harness.Check(badGates.Count == 0, "tier perk gates are reachable"
                 + (badGates.Count > 0 ? ": " + string.Join("; ", badGates) : ""));
 
-            // Wood and Stone must stay ungated: Phase 0 has no perk screen yet and its
-            // success test requires upgrading a wall to stone.
+            // Wood and Stone must stay ungated: the Phase 0 success test upgrades a wall
+            // to stone, and it has to be walkable before the first perk point lands.
             var earlyGated = new List<string>();
             for (int i = 0; i < db.buildPieces.Count; i++)
             {

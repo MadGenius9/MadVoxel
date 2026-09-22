@@ -16,6 +16,7 @@ namespace MadVoxel.UI
         MainMenu,
         Playing,
         Inventory,
+        Perks,
         Paused,
         Dead
     }
@@ -31,6 +32,7 @@ namespace MadVoxel.UI
         public DeathView Death { get; private set; }
         public HudView Hud { get; private set; }
         public InventoryScreen Inventory { get; private set; }
+        public PerkScreen Perks { get; private set; }
         public DebugOverlay Debug { get; private set; }
 
         public UiState State { get; private set; }
@@ -112,6 +114,9 @@ namespace MadVoxel.UI
             Inventory = _gameplayUi.AddComponent<InventoryScreen>();
             Inventory.Init(player, content);
 
+            Perks = _gameplayUi.AddComponent<PerkScreen>();
+            Perks.Init(player, content);
+
             Debug = _gameplayUi.AddComponent<DebugOverlay>();
             Debug.Init(player, voxels, streamer, seed, developerTools);
 
@@ -130,6 +135,7 @@ namespace MadVoxel.UI
             _gameplayUi = null;
             Hud = null;
             Inventory = null;
+            Perks = null;
             Debug = null;
         }
 
@@ -155,13 +161,20 @@ namespace MadVoxel.UI
 
             if (InputBridge.PauseDown)
             {
-                if (State == UiState.Inventory) SetState(UiState.Playing);
+                if (State == UiState.Inventory || State == UiState.Perks) SetState(UiState.Playing);
                 else if (State == UiState.Playing) SetState(UiState.Paused);
                 else if (State == UiState.Paused) SetState(UiState.Playing);
                 return;
             }
 
             if (State == UiState.Dead) return;
+
+            if (InputBridge.PerksDown && Perks != null)
+            {
+                if (State == UiState.Perks) SetState(UiState.Playing);
+                else if (State == UiState.Playing) SetState(UiState.Perks);
+                return;
+            }
 
             if (InputBridge.InventoryDown)
             {
@@ -181,6 +194,7 @@ namespace MadVoxel.UI
             bool menuOpen = state != UiState.Playing;
 
             if (state != UiState.Inventory && Inventory != null) Inventory.Close();
+            if (state != UiState.Perks && Perks != null) Perks.Close();
             if (state != UiState.Paused && Pause != null) Pause.Close();
             if (state != UiState.Dead && Death != null) Death.Close();
             if (state != UiState.MainMenu && MainMenu != null) MainMenu.Close();
@@ -189,6 +203,9 @@ namespace MadVoxel.UI
             {
                 case UiState.MainMenu:
                     MainMenu.Open();
+                    break;
+                case UiState.Perks:
+                    if (Perks != null) Perks.Open();
                     break;
                 case UiState.Paused:
                     Pause.Open();

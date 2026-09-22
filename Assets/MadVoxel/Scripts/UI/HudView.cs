@@ -180,7 +180,9 @@ namespace MadVoxel.UI
                 progression.Level,
                 Mathf.FloorToInt(progression.Xp),
                 Mathf.FloorToInt(progression.XpToNext),
-                progression.UnspentPerkPoints > 0 ? "   [" + progression.UnspentPerkPoints + " pts]" : "");
+                progression.UnspentPerkPoints > 0
+                    ? "   [" + progression.UnspentPerkPoints + " pts - press P]" : "");
+            _levelLabel.color = progression.UnspentPerkPoints > 0 ? UIKit.Accent : UIKit.TextDim;
 
             var interaction = _player.Interaction;
             _promptLabel.text = interaction != null ? interaction.TargetPrompt : "";

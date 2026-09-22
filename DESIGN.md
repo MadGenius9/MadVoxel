@@ -31,9 +31,16 @@ not a creative-mode doodle.
 ## Perk
 
 XP comes from harvesting, mining, crafting, building, kills and contracts — never
-from placing a block you just mined. Points go into Construction, Mining, Scavenging,
-Combat, Fortitude and Vehicles. Perks unlock tool tiers, building tiers, yield and
-carry weight. Mining and Construction are the two that change how the base gets built.
+from placing a block you just mined. Points go into Mining, Construction, Combat,
+Scavenging, Medicine, Vehicles and Farming. Perks unlock building tiers and recipes,
+and shift dig speed, yield, stamina, melee, healing and repair. Mining and Construction
+are the two that change how the base gets built; Farming is what makes the garden worth
+expanding past the first four plots.
+
+A rank is never a passive number you forget. Carpenter is the gate on stone and steel,
+so the base you can build is the base you have paid for. Iron Lungs is the difference
+between one trench session and two. The screen says what the next rank costs and why
+it is refused, because a perk you cannot read is a perk you do not plan around.
 
 ## Shape the killbox
 

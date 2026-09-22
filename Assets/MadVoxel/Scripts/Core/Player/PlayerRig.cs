@@ -75,6 +75,7 @@ namespace MadVoxel.Core.Player
 
             rig.Inventory = go.AddComponent<PlayerInventory>();
             rig.Progression = go.AddComponent<PlayerProgression>();
+            rig.Stats.BindPerks(rig.Progression.Effects);
 
             rig.Interaction = go.AddComponent<PlayerInteraction>();
             rig.Interaction.Init(config, voxels, structures, buildings, fields, rig.Inventory, rig.Stats, rig.Progression, camera);

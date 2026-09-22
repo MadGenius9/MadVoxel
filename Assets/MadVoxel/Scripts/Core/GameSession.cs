@@ -162,6 +162,7 @@ namespace MadVoxel.Core
             _worldSpawn = FindSurfaceSpawn(0, 0);
             _player = PlayerFactory.Create(_content.config, _voxels, _structures, _buildings, _fields, _worldSpawn);
             _player.transform.SetParent(_worldRoot.transform, true);
+            _player.Progression.BindPerkTree(_content.perkTree);
 
             _streamer = _worldRoot.AddComponent<ChunkStreamer>();
             _streamer.Init(_voxels, _content.config, _store, _player.transform);

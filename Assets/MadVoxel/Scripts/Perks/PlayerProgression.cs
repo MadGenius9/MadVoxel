@@ -36,6 +36,26 @@ namespace MadVoxel.Perks
         public ISet<string> UnlockedRecipes { get { return _unlockedRecipes; } }
         public IReadOnlyDictionary<string, int> PerkRanks { get { return _skillRanks; } }
 
+        /// <summary>Summed perk numbers. Always present; empty until a tree is bound.</summary>
+        public PerkEffects Effects { get { return _effects; } }
+
+        readonly PerkEffects _effects = new PerkEffects();
+        PerkTreeDefinition _tree;
+
+        /// <summary>The tree the ranks are read against. Bound once, at session start.</summary>
+        public PerkTreeDefinition Tree { get { return _tree; } }
+
+        public void BindPerkTree(PerkTreeDefinition tree)
+        {
+            _tree = tree;
+            RecomputeEffects();
+        }
+
+        void RecomputeEffects()
+        {
+            _effects.Recompute(_tree, GetRank);
+        }
+
         [Tooltip("Perk points granted per level.")]
         public int pointsPerLevel = 1;
 
@@ -80,13 +100,19 @@ namespace MadVoxel.Perks
         {
             if (string.IsNullOrEmpty(perkId)) return;
             _skillRanks[perkId] = rank;
+            RecomputeEffects();
             if (Changed != null) Changed();
         }
 
-        public void SpendPoint(string perkId, int newRank)
+        /// <summary>
+        /// Deducts the cost and sets the new rank. Callers check affordability first -
+        /// <see cref="PerkService.TryBuyRank"/> is the one that knows the rules.
+        /// </summary>
+        public void SpendPoints(string perkId, int newRank, int cost)
         {
-            if (UnspentPerkPoints <= 0) return;
-            UnspentPerkPoints--;
+            cost = Mathf.Max(0, cost);
+            if (UnspentPerkPoints < cost) return;
+            UnspentPerkPoints -= cost;
             SetRank(perkId, newRank);
         }
 
@@ -114,6 +140,7 @@ namespace MadVoxel.Perks
                 foreach (var id in unlockedRecipes) _unlockedRecipes.Add(id);
             }
 
+            RecomputeEffects();
             if (Changed != null) Changed();
         }
 
@@ -124,6 +151,7 @@ namespace MadVoxel.Perks
             UnspentPerkPoints = 0;
             _skillRanks.Clear();
             _unlockedRecipes.Clear();
+            RecomputeEffects();
             if (Changed != null) Changed();
         }
     }

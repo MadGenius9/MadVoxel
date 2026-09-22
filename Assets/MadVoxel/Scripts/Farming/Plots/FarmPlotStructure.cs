@@ -159,8 +159,7 @@ namespace MadVoxel.Farming.Plots
             // The Farming perk is what makes a garden worth expanding.
             if (progression != null)
             {
-                int rank = progression.GetRank(PerkIds.Farming);
-                if (rank > 0) yield = Mathf.Max(yield, Mathf.RoundToInt(yield * (1f + 0.15f * rank)));
+                yield = progression.Effects.ScaleCount(PerkEffectType.HarvestYieldMultiplier, yield);
             }
 
             if (yield > 0) inventory.Collect(crop.harvestItem, yield);

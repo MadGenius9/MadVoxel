@@ -1,5 +1,6 @@
 using System;
 using MadVoxel.Core;
+using MadVoxel.Perks;
 using UnityEngine;
 
 namespace MadVoxel.Core.Player
@@ -15,7 +16,9 @@ namespace MadVoxel.Core.Player
         public float Water { get; private set; }
 
         public float MaxHealth { get { return _config.maxHealth; } }
-        public float MaxStamina { get { return _config.maxStamina; } }
+
+        /// <summary>Base pool plus whatever Iron Lungs and friends have added.</summary>
+        public float MaxStamina { get { return _config.maxStamina + _perks.Bonus(PerkEffectType.MaxStaminaBonus); } }
         public float MaxFood { get { return _config.maxFood; } }
         public float MaxWater { get { return _config.maxWater; } }
 
@@ -27,6 +30,10 @@ namespace MadVoxel.Core.Player
         public event Action<DamageInfo> Damaged;
         public event Action Died;
 
+        // Never null: the rig binds the real set once progression exists, and an empty
+        // set reads as "no perks" rather than forcing a null check on every drain.
+        PerkEffects _perks = new PerkEffects();
+
         float _invulnerableUntil;
         float _staminaBlockedUntil;
         float _regenTick;
@@ -37,10 +44,15 @@ namespace MadVoxel.Core.Player
             ResetToFull();
         }
 
+        public void BindPerks(PerkEffects effects)
+        {
+            if (effects != null) _perks = effects;
+        }
+
         public void ResetToFull()
         {
             Health = _config.maxHealth;
-            Stamina = _config.maxStamina;
+            Stamina = MaxStamina;
             Food = _config.maxFood;
             Water = _config.maxWater;
             _invulnerableUntil = Time.time + _config.respawnInvulnerableSeconds;
@@ -49,7 +61,7 @@ namespace MadVoxel.Core.Player
         public void LoadState(float health, float stamina, float food, float water)
         {
             Health = Mathf.Clamp(health, 0f, _config.maxHealth);
-            Stamina = Mathf.Clamp(stamina, 0f, _config.maxStamina);
+            Stamina = Mathf.Clamp(stamina, 0f, MaxStamina);
             Food = Mathf.Clamp(food, 0f, _config.maxFood);
             Water = Mathf.Clamp(water, 0f, _config.maxWater);
         }
@@ -65,7 +77,7 @@ namespace MadVoxel.Core.Player
             if (Time.time >= _staminaBlockedUntil)
             {
                 float regen = _config.staminaRegenPerSecond * (Food > 0f ? 1f : 0.35f);
-                Stamina = Mathf.Min(_config.maxStamina, Stamina + regen * dt);
+                Stamina = Mathf.Min(MaxStamina, Stamina + regen * dt);
             }
 
             // Starvation and thirst bite once a second so the numbers stay readable.
@@ -85,6 +97,7 @@ namespace MadVoxel.Core.Player
 
         public bool TrySpendStamina(float amount)
         {
+            amount *= _perks.Multiplier(PerkEffectType.StaminaDrainMultiplier);
             if (Stamina < amount) return false;
             Stamina -= amount;
             _staminaBlockedUntil = Time.time + 1.1f;
@@ -93,6 +106,7 @@ namespace MadVoxel.Core.Player
 
         public void DrainStamina(float amountPerSecond, float dt)
         {
+            amountPerSecond *= _perks.Multiplier(PerkEffectType.StaminaDrainMultiplier);
             Stamina = Mathf.Max(0f, Stamina - amountPerSecond * dt);
             _staminaBlockedUntil = Time.time + 0.9f;
         }
@@ -108,12 +122,18 @@ namespace MadVoxel.Core.Player
             if (Health <= 0f && Died != null) Died();
         }
 
+        /// <summary>
+        /// Eating and bandaging. Medicine perks scale what the item gives back, which is
+        /// why this takes the raw item numbers rather than pre-scaled ones.
+        /// </summary>
         public void Consume(float food, float water, float health, float stamina = 0f)
         {
-            Food = Mathf.Min(_config.maxFood, Food + food);
-            Water = Mathf.Min(_config.maxWater, Water + water);
-            Health = Mathf.Min(_config.maxHealth, Health + health);
-            if (stamina > 0f) Stamina = Mathf.Min(_config.maxStamina, Stamina + stamina);
+            float scale = _perks.Multiplier(PerkEffectType.HealingMultiplier);
+
+            Food = Mathf.Min(_config.maxFood, Food + food * scale);
+            Water = Mathf.Min(_config.maxWater, Water + water * scale);
+            Health = Mathf.Min(_config.maxHealth, Health + health * scale);
+            if (stamina > 0f) Stamina = Mathf.Min(MaxStamina, Stamina + stamina * scale);
         }
 
         public void GrantInvulnerability(float seconds)
