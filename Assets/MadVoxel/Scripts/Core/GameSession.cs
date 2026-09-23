@@ -11,6 +11,7 @@ using MadVoxel.Fluid;
 using MadVoxel.Inventory.Spoil;
 using MadVoxel.Power;
 using MadVoxel.Save;
+using MadVoxel.Traders;
 using MadVoxel.World.Biomes;
 using MadVoxel.World.Fields;
 using MadVoxel.World.Weather;
@@ -39,6 +40,7 @@ namespace MadVoxel.Core
         FieldWorld _fields;
         Vehicles.VehicleWorld _vehicles;
         FieldCoverView _cover;
+        Traders.TraderWorld _traders;
         BlockDamageTracker _blockDamage;
         WorldClock _clock;
         SkyController _sky;
@@ -260,6 +262,12 @@ namespace MadVoxel.Core
                                  _structures, _spawner, _weather, _colony, _heat,
                                  _seed, DeveloperToolsEnabled);
 
+            // The counters. They stand at the outposts the generator placed, so the
+            // terrain has to exist before they do.
+            _traders = _worldRoot.AddComponent<TraderWorld>();
+            _traders.Init(_content, _voxels, _clock);
+            _save.Traders = _traders;
+
             // Machines last of all: the yard needs the field grid to work and the HUD to
             // report into, and the HUD only exists once the gameplay UI is up.
             // The standing crop. It needs the player to know what is near enough to draw.
@@ -269,6 +277,7 @@ namespace MadVoxel.Core
             _vehicles = _worldRoot.AddComponent<VehicleWorld>();
             _vehicles.Init(_content, _structures, _voxels, _fields, _player, _ui.Hud);
             _player.Interaction.Vehicles = _vehicles;
+            _vehicles.Traders = _traders;
             _save.Vehicles = _vehicles;
 
             // The claim ring lives in the world, not on the visor, so it hangs off the
@@ -579,6 +588,7 @@ namespace MadVoxel.Core
             _fields = null;
             _vehicles = null;
             _cover = null;
+            _traders = null;
             _blockDamage = null;
             _clock = null;
             _sky = null;

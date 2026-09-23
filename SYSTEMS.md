@@ -292,9 +292,52 @@ gold on time whether or not anyone walked past it.
 
 ---
 
+## Traders
+
+Two outposts have stood in the map since Phase 0, placed on farmland and clay hills
+before anything else could take the ground. They were buildings with nobody in them.
+Now each has a counter.
+
+It is a stall, not a person. A trader NPC would need pathing, a schedule, a greeting
+animation and somewhere to sleep, and none of that changes what trading is here: a
+counter, a price board, and what is in your bag.
+
+**The spread is the whole system.** The moment a trader will pay more for something than
+they charge for it, the game is a button you hold down, and nothing on screen would tell
+you. So the economy is pure C# and a headless check walks every line of every trader at
+every reputation tier — 95 combinations — asserting the margin stays positive, then plays
+out a real buy-and-sell-back at the top tier where it is thinnest. A trader also refuses
+to buy their own tokens back, which would otherwise leak value on every round trip.
+
+Every transaction is written the same way: work out the whole trade, refuse it outright
+if any part fails, then move everything. There is no partial trade, and no path that
+takes payment without handing over goods. A bag with no room refuses the sale rather than
+taking the money — which is the one way a trade can silently cost you something for
+nothing.
+
+**Reputation** rises faster from buying than selling, and unlocks stock tiers. Locked
+lines stay on the board with the tier that opens them printed where the price would be:
+a shop that hides its stock until you qualify gives you no reason to qualify.
+
+**Restocking is derived**, like crop growth. Whole elapsed cycles are credited and the
+remainder kept, so a trader you visit every hour still restocks — reset the stored hour on
+every visit and it never would — and one left alone for three days restocks by exactly the
+same amount.
+
+**Bulk produce** is what makes the field layer pay. Park a loaded harvester at the counter
+and `V` sells the haul by the litre instead of tipping it into a bin. Litres are priced
+through the crop's harvest item at a wholesale discount, using the *unrounded* per-item
+value: routing them through the rounded price flattened corn and grain onto the same
+number and made which crop you sowed an acre of stop mattering.
+
+A seed drill's hopper also holds litres — of seed — so the counter refuses anything but a
+harvester's load. Without that, buying seed and tipping it straight back is a laundry.
+
+---
+
 ## What the headless checks cover
 
-841 checks, all passing. The new ones:
+913 checks, all passing. The new ones:
 
 - **Biomes** — spawn is always farmland; no shelf near spawn but shelf at the edge; all
   five regions appear; the same seed repaints the same map; borders smear; the regions
@@ -317,6 +360,13 @@ gold on time whether or not anyone walked past it.
 - **Heat** — the floor, that Quiet Claim shaves it but cannot silence a farm, that a
   blackout is felt within the hour, that it settles at the floor and caps at 100, that
   dawn pulls harder, that an idle trap is silent.
+- **Traders** — that the spread never closes across all 95 line-and-tier combinations and
+  that a buy-and-sell-back round trip always leaves you poorer; that a refused trade moves
+  nothing at all, in either direction; that a trader will not buy their own tokens; that
+  money does not buy what reputation gates; that bulk takes a wholesale cut but still
+  prices two crops differently; that a seed item's worth of litres is worth less than the
+  seed; and that a trader visited hourly and a trader left alone for three days restock
+  identically.
 - **Field cover** — that patches tile correctly through negative coordinates (naive
   integer division puts the cell west of the origin in the origin patch and overlays two
   fields on the same ground); that a newly sown cell still shows a shoot, so the drill

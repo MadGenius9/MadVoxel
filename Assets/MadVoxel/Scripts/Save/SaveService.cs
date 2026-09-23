@@ -52,6 +52,8 @@ namespace MadVoxel.Save
         public MadVoxel.Claim.ClaimHeatTracker Heat { get; set; }
         /// <summary>The machine yard. Set by the session once the HUD exists.</summary>
         public VehicleWorld Vehicles { get; set; }
+        /// <summary>The counters at the outposts.</summary>
+        public MadVoxel.Traders.TraderWorld Traders { get; set; }
 
         public void Init(ContentDatabase content, ChunkStreamer streamer, StructureWorld structures,
                          BuildingWorld buildings, FieldWorld fields, WorldClock clock, HordeDirector horde, PlayerRig player,
@@ -231,6 +233,7 @@ namespace MadVoxel.Save
             CaptureLinks(data);
             CaptureColony(data);
             CaptureVehicles(data);
+            CaptureTraders(data);
             return data;
         }
 
@@ -507,6 +510,40 @@ namespace MadVoxel.Save
             RestoreLinks(data, powerRemap, fluidRemap);
             RestoreColony(data);
             RestoreVehicles(data);
+            RestoreTraders(data);
+        }
+
+        void CaptureTraders(StructuresSaveData data)
+        {
+            if (Traders == null) return;
+
+            var posts = Traders.All;
+            for (int i = 0; i < posts.Count; i++)
+            {
+                var post = posts[i];
+                if (post == null || post.State == null || post.Definition == null) continue;
+
+                var entry = new TraderSaveData
+                {
+                    traderId = post.Definition.stringId,
+                    reputation = post.State.Reputation,
+                    lastRestockHours = post.State.LastRestockHours
+                };
+                entry.stock.AddRange(post.State.SaveStock());
+
+                data.traders.Add(entry);
+            }
+        }
+
+        void RestoreTraders(StructuresSaveData data)
+        {
+            if (Traders == null || data.traders == null) return;
+
+            for (int i = 0; i < data.traders.Count; i++)
+            {
+                var entry = data.traders[i];
+                Traders.LoadState(entry.traderId, entry.reputation, entry.lastRestockHours, entry.stock);
+            }
         }
 
         /// <summary>

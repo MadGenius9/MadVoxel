@@ -173,9 +173,24 @@ namespace MadVoxel.Save
         public float hopperLitres;
     }
 
+    /// <summary>
+    /// A trader's books. The shelves are saved rather than recomputed, because a
+    /// trader you cleared out is meant to stay cleared out until they restock.
+    /// </summary>
+    [Serializable]
+    public class TraderSaveData
+    {
+        public string traderId = "";
+        public int reputation;
+        public double lastRestockHours;
+        public List<int> stock = new List<int>();
+    }
+
     [Serializable]
     public class StructuresSaveData
     {
+        public List<TraderSaveData> traders = new List<TraderSaveData>();
+
         public List<VehicleSaveData> vehicles = new List<VehicleSaveData>();
 
         public List<StructureSaveData> structures = new List<StructureSaveData>();

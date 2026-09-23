@@ -22,6 +22,8 @@ namespace MadVoxel.UI
         Perks,
         /// <summary>The colony board. The only colony screen there is.</summary>
         Board,
+        /// <summary>A trader's counter.</summary>
+        Trader,
         Paused,
         Dead
     }
@@ -39,6 +41,7 @@ namespace MadVoxel.UI
         public InventoryScreen Inventory { get; private set; }
         public PerkScreen Perks { get; private set; }
         public ColonyBoardScreen Board { get; private set; }
+        public TraderScreen Trader { get; private set; }
         public DebugOverlay Debug { get; private set; }
 
         public UiState State { get; private set; }
@@ -130,6 +133,9 @@ namespace MadVoxel.UI
             Board.Init(colony);
             Board.Heat = heat;
 
+            Trader = _gameplayUi.AddComponent<TraderScreen>();
+            Trader.Init(player);
+
             Debug = _gameplayUi.AddComponent<DebugOverlay>();
             Debug.Init(player, voxels, streamer, seed, developerTools);
 
@@ -137,6 +143,7 @@ namespace MadVoxel.UI
             CraftStationStructure.OpenRequested += OnStationOpen;
             CampfireStructure.OpenRequested += OnStationOpen;
             ColonyBoardStructure.OpenRequested += OnBoardOpen;
+            MadVoxel.Traders.TraderPost.OpenRequested += OnTraderOpen;
         }
 
         public void DestroyGameplayUi()
@@ -145,6 +152,7 @@ namespace MadVoxel.UI
             CraftStationStructure.OpenRequested -= OnStationOpen;
             CampfireStructure.OpenRequested -= OnStationOpen;
             ColonyBoardStructure.OpenRequested -= OnBoardOpen;
+            MadVoxel.Traders.TraderPost.OpenRequested -= OnTraderOpen;
 
             if (_gameplayUi != null) Destroy(_gameplayUi);
             _gameplayUi = null;
@@ -152,6 +160,7 @@ namespace MadVoxel.UI
             Inventory = null;
             Perks = null;
             Board = null;
+            Trader = null;
             Debug = null;
         }
 
@@ -160,6 +169,14 @@ namespace MadVoxel.UI
             if (Inventory == null || State == UiState.Dead) return;
             Inventory.OpenContainer(storage);
             SetState(UiState.Inventory);
+        }
+
+        void OnTraderOpen(MadVoxel.Traders.TraderPost post)
+        {
+            if (Trader == null || State == UiState.Dead) return;
+
+            Trader.Open(post);
+            SetState(UiState.Trader);
         }
 
         void OnBoardOpen(ColonyBoardStructure board)
@@ -185,7 +202,8 @@ namespace MadVoxel.UI
 
             if (InputBridge.PauseDown)
             {
-                if (State == UiState.Inventory || State == UiState.Perks || State == UiState.Board)
+                if (State == UiState.Inventory || State == UiState.Perks
+                    || State == UiState.Board || State == UiState.Trader)
                     SetState(UiState.Playing);
                 else if (State == UiState.Playing) SetState(UiState.Paused);
                 else if (State == UiState.Paused) SetState(UiState.Playing);
@@ -221,6 +239,7 @@ namespace MadVoxel.UI
             if (state != UiState.Inventory && Inventory != null) Inventory.Close();
             if (state != UiState.Perks && Perks != null) Perks.Close();
             if (state != UiState.Board && Board != null) Board.Close();
+            if (state != UiState.Trader && Trader != null) Trader.Close();
             if (state != UiState.Paused && Pause != null) Pause.Close();
             if (state != UiState.Dead && Death != null) Death.Close();
             if (state != UiState.MainMenu && MainMenu != null) MainMenu.Close();
@@ -235,6 +254,11 @@ namespace MadVoxel.UI
                     break;
                 case UiState.Board:
                     if (Board != null) Board.Open();
+                    break;
+                case UiState.Trader:
+                    // Reopened rather than built: the counter is always the one the
+                    // player walked up to, and it is already held by the screen.
+                    if (Trader != null && Trader.Post != null) Trader.Open(Trader.Post);
                     break;
                 case UiState.Paused:
                     Pause.Open();

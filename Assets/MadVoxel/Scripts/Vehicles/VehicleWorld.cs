@@ -40,6 +40,9 @@ namespace MadVoxel.Vehicles
         /// <summary>The machine the player is sitting on, or null.</summary>
         public VehicleRig Driving { get; private set; }
 
+        /// <summary>The outposts, so a harvest can be sold over the counter. Set by the session.</summary>
+        public Traders.TraderWorld Traders { get; set; }
+
         public void Init(ContentDatabase content, StructureWorld structures, TerrainWorld voxels,
                          FieldWorld fields, PlayerRig player, HudView hud)
         {
@@ -304,6 +307,10 @@ namespace MadVoxel.Vehicles
                 return;
             }
 
+            // A counter beats a bin. If you drove a full harvester all the way to an
+            // outpost, you came to sell it, not to look for somewhere to put it.
+            if (SellAtCounter(rig, implement)) return;
+
             var bin = NearestBin(rig.transform.position);
             if (bin == null)
             {
@@ -322,6 +329,33 @@ namespace MadVoxel.Vehicles
 
             Notifications.PostFormat("Tipped {0:0} L of {1}", moved,
                 cargo != null ? cargo.displayName : "produce");
+        }
+
+        /// <summary>
+        /// Tips the load over a trader's counter instead of into a bin. Returns true
+        /// when a counter was in range, whether or not the sale went through - a failed
+        /// sale at an outpost must not silently fall back to looking for a grain bin
+        /// four hundred metres away.
+        /// </summary>
+        bool SellAtCounter(VehicleRig rig, ImplementController implement)
+        {
+            if (Traders == null) return false;
+
+            var post = Traders.NearestPost(rig.transform.position, MadVoxel.Traders.TraderWorld.TipRange);
+            if (post == null) return false;
+
+            var player = rig.Driver;
+            if (player == null) return false;
+
+            var cargo = implement.Cargo;
+            int paid;
+            float sold = Traders.SellHarvest(post, player.Inventory.Bag, cargo,
+                                             implement.HopperLitres,
+                                             implement.Definition.FillsHopper, out paid);
+            if (sold <= 0f) return true;
+
+            implement.Empty();
+            return true;
         }
 
         SiloStructure NearestBin(Vector3 from)

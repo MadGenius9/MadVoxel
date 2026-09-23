@@ -18,7 +18,7 @@ without a Unity editor available. Everything was verified two ways instead:
 
 1. **Compile check** against real Unity reference assemblies (2021.3 — the newest on
    NuGet, while the project targets Unity 6, so API drift between them is a real gap).
-2. **841 headless checks** that run the *actual* gameplay sources against an executable
+2. **913 headless checks** that run the *actual* gameplay sources against an executable
    `UnityEngine` shim in `Tests/Headless/`.
 
 Those caught eight genuine bugs a compile could not see. They cannot tell you whether
@@ -34,7 +34,7 @@ the tests.** The tests are strong on logic and silent on everything else.
 Always, before saying anything is done:
 
 ```bash
-cd Tests/Headless && dotnet run      # 841 checks, exit 0 when clean
+cd Tests/Headless && dotnet run      # 913 checks, exit 0 when clean
 ```
 
 If .NET is missing, `dotnet` is a free install and worth it — this suite is the only
@@ -84,6 +84,7 @@ If you add a system, add the check that would have caught you getting it wrong.
     Farming/         garden plots and crops
     Power/ Fluid/    the grid and the plumbing, one graph each
     Colony/          Mad Colony: charter, morale, people, jobs
+    Traders/         the counters, prices, reputation and restocking
     Claim/           claim heat
     Inventory/       items, stacks, crafting, spoilage
     Perks/           XP, tree, effect resolution, buy rules
@@ -130,7 +131,8 @@ If you add a system, add the check that would have caught you getting it wrong.
 ### Player keys worth knowing
 
 `E` interact / mount / dismount · `F` lower or raise the implement · `G` hitch or
-unhitch · `V` load the drill from your hand, or tip a harvester into a bin within 8 m
+unhitch · `V` load the drill from your hand, or empty a harvester — into a trader's
+counter within 14 m, else a grain bin within 8 m · shift-click trades ten at a counter
 
 ### Editor log (when the user cannot paste a stack trace)
 

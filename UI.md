@@ -78,6 +78,7 @@ dimmer colour. The board's founding checklist uses `[X]` and `[ ]`, not green an
 | **Horde** | Blood moon active | Four oxidised edges (never a full-screen wash), blood threat ticks on the compass, and **one line**: `BLOOD MOON  00:18`. No title card, no skull. |
 | **Utilities look-at** | Crosshair on a device or fitting | The device answers for itself: `GEN BANK  31/100 W  FUEL 7L`, `RELAY  30M`, `PUMP  NEEDS 18 W`, `TANK  412 / 800 L`, `TAP  FROZEN`. Rust when it is broken, frozen or unpowered. |
 | **Wiring** | Wire tool in hand with a line started | `RUNNING A LINE   REACH 30M   RMB TO DROP`, which takes the look-at line because it is the only thing you are thinking about. |
+| **Trader counter** | `E` at a stall | A ticket saying who you are to them (`TRADER VANCE`, `REGULAR`, `140 REP TO NEXT`), your tokens as one big number, their board on the left and what they will take off you on the right. Every line is a name, a count and a price — no grid of pictures. A locked line keeps its place with `TRUSTED` where the price would be; an unaffordable one reads `SHORT` in rust, so the word carries the signal and the colour only confirms it. |
 | **Colonist look-at** | Crosshair on a person | `JULES  FARM  HUNGRY`, and `NO BED ASSIGNED` under it when that is why. |
 | **Tractor** | Sitting on a machine | Speed as one big number, fuel in litres, hopper in litres, and an implement lamp with a word beside it: `SEED DRILL  WORKING`, `HARVESTER  HOPPER FULL`, `DISC PLOW  RAISED`. Colour and shape together, as everywhere else. The on-foot crosshair and look-at readout go away entirely — the player's own interaction is switched off while their hands are on the wheel, so leaving either up would show a frozen target over the gauges. |
 
@@ -103,13 +104,13 @@ dimmer colour. The board's founding checklist uses `[X]` and `[ ]`, not green an
 
 ## Not built yet
 
-**Trader (ticket + price board)** is specified but not built: there is no trader NPC to
-talk to, and a screen with nothing behind it is dead UI that rots before its system
-arrives. It lands with the trader runtime.
+**The silo screen** is specified and not built. The grain bin has a runtime now — a
+harvester tips into it — so its contents are read out one line at a time through
+notifications rather than on a plate. It is the next screen worth building, and the
+trader board is the layout to copy.
 
-**The silo screen** is specified and not built either, but the grain bin now has a
-runtime — a harvester tips into it — so its contents are still read out one line at a
-time through notifications rather than on a plate. That is the next screen worth building.
+**The quest board** has no screen. The contracts and the trader who would hand them out
+both exist; accepting and tracking one does not.
 
 The tractor cluster was built ahead of its system, and only because it was asked for
 explicitly. It paid off: when the machines landed it needed no HUD surgery and no second
@@ -130,6 +131,7 @@ rather than a coat of paint, so it is yours to call.
     UI/CompassStrip.cs         the tape itself: ticks, cardinals, pips, day and clock
     UI/HudView.cs              the visor, and which layer each mode is allowed
     UI/TractorPanel.cs         the gauge cluster, fed by VehicleWorld while driving
+    UI/TraderScreen.cs         the ticket, the price board, and what they will buy
     UI/InventoryScreen.cs      bag, container, work-order strip
     UI/PerkScreen.cs           the wiring diagram
     UI/MenuScreens.cs          title, pause, death

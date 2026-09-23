@@ -357,6 +357,17 @@ namespace MadVoxel.Vehicles
             return moved;
         }
 
+        /// <summary>
+        /// Empties the hopper outright. Used when the load has already been paid for
+        /// over a counter, where there is no store to tip into and nothing to reject.
+        /// </summary>
+        public void Empty()
+        {
+            _hopperLitres = 0f;
+            Cargo = null;
+            _warnedBlocked = false;
+        }
+
         /// <summary>Litres lost to a full hopper since the last time anyone asked.</summary>
         public float TakeSpillage()
         {

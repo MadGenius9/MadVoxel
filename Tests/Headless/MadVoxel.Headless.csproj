@@ -38,6 +38,7 @@
     <Compile Include="ColonyTests.cs" />
     <Compile Include="FieldMachineTests.cs" />
     <Compile Include="FieldCoverTests.cs" />
+    <Compile Include="TraderTests.cs" />
     <Compile Include="FluidTests.cs" />
   </ItemGroup>
 
@@ -97,6 +98,8 @@
     <Compile Include="../../Assets/MadVoxel/Scripts/Perks/PerkService.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Perks/PlayerProgression.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Traders/TraderDefinition.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Traders/TraderPricing.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Traders/TraderState.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Quests/QuestDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Vehicles/VehicleDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Vehicles/ImplementDefinition.cs" />
