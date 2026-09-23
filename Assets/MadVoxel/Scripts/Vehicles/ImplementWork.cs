@@ -64,7 +64,13 @@ namespace MadVoxel.Vehicles
         public static bool Accepts(ImplementDefinition implement, float hopperLitres, float litres)
         {
             if (implement == null || litres <= 0f) return false;
-            return hopperLitres + litres <= implement.hopperCapacityLitres + 0.001f;
+            if (hopperLitres + litres <= implement.hopperCapacityLitres + 0.001f) return true;
+
+            // Unless a whole sack never fits. A modded drill holding less than one
+            // sack's worth would otherwise be unloadable for ever, and be told its
+            // empty hopper was as full as it would go. It takes one sack, fills to the
+            // brim, and the rest of the sack is the price of building it that small.
+            return litres > implement.hopperCapacityLitres && hopperLitres <= 0.001f;
         }
 
         /// <summary>Litres a seeder spends putting seed in this many cells.</summary>

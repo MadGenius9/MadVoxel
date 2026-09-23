@@ -317,11 +317,7 @@ namespace MadVoxel.Vehicles
         // ------------------------------------------------------------------ hopper
 
         /// <summary>
-        /// Loads seed into a seeder. Returns the litres taken, so the caller knows how
-        /// many seed items to consume.
-        /// </summary>
-        /// <summary>
-        /// Loads one item's worth of seed, or nothing.
+        /// Loads one item's worth of seed, or nothing. Returns the litres taken.
         ///
         /// All or nothing on purpose. A part-fill has to be either free seed or a whole
         /// item spent on a splash, and both are worse than simply saying the hopper is

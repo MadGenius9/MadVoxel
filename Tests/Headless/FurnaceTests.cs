@@ -220,6 +220,50 @@ namespace MadVoxel.Headless
                 "and a full one says that instead");
             Harness.Equal(FurnaceRules.Describe(true, true, true), "SMELTING", "a working one just works");
 
+            // THE combination bug. All three answers have to come from the same
+            // recipes - the ones the furnace has ingredients for. Measuring fuel over
+            // every forge recipe made a furnace with iron ore and nine seconds of burn
+            // read SMELTING, because nine seconds covers a batch of glass it has no
+            // sand for.
+            var cheap = ScriptableObject.CreateInstance<RecipeDefinition>();
+            cheap.stringId = "test:cheap";
+            cheap.craftSeconds = 2f;
+            cheap.output = db.Item(ItemIds.BlockGlass);
+            cheap.outputCount = 1;
+
+            var dear = ScriptableObject.CreateInstance<RecipeDefinition>();
+            dear.stringId = "test:dear";
+            dear.craftSeconds = 40f;
+            dear.output = db.Item(ItemIds.IronIngot);
+            dear.outputCount = 1;
+
+            var both = new List<RecipeDefinition> { cheap, dear };
+
+            bool work, fuelled, room;
+
+            // Ingredients only for the expensive one, and only enough burn for the
+            // cheap one. That is a furnace that cannot do anything.
+            FurnaceRules.Survey(both, FurnaceRules.SecondsPerBatch(cheap),
+                r => r == dear, r => true, out work, out fuelled, out room);
+
+            Harness.Check(work, "it has something to smelt");
+            Harness.Check(!fuelled,
+                "but not the fuel to smelt THAT - burn for a recipe it cannot make does not count");
+            Harness.Equal(FurnaceRules.Describe(work, fuelled, room), "OUT OF FUEL",
+                "so it says it is out of fuel rather than claiming to be smelting");
+
+            // Enough for the one it can actually make.
+            FurnaceRules.Survey(both, FurnaceRules.SecondsPerBatch(dear),
+                r => r == dear, r => true, out work, out fuelled, out room);
+            Harness.Check(fuelled, "and with burn enough for the job it has, it is fuelled");
+
+            // Nothing to smelt at all reads as idle, whatever is in the fuel tray.
+            FurnaceRules.Survey(both, 10000f, r => false, r => true, out work, out fuelled, out room);
+            Harness.Check(!work && !fuelled && !room, "an empty furnace is idle, however much coal is in it");
+
+            FurnaceRules.Survey(null, 100f, r => true, r => true, out work, out fuelled, out room);
+            Harness.Check(!work, "and a furnace that knows no recipes has nothing to do");
+
             // A furnace that stopped for want of ore must not bank the hours it spent
             // cold. The structure decides this by asking whether it could still be
             // working, so that question has to answer honestly for an empty furnace.

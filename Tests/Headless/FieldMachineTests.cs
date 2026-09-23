@@ -162,12 +162,16 @@ namespace MadVoxel.Headless
             Harness.Check(!ImplementWork.Accepts(seeder, 0f, 0f), "and nothing is not a sack");
             Harness.Check(!ImplementWork.Accepts(null, 0f, 8f), "nor is a sack with no implement to take it");
 
-            // A modded drill whose whole hopper is smaller than one sack must refuse
-            // rather than fill for free on every press.
+            // A modded drill whose whole hopper is smaller than one sack is the one
+            // case the all-or-nothing rule has to bend for: refusing outright would
+            // make it unloadable for ever and tell the player an empty hopper was full.
             var tiny = Implement(ImplementKind.Seeder, 2f);
             tiny.hopperCapacityLitres = 3f;
-            Harness.Check(!ImplementWork.Accepts(tiny, 0f, 8f),
-                "a hopper smaller than a sack never takes one");
+
+            Harness.Check(ImplementWork.Accepts(tiny, 0f, 8f),
+                "a hopper smaller than a sack still takes one when empty");
+            Harness.Check(!ImplementWork.Accepts(tiny, 3f, 8f),
+                "but not a second one on top of it");
 
             var harvester = Implement(ImplementKind.Harvester, 5f);
             harvester.hopperCapacityLitres = 400f;

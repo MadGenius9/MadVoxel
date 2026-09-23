@@ -239,23 +239,14 @@ namespace MadVoxel.Building
 
             FurnaceRules.CollectRecipes(Content.recipes, _recipes);
 
-            bool hasWork = false, hasRoom = false;
-            for (int i = 0; i < _recipes.Count; i++)
-            {
-                if (FurnaceRules.BatchesFromIngredients(Contents, _recipes[i]) <= 0) continue;
-
-                hasWork = true;
-                if (Contents.CanFit(_recipes[i].output, _recipes[i].outputCount)) hasRoom = true;
-            }
-
-            // Enough to finish something, not merely more than nothing - a furnace
-            // holding four seconds of burn and a stack of ore is out of fuel.
             float available = FurnaceRules.FuelSecondsIn(Contents) + BankedFuelSeconds;
-            bool hasFuel = false;
-            for (int i = 0; i < _recipes.Count; i++)
-            {
-                if (FurnaceRules.HasBurnFor(available, _recipes[i])) hasFuel = true;
-            }
+
+            bool hasWork, hasFuel, hasRoom;
+            FurnaceRules.Survey(_recipes, available,
+                r => FurnaceRules.BatchesFromIngredients(Contents, r) > 0,
+                r => Contents.CanFit(r.output, r.outputCount),
+                out hasWork, out hasFuel, out hasRoom);
+
             return "FURNACE  " + FurnaceRules.Describe(hasWork, hasFuel, hasRoom);
         }
 

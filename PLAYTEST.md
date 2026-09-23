@@ -1,6 +1,6 @@
 # What to try first
 
-None of what follows has ever been rendered. It compiles, and 1,214 headless checks say
+None of what follows has ever been rendered. It compiles, and 1,221 headless checks say
 the logic is right, but the tests are silent on whether anything *looks* right, sits at a
 sensible height, or is reachable with the camera where it is. If something looks wrong,
 it probably is — believe your eyes over this file.

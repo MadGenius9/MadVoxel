@@ -201,6 +201,37 @@ namespace MadVoxel.Building
             return fuelSeconds >= SecondsPerBatch(recipe);
         }
 
+        /// <summary>
+        /// Works out what a furnace should say about itself, over one set of recipes.
+        ///
+        /// One pass on purpose. All three answers are about the work this furnace could
+        /// actually do, so all three have to be measured over the same recipes - the
+        /// ones it has ingredients for. Asking whether there is fuel for *any* forge
+        /// recipe made a furnace holding iron ore and nine seconds of burn read
+        /// SMELTING, because nine seconds covers a batch of glass it has no sand for.
+        /// </summary>
+        public static void Survey(IList<RecipeDefinition> recipes, float fuelSeconds,
+                                  System.Func<RecipeDefinition, bool> hasIngredients,
+                                  System.Func<RecipeDefinition, bool> hasRoom,
+                                  out bool work, out bool fuel, out bool room)
+        {
+            work = false;
+            fuel = false;
+            room = false;
+
+            if (recipes == null || hasIngredients == null) return;
+
+            for (int i = 0; i < recipes.Count; i++)
+            {
+                var recipe = recipes[i];
+                if (recipe == null || !hasIngredients(recipe)) continue;
+
+                work = true;
+                if (hasRoom != null && hasRoom(recipe)) room = true;
+                if (HasBurnFor(fuelSeconds, recipe)) fuel = true;
+            }
+        }
+
         /// <summary>The one line the furnace shows about what it is doing.</summary>
         public static string Describe(bool hasWork, bool hasFuel, bool hasRoom)
         {
