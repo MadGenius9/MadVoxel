@@ -22,11 +22,18 @@ namespace MadVoxel.Traders
         public const float BonusPerTier = 0.035f;
 
         /// <summary>
-        /// Litres of bulk produce one sack's worth of an item represents. Field crops
-        /// are priced through their harvest item so a litre of corn and an ear of corn
-        /// cannot drift apart into two different economies.
+        /// Litres of bulk produce one harvest item represents, when the crop does not
+        /// say. The rate lives on the crop so a grain bin drawing produce out and a
+        /// trader pricing it use the same number - a litre of corn and an ear of corn
+        /// must not drift into two different economies.
         /// </summary>
-        public const float LitresPerProduceItem = 4f;
+        public const float DefaultLitresPerProduceItem = 4f;
+
+        public static float LitresPerItem(CropDefinition crop)
+        {
+            if (crop == null || crop.litresPerHarvestItem <= 0f) return DefaultLitresPerProduceItem;
+            return crop.litresPerHarvestItem;
+        }
 
         /// <summary>
         /// The wholesale discount on bulk produce. Tipping a hopper is selling to a
@@ -157,7 +164,7 @@ namespace MadVoxel.Traders
             // and grain both land on 1 - and pricing litres through that would flatten
             // the whole field economy into a single number.
             float perItem = BuyPriceExact(trader, crop.harvestItem, tier);
-            return perItem * BulkRate / Mathf.Max(0.01f, LitresPerProduceItem);
+            return perItem * BulkRate / LitresPerItem(crop);
         }
 
         /// <summary>

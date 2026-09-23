@@ -326,9 +326,9 @@ namespace MadVoxel.Headless
             // produce is worth per unit.
             float perLitre = TraderPricing.LitreValue(vance, corn, 0);
             float exact = TraderPricing.BuyPriceExact(vance, corn.harvestItem, 0);
-            Harness.Check(perLitre * TraderPricing.LitresPerProduceItem < exact,
+            Harness.Check(perLitre * TraderPricing.LitresPerItem(corn) < exact,
                 string.Format("bulk takes a wholesale cut: {0:0.00} against {1:0.00} a sack's worth",
-                    perLitre * TraderPricing.LitresPerProduceItem, exact));
+                    perLitre * TraderPricing.LitresPerItem(corn), exact));
 
             // Crops of different worth must fetch different rates. Routing litres
             // through the rounded per-item price flattened corn and grain onto the same

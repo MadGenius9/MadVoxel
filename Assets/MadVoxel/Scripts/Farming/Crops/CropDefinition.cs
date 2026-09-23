@@ -52,9 +52,24 @@ namespace MadVoxel.Farming.Crops
         public int seedReturnMin = 1;
         public int seedReturnMax = 2;
 
-        [Header("Field layer (Phase 1)")]
+        [Header("Field layer")]
         [Tooltip("Litres yielded per harvested field cell.")]
         public float litresPerCell = 12f;
+        [Tooltip("Litres of bulk produce that make one harvest item. The rate a grain bin draws at, and the rate a trader prices litres by.")]
+        public float litresPerHarvestItem = 4f;
+
+        /// <summary>Harvest items a quantity of bulk produce is worth, rounded down.</summary>
+        public int ItemsFromLitres(float litres)
+        {
+            if (harvestItem == null || litres <= 0f) return 0;
+            return Mathf.FloorToInt(litres / Mathf.Max(0.01f, litresPerHarvestItem));
+        }
+
+        /// <summary>The litres those items cost, so drawing never loses a fraction.</summary>
+        public float LitresForItems(int items)
+        {
+            return Mathf.Max(0, items) * Mathf.Max(0.01f, litresPerHarvestItem);
+        }
 
         [Header("Look")]
         public Color plantTint = new Color(0.36f, 0.52f, 0.22f);

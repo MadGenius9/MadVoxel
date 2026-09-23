@@ -1,4 +1,5 @@
 using MadVoxel.Building;
+using MadVoxel.Farming.Crops;
 using MadVoxel.Core;
 using UnityEngine;
 
@@ -14,6 +15,9 @@ namespace MadVoxel.Farming.Plots
     /// </summary>
     public class SiloStructure : MonoBehaviour, IInteractable
     {
+        /// <summary>Raised when the player opens it. The UI layer listens.</summary>
+        public static event System.Action<SiloStructure> OpenRequested;
+
         public PlacedStructure Structure { get; private set; }
 
         /// <summary>Litres currently stored, keyed by crop string id.</summary>
@@ -86,16 +90,41 @@ namespace MadVoxel.Farming.Plots
 
         public void Interact(GameObject interactor)
         {
-            if (StoredLitres <= 0f)
-            {
-                Notifications.Post("The grain bin is empty. Harvest a field to fill it.");
-                return;
-            }
+            if (OpenRequested != null) OpenRequested(this);
+        }
 
-            foreach (var kv in _contents)
-            {
-                Notifications.PostFormat("{0}: {1:0} L", kv.Key, kv.Value);
-            }
+        /// <summary>
+        /// Draws bulk produce back out as harvest items.
+        ///
+        /// Without this the bin is a black hole: a harvester could tip into it and
+        /// nothing could ever come out again. Drawing costs the exact litres the items
+        /// are worth, so the bin cannot be used to launder a fraction of a litre into a
+        /// whole sack.
+        /// </summary>
+        public int Draw(CropDefinition crop, MadVoxel.Inventory.Inventory bag, int wantedItems)
+        {
+            if (crop == null || crop.harvestItem == null || bag == null || wantedItems <= 0) return 0;
+
+            float stored = StoredOf(crop.stringId);
+            int affordable = Mathf.Min(wantedItems, crop.ItemsFromLitres(stored));
+            if (affordable <= 0) return 0;
+
+            // Only as many as will actually fit. Taking the litres for items that then
+            // bounce off a full bag would lose the harvest.
+            while (affordable > 0 && !bag.CanFit(crop.harvestItem, affordable)) affordable--;
+            if (affordable <= 0) return 0;
+
+            float cost = crop.LitresForItems(affordable);
+            if (Withdraw(crop.stringId, cost) < cost - 0.01f) return 0;
+
+            bag.Add(crop.harvestItem, affordable);
+            return affordable;
+        }
+
+        public float StoredOf(string cropId)
+        {
+            float litres;
+            return !string.IsNullOrEmpty(cropId) && _contents.TryGetValue(cropId, out litres) ? litres : 0f;
         }
     }
 }

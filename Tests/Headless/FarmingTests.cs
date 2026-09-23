@@ -19,6 +19,62 @@ namespace MadVoxel.Headless
             GardenGrowth(db);
             FieldStateMachine(db);
             FieldYield(db);
+            BulkDrawing(db);
+        }
+
+        /// <summary>
+        /// Litres out of a grain bin and back into harvest items. The bin used to be a
+        /// black hole - a harvester could tip in and nothing could come out - and the
+        /// rate that fixed it is the same one a trader prices litres by, so storing a
+        /// harvest and carrying it stay two ways of holding the same thing.
+        /// </summary>
+        static void BulkDrawing(ContentDatabase db)
+        {
+            Harness.Section("farming: drawing bulk back out");
+
+            CropDefinition crop = null;
+            for (int i = 0; i < db.crops.Count; i++)
+            {
+                if (db.crops[i].growsOnField && db.crops[i].harvestItem != null) crop = db.crops[i];
+            }
+
+            Harness.Check(crop != null, "there is a field crop with produce");
+            if (crop == null) return;
+
+            Harness.Check(crop.litresPerHarvestItem > 0f, "and it says what a sack of it is worth");
+
+            Harness.Equal(crop.ItemsFromLitres(0f), 0, "an empty bin draws nothing");
+            Harness.Equal(crop.ItemsFromLitres(-50f), 0, "and neither does a negative");
+
+            // A part-filled sack is not a sack. Rounding up here would let a bin with a
+            // splash in the bottom print produce forever.
+            Harness.Equal(crop.ItemsFromLitres(crop.litresPerHarvestItem * 0.99f), 0,
+                "just under one sack's worth draws nothing");
+            Harness.Equal(crop.ItemsFromLitres(crop.litresPerHarvestItem), 1, "exactly one draws one");
+            Harness.Equal(crop.ItemsFromLitres(crop.litresPerHarvestItem * 7.6f), 7, "and seven and a bit draws seven");
+
+            // THE round trip: drawing n items must cost exactly what n items are worth.
+            // Any drift either way is a way to make or destroy produce by clicking.
+            bool exact = true;
+            for (int n = 0; n <= 50; n++)
+            {
+                if (crop.ItemsFromLitres(crop.LitresForItems(n)) != n) exact = false;
+            }
+            Harness.Check(exact, "drawing n sacks costs exactly n sacks' worth, for every n up to fifty");
+
+            bool neverGains = true;
+            for (float litres = 0f; litres < 200f; litres += 0.7f)
+            {
+                if (crop.LitresForItems(crop.ItemsFromLitres(litres)) > litres + 0.001f) neverGains = false;
+            }
+            Harness.Check(neverGains, "and drawing never costs less than what came out");
+
+            Harness.Equal(crop.LitresForItems(-5), 0f, "you cannot draw a negative number of sacks");
+
+            // The trader must price litres at the same rate the bin draws them, or
+            // storing a harvest and carrying it become two different economies.
+            Harness.Equal(MadVoxel.Traders.TraderPricing.LitresPerItem(crop), crop.litresPerHarvestItem,
+                "the bin and the counter agree on what a sack is worth");
         }
 
         static void CropContent(ContentDatabase db)

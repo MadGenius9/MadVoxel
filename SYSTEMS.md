@@ -333,6 +333,21 @@ number and made which crop you sowed an acre of stop mattering.
 A seed drill's hopper also holds litres — of seed — so the counter refuses anything but a
 harvester's load. Without that, buying seed and tipping it straight back is a laundry.
 
+### The grain bin
+
+The bin was a black hole: a harvester could tip into it and nothing could ever come out.
+It draws now, turning litres back into harvest items at a rate the crop itself carries —
+the same rate a trader prices litres by, so storing a harvest and carrying it are two ways
+of holding the same thing rather than two economies.
+
+Which one you want is a real decision. Tipping a hopper at a counter is one trip and takes
+the wholesale cut; drawing the same harvest as sacks and hauling it sells for more per
+unit and fills most of your bag doing it. A full harvester is six thousand litres, which
+is fifteen hundred sacks — you are not carrying that in one go.
+
+Drawing costs the exact litres the sacks are worth, and a part-filled sack is not a sack.
+Rounding up would let a bin with a splash in the bottom print produce forever.
+
 ---
 
 ## Contracts
@@ -373,7 +388,7 @@ cabinet for a postcard.
 
 ## What the headless checks cover
 
-972 checks, all passing. The new ones:
+983 checks, all passing. The new ones:
 
 - **Biomes** — spawn is always farmland; no shelf near spawn but shelf at the edge; all
   five regions appear; the same seed repaints the same map; borders smear; the regions
@@ -396,6 +411,9 @@ cabinet for a postcard.
 - **Heat** — the floor, that Quiet Claim shaves it but cannot silence a farm, that a
   blackout is felt within the hour, that it settles at the floor and caps at 100, that
   dawn pulls harder, that an idle trap is silent.
+- **Bulk drawing** — that drawing n sacks costs exactly n sacks' worth for every n, that
+  drawing never costs less than what came out, that just under a sack's worth draws
+  nothing, and that the bin and the counter agree on what a sack is worth.
 - **Contracts** — that a fetch contract's progress follows the bag both ways; that a
   contract taken at dusk credits a night by morning but one taken at dawn does not credit
   one by dusk; that a tally caps at the objective and is dropped with the contract rather

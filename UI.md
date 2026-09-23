@@ -81,6 +81,7 @@ dimmer colour. The board's founding checklist uses `[X]` and `[ ]`, not green an
 | **Trader counter** | `E` at a stall | Two tabs, GOODS and CONTRACTS, sharing the same two columns. |
 | **Trader — goods** | The GOODS tab | A ticket saying who you are to them (`TRADER VANCE`, `REGULAR`, `140 REP TO NEXT`), your tokens as one big number, their board on the left and what they will take off you on the right. Every line is a name, a count and a price — no grid of pictures. A locked line keeps its place with `TRUSTED` where the price would be; an unaffordable one reads `SHORT` in rust, so the word carries the signal and the colour only confirms it. |
 | **Trader — contracts** | The CONTRACTS tab | Their board on the left, what you are carrying on the right, `2 / 3` in the heading. A contract you cannot take keeps its place with the reason in place of the button — `LVL 6`, `TRUSTED`, `FULL` — for the same reason locked stock does. One issued by the other trader reads `ELSEWHERE` rather than hiding, so you know where to walk. |
+| **Grain bin** | `E` at a bin | Litres as one big number with a sage fill gauge, then a line per crop: `WHEAT   1,840 L   =   460 GRAIN`, and a DRAW button. The footer names the trade-off it exists to pose — hand-carried produce sells for more than a tipped hopper. An empty bin says how to fill it instead of showing nothing. |
 | **Contracts** | Carrying any | Up to three lines under the horde line: `FIRST HARVEST   7 / 12 POTATO`. A finished one reads `READY TO HAND IN` in sage — the only cue that it is worth the walk back. |
 | **Colonist look-at** | Crosshair on a person | `JULES  FARM  HUNGRY`, and `NO BED ASSIGNED` under it when that is why. |
 | **Tractor** | Sitting on a machine | Speed as one big number, fuel in litres, hopper in litres, and an implement lamp with a word beside it: `SEED DRILL  WORKING`, `HARVESTER  HOPPER FULL`, `DISC PLOW  RAISED`. Colour and shape together, as everywhere else. The on-foot crosshair and look-at readout go away entirely — the player's own interaction is switched off while their hands are on the wheel, so leaving either up would show a frozen target over the gauges. |
@@ -107,11 +108,6 @@ dimmer colour. The board's founding checklist uses `[X]` and `[ ]`, not green an
 
 ## Not built yet
 
-**The silo screen** is specified and not built. The grain bin has a runtime now — a
-harvester tips into it — so its contents are read out one line at a time through
-notifications rather than on a plate. It is the next screen worth building, and the
-trader board is the layout to copy.
-
 **There is no quest journal**, deliberately. Three contracts fit on three lines under the
 horde line, and the board itself is a tab on the trader screen. A filing cabinet for a
 postcard.
@@ -136,6 +132,7 @@ rather than a coat of paint, so it is yours to call.
     UI/HudView.cs              the visor, and which layer each mode is allowed
     UI/TractorPanel.cs         the gauge cluster, fed by VehicleWorld while driving
     UI/TraderScreen.cs         the ticket, the price board, and what they will buy
+    UI/SiloScreen.cs           what is in the grain bin, and drawing it back out
     UI/InventoryScreen.cs      bag, container, work-order strip
     UI/PerkScreen.cs           the wiring diagram
     UI/MenuScreens.cs          title, pause, death
