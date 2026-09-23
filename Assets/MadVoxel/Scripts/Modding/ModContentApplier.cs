@@ -288,6 +288,7 @@ namespace MadVoxel.Modding
                 case "quests": db.quests.Remove((QuestDefinition)existing); break;
                 case "traders": db.traders.Remove((TraderDefinition)existing); break;
                 case "vehicles": db.vehicles.Remove((VehicleDefinition)existing); break;
+                case "implements": db.implements.Remove((MadVoxel.Vehicles.ImplementDefinition)existing); break;
                 case "perks": if (db.perkTree != null) db.perkTree.perks.Remove((PerkDefinition)existing); break;
             }
             db.Build();

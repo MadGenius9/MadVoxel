@@ -115,6 +115,33 @@ namespace MadVoxel.Headless
                         "and an item that deploys it");
                 }
 
+                // Removing and replacing an implement. Both were silent no-ops: remove
+                // left the definition in place and logged nothing, and replace appended
+                // a second one with the same id that no lookup could ever reach.
+                WriteMod(root, "killmod",
+                    "{\"id\":\"killmod\",\"name\":\"Kill Mod\",\"loadAfter\":[\"farmmod\"]}",
+                    @"{
+                      ""implements"": [
+                        { ""id"": ""farmmod:subsoiler"", ""$op"": ""remove"" }
+                      ]
+                    }");
+
+                var db2 = ContentDatabase.LoadOrBuild();
+                db2.Build();
+
+                var log2 = new ModLog();
+                ModLoader.LoadAll(db2, log2);
+
+                int stillThere = 0;
+                for (int i = 0; i < db2.implements.Count; i++)
+                {
+                    if (db2.implements[i].stringId == "farmmod:subsoiler") stillThere++;
+                }
+
+                Harness.Equal(stillThere, 0, "a mod can remove an implement another mod added");
+                Harness.Check(log2.ErrorCount == 0,
+                    "and does so without error" + (log2.ErrorCount > 0 ? ": " + First(log2) : ""));
+
                 // The bow, which is only a bow because of fields the loader could not set.
                 var crossbow = db.Item("farmmod:crossbow");
                 Harness.Check(crossbow != null, "the ranged weapon was added");

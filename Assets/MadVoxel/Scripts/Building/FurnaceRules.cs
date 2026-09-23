@@ -187,6 +187,20 @@ namespace MadVoxel.Building
             }
         }
 
+        /// <summary>
+        /// Whether there is burn enough to finish one batch of this recipe.
+        ///
+        /// Enough rather than any. A lump of coal almost never divides evenly into
+        /// batches, so ending a burn with a splash of banked seconds is the normal
+        /// case - and treating that splash as "still working" is what let a cold
+        /// furnace go on banking hours.
+        /// </summary>
+        public static bool HasBurnFor(float fuelSeconds, RecipeDefinition recipe)
+        {
+            if (recipe == null) return false;
+            return fuelSeconds >= SecondsPerBatch(recipe);
+        }
+
         /// <summary>The one line the furnace shows about what it is doing.</summary>
         public static string Describe(bool hasWork, bool hasFuel, bool hasRoom)
         {

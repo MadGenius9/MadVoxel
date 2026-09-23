@@ -141,13 +141,16 @@ namespace MadVoxel.Traders
             spent = 0;
             bought = 0;
 
-            // A bad line or a request for nothing is the caller's mistake, not a small
-            // shelf, and both have to be told apart from it before anything is clamped.
+            // Every refusal that is about the line rather than the amount comes first,
+            // or clamping answers the wrong question: a broke player at a rep-gated
+            // line should be told it is not for them, not that they are short.
             if (index < 0 || index >= LineCount || Line(index).item == null) return TradeResult.NoSuchLine;
             if (count <= 0) return TradeResult.NoSuchLine;
+            if (!IsOffered(index)) return TradeResult.NotOffered;
+            if (bag == null) return TradeResult.NoRoom;
 
-            // Otherwise take what they have rather than refusing. Shift-buying ten off
-            // a shelf of five used to fail outright while the board still read "5 LEFT"
+            // Then take what they have rather than refusing. Shift-buying ten off a
+            // shelf of five used to fail outright while the board still read "5 LEFT"
             // with the button lit, which reads as a broken shop rather than a small one.
             count = Mathf.Min(count, StockOf(index));
             if (count <= 0) return TradeResult.OutOfStock;

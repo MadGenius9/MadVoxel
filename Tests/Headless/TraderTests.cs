@@ -230,6 +230,12 @@ namespace MadVoxel.Headless
                 Harness.Equal((int)locked.Buy(rich, gated, 1, out spent), (int)TradeResult.NotOffered,
                     "money does not buy what reputation gates");
 
+                // And a broke player at a gated line must hear why it is gated, not
+                // that they are short. The clamps have to run after the gate.
+                var broke2 = new Inv(36);
+                Harness.Equal((int)locked.Buy(broke2, gated, 1, out spent), (int)TradeResult.NotOffered,
+                    "a line you cannot unlock says so, whether or not you could pay");
+
                 locked.AddReputation(vance.reputationPerTier * locked.Line(gated).minReputationTier);
                 Harness.Equal((int)locked.Buy(rich, gated, 1, out spent), (int)TradeResult.Ok,
                     "and reputation does");

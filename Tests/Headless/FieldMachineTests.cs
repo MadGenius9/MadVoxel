@@ -152,6 +152,23 @@ namespace MadVoxel.Headless
 
             Harness.Equal(ImplementWork.SeedCost(seeder, 8), 4f, "eight cells at half a litre costs four");
 
+            // A sack goes in whole or not at all. Half a sack is either free seed or a
+            // whole item spent on a splash, and both are worse than a full hopper.
+            Harness.Check(ImplementWork.Accepts(seeder, 0f, 8f), "an empty hopper takes a sack");
+            Harness.Check(ImplementWork.Accepts(seeder, 92f, 8f), "and so does one with exactly room");
+            Harness.Check(!ImplementWork.Accepts(seeder, 95f, 8f),
+                "a hopper with five litres of room refuses an eight-litre sack outright");
+            Harness.Check(!ImplementWork.Accepts(seeder, 100f, 8f), "a full one certainly does");
+            Harness.Check(!ImplementWork.Accepts(seeder, 0f, 0f), "and nothing is not a sack");
+            Harness.Check(!ImplementWork.Accepts(null, 0f, 8f), "nor is a sack with no implement to take it");
+
+            // A modded drill whose whole hopper is smaller than one sack must refuse
+            // rather than fill for free on every press.
+            var tiny = Implement(ImplementKind.Seeder, 2f);
+            tiny.hopperCapacityLitres = 3f;
+            Harness.Check(!ImplementWork.Accepts(tiny, 0f, 8f),
+                "a hopper smaller than a sack never takes one");
+
             var harvester = Implement(ImplementKind.Harvester, 5f);
             harvester.hopperCapacityLitres = 400f;
 

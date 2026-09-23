@@ -172,11 +172,13 @@ namespace MadVoxel.Combat
             var inventory = _shooter.GetComponent<PlayerInventory>();
             if (inventory == null) return;
 
-            // Only if it actually went in. Destroying it on a full bag deleted the
-            // arrow and told the player their inventory was full, which is the worst
-            // of both.
-            if (inventory.Collect(_ammo, 1, false) > 0) return;
+            // Asked before it is taken, not after. Destroying it on a full bag lost the
+            // arrow; trying and failing instead retried every frame for the twenty
+            // seconds it lies there, and Collect announces a full bag however quietly
+            // you ask it to. Checking first does neither.
+            if (!inventory.Bag.CanFit(_ammo, 1)) return;
 
+            inventory.Collect(_ammo, 1, false);
             Destroy(gameObject);
         }
     }

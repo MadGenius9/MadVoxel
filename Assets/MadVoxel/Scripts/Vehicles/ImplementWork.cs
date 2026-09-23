@@ -53,6 +53,20 @@ namespace MadVoxel.Vehicles
             return Mathf.Clamp(affordable, 0, wanted);
         }
 
+        /// <summary>
+        /// Whether a hopper can take a whole sack's worth.
+        ///
+        /// All-or-nothing on purpose. A part-fill has to be either free seed or a whole
+        /// item spent on a splash, and both are worse than saying the hopper is full -
+        /// the few litres of headroom that will not take another sack round off, and
+        /// nothing is lost either way.
+        /// </summary>
+        public static bool Accepts(ImplementDefinition implement, float hopperLitres, float litres)
+        {
+            if (implement == null || litres <= 0f) return false;
+            return hopperLitres + litres <= implement.hopperCapacityLitres + 0.001f;
+        }
+
         /// <summary>Litres a seeder spends putting seed in this many cells.</summary>
         public static float SeedCost(ImplementDefinition implement, int cells)
         {

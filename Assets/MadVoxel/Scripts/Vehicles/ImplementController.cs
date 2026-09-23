@@ -320,6 +320,14 @@ namespace MadVoxel.Vehicles
         /// Loads seed into a seeder. Returns the litres taken, so the caller knows how
         /// many seed items to consume.
         /// </summary>
+        /// <summary>
+        /// Loads one item's worth of seed, or nothing.
+        ///
+        /// All or nothing on purpose. A part-fill has to be either free seed or a whole
+        /// item spent on a splash, and both are worse than simply saying the hopper is
+        /// full - the few litres of headroom that will not take another sack round off,
+        /// and nothing is lost.
+        /// </summary>
         public float LoadSeed(CropDefinition crop, float litres)
         {
             if (Definition == null || Definition.FillsHopper || crop == null || litres <= 0f) return 0f;
@@ -328,6 +336,10 @@ namespace MadVoxel.Vehicles
             // One crop at a time. Changing seed empties what is in there rather than
             // sowing a silent mixture the player cannot see or undo.
             if (Cargo != crop && HopperLitres > 0.01f) return 0f;
+
+            // Asked before anything moves, so a hopper that cannot take the whole sack
+            // does not quietly swallow part of it.
+            if (!ImplementWork.Accepts(Definition, HopperLitres, litres)) return 0f;
 
             float before = _hopperLitres;
             ImplementWork.AddToHopper(Definition, ref _hopperLitres, litres);

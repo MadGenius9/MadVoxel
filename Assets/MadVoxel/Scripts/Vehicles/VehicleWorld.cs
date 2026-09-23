@@ -281,18 +281,22 @@ namespace MadVoxel.Vehicles
             float perItem = Mathf.Max(0.1f, implement.Definition.litresPerSeedItem);
             int loaded = 0;
 
-            // One item at a time, and only counted as spent when the whole item fits.
-            // A hopper with two litres of room used to swallow a whole eight-litre seed
-            // for the two - the comment said otherwise, the arithmetic did not.
+            // One sack at a time. LoadSeed refuses a part-fill outright, so a sack is
+            // either in the hopper or still in the bag - there is no state where the
+            // player has paid for litres they did not get, or got litres they did not
+            // pay for.
             for (int i = 0; i < held.Count; i++)
             {
-                if (implement.LoadSeed(crop, perItem) < perItem - 0.001f) break;
+                if (implement.LoadSeed(crop, perItem) <= 0f) break;
                 loaded++;
             }
 
             if (loaded <= 0)
             {
-                Notifications.PostFormat("The hopper will not take {0}", crop.displayName);
+                bool full = !ImplementWork.Accepts(implement.Definition, implement.HopperLitres, perItem);
+                Notifications.PostFormat(full
+                    ? "The hopper is as full as it will go"
+                    : "The hopper will not take {0}", crop.displayName);
                 return;
             }
 

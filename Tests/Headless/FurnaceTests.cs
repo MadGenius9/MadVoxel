@@ -203,6 +203,16 @@ namespace MadVoxel.Headless
             Harness.Equal(FurnaceRules.BatchesFromIngredients(null, recipe), 0, "no furnace smelts nothing");
             Harness.Equal(FurnaceRules.BatchesFromIngredients(box, null), 0, "and no recipe does either");
 
+            // Enough burn to finish one, not merely more than none. A splash of banked
+            // seconds is how every burn ends, and calling that "still working" is what
+            // let a cold furnace go on banking hours.
+            Harness.Check(FurnaceRules.HasBurnFor(perBatch, recipe), "exactly one batch of burn is enough");
+            Harness.Check(FurnaceRules.HasBurnFor(perBatch * 9f, recipe), "and plenty certainly is");
+            Harness.Check(!FurnaceRules.HasBurnFor(perBatch * 0.9f, recipe),
+                "nine tenths of a batch is not enough to start one");
+            Harness.Check(!FurnaceRules.HasBurnFor(0.01f, recipe), "and a splash is not fuel");
+            Harness.Check(!FurnaceRules.HasBurnFor(1000f, null), "a recipe that is not there cannot be started");
+
             Harness.Equal(FurnaceRules.Describe(false, true, true), "IDLE  -  NOTHING TO SMELT",
                 "an idle furnace says so");
             Harness.Equal(FurnaceRules.Describe(true, false, true), "OUT OF FUEL", "and a cold one says why");

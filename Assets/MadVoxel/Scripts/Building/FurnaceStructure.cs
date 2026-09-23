@@ -201,17 +201,29 @@ namespace MadVoxel.Building
             return 1;
         }
 
-        /// <summary>True when there is something to smelt, fuel to smelt it and room for it.</summary>
+        /// <summary>
+        /// True when a batch could actually run: something to smelt, room for it, and
+        /// enough burn to finish it.
+        ///
+        /// "Enough burn" rather than "any burn" is the whole point. A lump of coal
+        /// almost never divides evenly into batches, so ending a burn with a splash of
+        /// banked seconds is the normal case - and treating that as still working put
+        /// the catch-up back on the branch that keeps unspent hours, which is the cold
+        /// banking this was supposed to have fixed.
+        /// </summary>
         public bool IsWorking()
         {
             if (Contents == null || Content == null) return false;
 
             FurnaceRules.CollectRecipes(Content.recipes, _recipes);
-            if (FurnaceRules.FuelSecondsIn(Contents) + BankedFuelSeconds <= 0f) return false;
+
+            float fuel = FurnaceRules.FuelSecondsIn(Contents) + BankedFuelSeconds;
+            if (fuel <= 0f) return false;
 
             for (int i = 0; i < _recipes.Count; i++)
             {
                 var recipe = _recipes[i];
+                if (!FurnaceRules.HasBurnFor(fuel, recipe)) continue;
                 if (FurnaceRules.BatchesFromIngredients(Contents, recipe) <= 0) continue;
                 if (!Contents.CanFit(recipe.output, recipe.outputCount)) continue;
 
@@ -236,7 +248,14 @@ namespace MadVoxel.Building
                 if (Contents.CanFit(_recipes[i].output, _recipes[i].outputCount)) hasRoom = true;
             }
 
-            bool hasFuel = FurnaceRules.FuelSecondsIn(Contents) + BankedFuelSeconds > 0f;
+            // Enough to finish something, not merely more than nothing - a furnace
+            // holding four seconds of burn and a stack of ore is out of fuel.
+            float available = FurnaceRules.FuelSecondsIn(Contents) + BankedFuelSeconds;
+            bool hasFuel = false;
+            for (int i = 0; i < _recipes.Count; i++)
+            {
+                if (FurnaceRules.HasBurnFor(available, _recipes[i])) hasFuel = true;
+            }
             return "FURNACE  " + FurnaceRules.Describe(hasWork, hasFuel, hasRoom);
         }
 

@@ -18,7 +18,7 @@ without a Unity editor available. Everything was verified two ways instead:
 
 1. **Compile check** against real Unity reference assemblies (2021.3 — the newest on
    NuGet, while the project targets Unity 6, so API drift between them is a real gap).
-2. **1,193 headless checks** that run the *actual* gameplay sources against an executable
+2. **1,214 headless checks** that run the *actual* gameplay sources against an executable
    `UnityEngine` shim in `Tests/Headless/`.
 
 Those caught eight genuine bugs a compile could not see. They cannot tell you whether
@@ -34,7 +34,7 @@ the tests.** The tests are strong on logic and silent on everything else.
 Always, before saying anything is done:
 
 ```bash
-cd Tests/Headless && dotnet run      # 1193 checks, exit 0 when clean
+cd Tests/Headless && dotnet run      # 1214 checks, exit 0 when clean
 ```
 
 If .NET is missing, `dotnet` is a free install and worth it — this suite is the only
@@ -61,6 +61,13 @@ that already happened once:
   asymmetric graph silently collapses roofs.
 
 If you add a system, add the check that would have caught you getting it wrong.
+
+**Fixing a bug is the likeliest moment to write one.** Two of the fixes in this project's
+history reintroduced the thing they were fixing, one commit later, because the fix moved
+the decision somewhere the original check no longer looked. When a fix turns on a rule —
+"a sack goes in whole or not at all", "enough burn to finish a batch, not merely some" —
+put the rule somewhere pure and pin it, rather than leaving it inline where the next edit
+will quietly move it.
 
 ---
 

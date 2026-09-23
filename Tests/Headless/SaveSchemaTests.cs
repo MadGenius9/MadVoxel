@@ -138,6 +138,15 @@ namespace MadVoxel.Headless
                 "storage", "implementId", "hopperCropId", "hopperLitres" } },
 
             { "TraderSaveData", new[] { "traderId", "reputation", "lastRestockHours", "stock" } },
+
+            { "FieldCellSaveData", new[] { "x", "z", "state", "cropIndex", "changedAtHours",
+                "moisture", "fertiliser", "yieldFactor" } },
+
+            { "BuildPieceSaveData", new[] { "definitionId", "x", "y", "z",
+                "slot", "side", "health", "open" } },
+
+            { "StructuresSaveData", new[] { "vehicles", "traders", "structures", "pieces",
+                "fieldCells", "wires", "hoses", "colony" } },
         };
 
         static void Schema()
@@ -181,8 +190,10 @@ namespace MadVoxel.Headless
                     type.Name + " writes nothing the ledger has not been told about" + Detail(added));
             }
 
-            Harness.Check(checked_ >= 12,
-                string.Format("{0} save records are pinned against the ledger", checked_));
+            // Every type in the list, not merely most of them. A record with no ledger
+            // entry is silently skipped, which is exactly the hole this is here to close.
+            Harness.Equal(checked_, SaveTypes.Length,
+                string.Format("all {0} save records are pinned, none skipped", SaveTypes.Length));
 
             // A save written before any of today's systems existed must still load. That
             // is what JsonUtility's missing-key-reads-as-default behaviour buys, and it
