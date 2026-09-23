@@ -12,9 +12,7 @@ namespace MadVoxel.Colony
         NoBed,
         /// <summary>You cannot feed the ones you have, let alone another.</summary>
         NoFood,
-        NoWater,
-        /// <summary>Nobody has found you yet. Time, and a claim worth walking towards.</summary>
-        TooSoon
+        NoWater
     }
 
     /// <summary>

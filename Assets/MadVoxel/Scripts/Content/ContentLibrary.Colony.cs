@@ -8,7 +8,7 @@ using UnityEngine;
 namespace MadVoxel.Content
 {
     /// <summary>
-    /// The people. Three of them, at most, and the numbers that decide how long they
+    /// The people. Six of them, at most, and the numbers that decide how long they
     /// put up with you.
     /// </summary>
     public static partial class ContentLibrary

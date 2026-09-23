@@ -141,7 +141,11 @@ namespace MadVoxel.Colony
         public string WandererName { get; private set; }
 
         int _lastArrivalDay;
-        int _lastCheckedDay;
+
+        // Starts unset so founding or loading seeds it with the current day rather
+        // than day zero - otherwise the first check fires the instant the colony
+        // exists, whatever the hour, and a stranger appears at two in the afternoon.
+        int _lastCheckedDay = -1;
 
         /// <summary>
         /// Whether the colony could take someone, and why not. The board shows this
@@ -175,15 +179,27 @@ namespace MadVoxel.Colony
         void CheckForWanderer()
         {
             if (_clock == null || WandererWaiting) return;
-            if (_clock.Day == _lastCheckedDay) return;
 
+            if (_lastCheckedDay < 0)
+            {
+                // First look since the colony came into being. Note the day and wait
+                // for the turn of the next one.
+                _lastCheckedDay = _clock.Day;
+                if (_lastArrivalDay <= 0) _lastArrivalDay = _clock.Day;
+                return;
+            }
+
+            if (_clock.Day == _lastCheckedDay) return;
             _lastCheckedDay = _clock.Day;
 
             float heat = _heat != null ? _heat.Heat : 0f;
             if (!ColonyRecruitment.Arrives(Readiness(), DaysSinceArrival, heat, UnityEngine.Random.value)) return;
 
             WandererWaiting = true;
-            WandererName = NextName();
+
+            // Borrowed, not taken. Marking it used at the fence meant ten refusals
+            // emptied a ten-name pool and everyone after that was "Survivor 4".
+            WandererName = PeekName();
 
             Notifications.PostFormat("{0} is at the fence, asking to stay", WandererName);
         }
@@ -194,13 +210,40 @@ namespace MadVoxel.Colony
             if (!WandererWaiting) return null;
 
             var person = TryRecruit(WandererName);
-            if (person == null) return null;
+            if (person == null)
+            {
+                // The colony changed its mind for them - a lost cupboard, or the last
+                // place taken some other way. They have to leave either way: a wanderer
+                // left waiting for ever blocks the daily check and quietly ends every
+                // future arrival.
+                Notifications.PostFormat("{0} cannot stay after all", WandererName);
+                TurnAwayWanderer();
+                return null;
+            }
 
             WandererWaiting = false;
             WandererName = "";
             _lastArrivalDay = _clock != null ? _clock.Day : 0;
 
             return person;
+        }
+
+        /// <summary>When the last person arrived, for the save layer.</summary>
+        public int LastArrivalDay { get { return _lastArrivalDay; } }
+
+        /// <summary>
+        /// Puts the wanderer state back after a load.
+        ///
+        /// The arrival day is the part that matters: without it, reloading reset the
+        /// three-day wait, and turning someone away stopped being a decision and became
+        /// a reroll you could do from the menu.
+        /// </summary>
+        public void LoadWandererState(bool waiting, string name, int lastArrivalDay)
+        {
+            WandererWaiting = waiting;
+            WandererName = name ?? "";
+            _lastArrivalDay = lastArrivalDay;
+            _lastCheckedDay = _clock != null ? _clock.Day : -1;
         }
 
         /// <summary>
@@ -257,6 +300,17 @@ namespace MadVoxel.Colony
 
             Notifications.PostFormat("{0} joined {1}", colonist.Name, ColonyName);
             return colonist;
+        }
+
+        /// <summary>A name that is free, without claiming it. For someone at the gate.</summary>
+        string PeekName()
+        {
+            var pool = Rules.colonist.names;
+            for (int i = 0; i < pool.Count; i++)
+            {
+                if (!_usedNames.Contains(pool[i])) return pool[i];
+            }
+            return "Survivor " + (_colonists.Count + 1);
         }
 
         string NextName()

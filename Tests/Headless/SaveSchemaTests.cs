@@ -130,7 +130,8 @@ namespace MadVoxel.Headless
 
             { "LinkSaveData", new[] { "fromId", "toId" } },
             { "ColonistSaveData", new[] { "name", "job", "food", "water", "morale" } },
-            { "ColonySaveData", new[] { "founded", "colonyName", "sheltering", "colonists" } },
+            { "ColonySaveData", new[] { "founded", "colonyName", "sheltering", "colonists",
+                "wandererWaiting", "wandererName", "lastArrivalDay" } },
             { "SiloEntryData", new[] { "cropId", "litres" } },
 
             { "VehicleSaveData", new[] {

@@ -221,14 +221,33 @@ namespace MadVoxel.Building
 
             if (recipes == null || hasIngredients == null) return;
 
+            // One recipe's story, not three recipes' best bits.
+            //
+            // Reporting the three answers independently was the same bug one level up
+            // from the one this replaced: with iron ore and sand loaded, glass could
+            // supply the "there is fuel" and iron the "there is room", and the furnace
+            // read SMELTING while sitting dark and doing neither. So each candidate is
+            // scored on its own and the most-satisfied one speaks for the furnace.
+            int best = -1;
+
             for (int i = 0; i < recipes.Count; i++)
             {
                 var recipe = recipes[i];
                 if (recipe == null || !hasIngredients(recipe)) continue;
 
                 work = true;
-                if (hasRoom != null && hasRoom(recipe)) room = true;
-                if (HasBurnFor(fuelSeconds, recipe)) fuel = true;
+
+                bool thisFuel = HasBurnFor(fuelSeconds, recipe);
+                bool thisRoom = hasRoom == null || hasRoom(recipe);
+
+                int score = (thisFuel ? 1 : 0) + (thisRoom ? 1 : 0);
+                if (score <= best) continue;
+
+                best = score;
+                fuel = thisFuel;
+                room = thisRoom;
+
+                if (score == 2) return;
             }
         }
 

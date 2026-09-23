@@ -264,6 +264,30 @@ namespace MadVoxel.Headless
             FurnaceRules.Survey(null, 100f, r => true, r => true, out work, out fuelled, out room);
             Harness.Check(!work, "and a furnace that knows no recipes has nothing to do");
 
+            // THE second version of the same bug. Reporting the three answers
+            // independently let one recipe supply the fuel and another the room, so a
+            // furnace that could run neither of them still read SMELTING. One recipe
+            // has to satisfy all three, or none does.
+            FurnaceRules.Survey(both, FurnaceRules.SecondsPerBatch(cheap),
+                r => true,                    // ingredients for both
+                r => r == dear,               // but room only for the expensive one
+                out work, out fuelled, out room);
+
+            Harness.Check(work, "with ingredients for both it has something to smelt");
+            Harness.Check(!(fuelled && room),
+                "but burn for one and room for the other is not a furnace that can run");
+            Harness.Check(FurnaceRules.Describe(work, fuelled, room) != "SMELTING",
+                "so it does not claim to be smelting while sitting dark");
+
+            // And when one recipe genuinely satisfies everything, it is found even if
+            // an earlier one does not.
+            FurnaceRules.Survey(both, FurnaceRules.SecondsPerBatch(dear),
+                r => r == dear, r => r == dear, out work, out fuelled, out room);
+
+            Harness.Check(work && fuelled && room, "a recipe that can actually run is found");
+            Harness.Equal(FurnaceRules.Describe(work, fuelled, room), "SMELTING",
+                "and then it really is smelting");
+
             // A furnace that stopped for want of ore must not bank the hours it spent
             // cold. The structure decides this by asking whether it could still be
             // working, so that question has to answer honestly for an empty furnace.

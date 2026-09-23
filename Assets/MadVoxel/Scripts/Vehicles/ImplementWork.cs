@@ -66,11 +66,13 @@ namespace MadVoxel.Vehicles
             if (implement == null || litres <= 0f) return false;
             if (hopperLitres + litres <= implement.hopperCapacityLitres + 0.001f) return true;
 
-            // Unless a whole sack never fits. A modded drill holding less than one
-            // sack's worth would otherwise be unloadable for ever, and be told its
-            // empty hopper was as full as it would go. It takes one sack, fills to the
-            // brim, and the rest of the sack is the price of building it that small.
-            return litres > implement.hopperCapacityLitres && hopperLitres <= 0.001f;
+            // Unless a whole sack never fits and what is left cannot be sown either.
+            // A drill whose hopper is smaller than a sack would otherwise dead-end the
+            // moment it held a dribble: too little to sow a cell, too full to reload,
+            // and no way to tip it out. Keyed on "cannot sow this" rather than "exactly
+            // empty", because that is the state that traps it.
+            return litres > implement.hopperCapacityLitres
+                   && hopperLitres < implement.seedLitresPerCell;
         }
 
         /// <summary>Litres a seeder spends putting seed in this many cells.</summary>

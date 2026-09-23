@@ -168,10 +168,20 @@ namespace MadVoxel.Headless
             var tiny = Implement(ImplementKind.Seeder, 2f);
             tiny.hopperCapacityLitres = 3f;
 
+            tiny.seedLitresPerCell = 2f;
+
             Harness.Check(ImplementWork.Accepts(tiny, 0f, 8f),
                 "a hopper smaller than a sack still takes one when empty");
             Harness.Check(!ImplementWork.Accepts(tiny, 3f, 8f),
-                "but not a second one on top of it");
+                "but not a second one on top of a full load");
+
+            // THE dead end. Sow it down to a dribble and the drill could neither sow
+            // that dribble nor reload, and a seeder has no way to tip out - so it was
+            // scrap. The escape has to key on "cannot sow this", not "exactly empty".
+            Harness.Check(ImplementWork.IsBlocked(tiny, 1f),
+                "one litre is too little to sow a two-litre cell");
+            Harness.Check(ImplementWork.Accepts(tiny, 1f, 8f),
+                "so it reloads rather than stranding the drill with an unusable dribble");
 
             var harvester = Implement(ImplementKind.Harvester, 5f);
             harvester.hopperCapacityLitres = 400f;

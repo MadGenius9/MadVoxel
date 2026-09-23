@@ -145,6 +145,15 @@ namespace MadVoxel.Save
         public string colonyName = "Mad Colony";
         public bool sheltering;
         public List<ColonistSaveData> colonists = new List<ColonistSaveData>();
+
+        /// <summary>
+        /// Whoever is standing at the fence, and when the last one arrived. Without the
+        /// arrival day a reload clears the three-day wait, which turns turning someone
+        /// away from a decision into a reroll.
+        /// </summary>
+        public bool wandererWaiting;
+        public string wandererName = "";
+        public int lastArrivalDay;
     }
 
     [Serializable]

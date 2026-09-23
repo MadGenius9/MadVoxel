@@ -543,7 +543,7 @@ satisfying version of finding that out at dawn.
 
 ## What the headless checks cover
 
-1252 checks, all passing. The new ones:
+1259 checks, all passing. The new ones:
 
 - **Biomes** — spawn is always farmland; no shelf near spawn but shelf at the edge; all
   five regions appear; the same seed repaints the same map; borders smear; the regions

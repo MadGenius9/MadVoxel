@@ -302,6 +302,9 @@ namespace MadVoxel.Save
             data.colony.founded = Colony.Founded;
             data.colony.colonyName = Colony.ColonyName;
             data.colony.sheltering = Colony.Sheltering;
+            data.colony.wandererWaiting = Colony.WandererWaiting;
+            data.colony.wandererName = Colony.WandererName;
+            data.colony.lastArrivalDay = Colony.LastArrivalDay;
 
             var people = Colony.Colonists;
             for (int i = 0; i < people.Count; i++)
@@ -825,6 +828,8 @@ namespace MadVoxel.Save
             }
 
             Colony.LoadState(data.colony.colonyName, true, people);
+            Colony.LoadWandererState(data.colony.wandererWaiting, data.colony.wandererName,
+                                     data.colony.lastArrivalDay);
             if (data.colony.sheltering) Colony.OrderShelter(true);
         }
 

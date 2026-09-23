@@ -260,10 +260,24 @@ namespace MadVoxel.UI
 
         // ----------------------------------------------------------------- refresh
 
+        /// <summary>
+        /// Five times a second, not sixty. Readiness walks every structure in the claim
+        /// counting beds, food and water, and it sits on top of the scans this screen
+        /// already did - three full passes a frame for numbers that move on a clock
+        /// measured in in-game hours.
+        /// </summary>
         void Update()
         {
-            if (IsOpen) Refresh();
+            if (!IsOpen) return;
+
+            _sinceRefresh += Time.unscaledDeltaTime;
+            if (_sinceRefresh < 0.2f) return;
+
+            _sinceRefresh = 0f;
+            Refresh();
         }
+
+        float _sinceRefresh;
 
         public void Refresh()
         {
@@ -316,8 +330,11 @@ namespace MadVoxel.UI
             _heatLine.text = Heat != null ? Heat.Readout() : "";
             _heatLine.color = Heat != null && Heat.Heat >= 50f ? ClaimSlate.OxideRust : ClaimSlate.Bone;
 
+            // Not an instruction - there is no button that summons anyone. What the
+            // board can usefully say when the colony is empty is what would bring the
+            // first person, which is exactly what the recruit line already reads.
             _requirements.text = population == 0
-                ? "NOBODY LIVES HERE YET - TAKE IN A WANDERER"
+                ? "NOBODY LIVES HERE YET  -  SOMEONE MAY FIND YOU"
                 : "";
 
             if (_rows.Count != population) RebuildRoster();
