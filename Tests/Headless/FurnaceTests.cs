@@ -179,6 +179,15 @@ namespace MadVoxel.Headless
             Harness.Equal(FurnaceRules.Describe(true, true, false), "FULL  -  NOWHERE TO PUT IT",
                 "and a full one says that instead");
             Harness.Equal(FurnaceRules.Describe(true, true, true), "SMELTING", "a working one just works");
+
+            // A furnace that stopped for want of ore must not bank the hours it spent
+            // cold. The structure decides this by asking whether it could still be
+            // working, so that question has to answer honestly for an empty furnace.
+            var idle = new Inv(12);
+            idle.Add(db.Item(ItemIds.Coal), 10);
+            Harness.Equal(FurnaceRules.BatchesFromIngredients(idle, recipe), 0,
+                "a furnace with only fuel in it has nothing to smelt");
+            Harness.Check(FurnaceRules.FuelSecondsIn(idle) > 0f, "even though it is holding fuel");
         }
 
         // ---------------------------------------------------------------- content

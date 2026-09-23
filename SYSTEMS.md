@@ -403,8 +403,11 @@ hundred metres away in an unloaded chunk for most of it and asleep for the rest.
 up whenever anyone asks — on a tick, on opening it, on saving, and on load, so a furnace
 left running through a closed world hands you the metal when you come back.
 
-The hour it has worked to is advanced by exactly the work that completed, so a partly
-finished batch is still owed next time. The seconds-to-hours conversion is checked to be an
+Why it stopped decides what happens to the unspent time. Out of time mid-batch, the
+remainder is genuinely owed and is kept. Out of ore, fuel or room, the furnace has been
+sitting cold and the hours are dropped — banking them would mean walking up to an idle
+furnace, dropping in a stack and watching a week of stored time turn it into metal at
+once. The seconds-to-hours conversion is checked to be an
 exact inverse: a furnace opened every minute must neither lose time nor invent it.
 
 Fuel burns cheapest-first, so a furnace does not spend your coal while there is wood in it.
@@ -421,7 +424,7 @@ only be made in a furnace.
 
 ## What the headless checks cover
 
-1042 checks, all passing. The new ones:
+1044 checks, all passing. The new ones:
 
 - **Biomes** — spawn is always farmland; no shelf near spawn but shelf at the edge; all
   five regions appear; the same seed repaints the same map; borders smear; the regions

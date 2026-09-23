@@ -142,12 +142,20 @@ namespace MadVoxel.Building
                 }
             }
 
-            // Advance by exactly the work that happened, so a partly-finished batch is
-            // still owed next time rather than thrown away.
-            WorkedToHours += FurnaceRules.HoursForSeconds(spent);
-            if (total == 0) WorkedToHours = now;
+            // Why it stopped decides what happens to the unspent time.
+            //
+            // Out of time, mid-batch: the remainder is genuinely owed, so advance by
+            // exactly the work that happened and leave the rest for next time.
+            //
+            // Out of ore, fuel or room: the furnace has been sitting cold, and banking
+            // those hours would mean walking up to an idle furnace, dropping in a stack
+            // and watching a week of stored time turn it into metal at once.
+            bool stillCould = IsWorking();
 
-            SetLit(total > 0 || IsWorking());
+            if (stillCould) WorkedToHours += FurnaceRules.HoursForSeconds(spent);
+            else WorkedToHours = now;
+
+            SetLit(stillCould);
             return total;
         }
 
