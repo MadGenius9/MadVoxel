@@ -70,7 +70,9 @@ namespace MadVoxel.Content
 
             var rules = ScriptableObject.CreateInstance<ColonyRules>();
             rules.name = "ColonyRules";
-            rules.maxColonists = 3;
+            // The brief said three to six. Three was the floor: the hard cap is six and
+            // what you have actually built - beds, food put by - decides the rest.
+            rules.maxColonists = 6;
             rules.bedsRequired = 1;
             rules.foodRequired = 1;
             rules.foodPerColonistPerDay = 3f;

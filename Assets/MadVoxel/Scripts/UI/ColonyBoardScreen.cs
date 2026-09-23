@@ -27,7 +27,7 @@ namespace MadVoxel.UI
         RectTransform _roster;
         InputField _nameField;
         Text _summary, _supplies, _heatLine, _requirements;
-        Button _foundButton, _shelterButton, _recruitButton;
+        Button _foundButton, _shelterButton, _recruitButton, _turnAwayButton;
         Text _foundLabel, _shelterLabel, _recruitLabel;
 
         readonly List<RosterRow> _rows = new List<RosterRow>();
@@ -112,6 +112,14 @@ namespace MadVoxel.UI
             _recruitLabel = _recruitButton.GetComponentInChildren<Text>();
             _recruitButton.onClick.AddListener(Recruit);
 
+            // Only shown while someone is waiting. Turning them away has to be as
+            // available as taking them in, or it is not a decision.
+            _turnAwayButton = UIKit.Button(_panel, "TurnAway", "TURN THEM AWAY", 16);
+            ClaimSlate.Place(_turnAwayButton.GetComponent<RectTransform>(), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(0f, 96f), new Vector2(320f, 34f));
+            _turnAwayButton.onClick.AddListener(TurnAway);
+            _turnAwayButton.gameObject.SetActive(false);
+
             _shelterButton = UIKit.Button(_panel, "Shelter", "ORDER SHELTER", 20);
             ClaimSlate.Place(_shelterButton.GetComponent<RectTransform>(), new Vector2(1f, 0f), new Vector2(1f, 0f),
                 new Vector2(-32f, 24f), new Vector2(300f, 48f));
@@ -153,19 +161,30 @@ namespace MadVoxel.UI
             Refresh();
         }
 
+        /// <summary>
+        /// Takes in whoever is at the fence.
+        ///
+        /// This used to conjure a colonist out of nothing whenever it was pressed,
+        /// which is not a system - it is a cheat with a label on it. Now it only does
+        /// anything when someone has actually turned up, and the readout beside it says
+        /// what the colony is short of when nobody will.
+        /// </summary>
         void Recruit()
         {
-            if (_colony == null) return;
+            if (_colony == null || !_colony.WandererWaiting) return;
 
-            var person = _colony.TryRecruit();
-            if (person == null)
-            {
-                Notifications.Post(_colony.Founded
-                    ? "No room - every bunk is spoken for"
-                    : "Found the colony first");
-            }
+            var person = _colony.AcceptWanderer();
+            if (person != null) Notifications.PostFormat("{0} stays", person.Name);
 
             RebuildRoster();
+            Refresh();
+        }
+
+        void TurnAway()
+        {
+            if (_colony == null || !_colony.WandererWaiting) return;
+
+            _colony.TurnAwayWanderer();
             Refresh();
         }
 
@@ -258,8 +277,17 @@ namespace MadVoxel.UI
             _foundButton.interactable = !founded;
             _foundLabel.text = founded ? "FOUNDED" : "FOUND THIS COLONY";
 
-            _recruitButton.interactable = founded && population < cap;
-            _recruitLabel.text = population >= cap ? "NO ROOM" : "TAKE IN A WANDERER";
+            // The button is only live when there is someone to answer. The rest of the
+            // time it reads as the reason nobody is coming, which is the thing the
+            // player can actually do something about.
+            bool waiting = _colony.WandererWaiting;
+
+            _recruitButton.interactable = waiting;
+            _recruitLabel.text = waiting
+                ? "TAKE IN " + _colony.WandererName.ToUpperInvariant()
+                : ColonyRecruitment.Describe(_colony.Readiness(), _colony.DaysSinceArrival);
+
+            _turnAwayButton.gameObject.SetActive(waiting);
 
             _shelterButton.interactable = founded && population > 0;
             _shelterLabel.text = _colony.Sheltering ? "BACK TO WORK" : "ORDER SHELTER";

@@ -208,6 +208,35 @@ walk out, so there is a warning.
 
 ### The Marker
 
+### Who turns up
+
+The colony could be founded on day one and then filled from a button on its own board.
+That is not a system — it is a cheat with a label on it, and the brief always said a
+wanderer at the fence was how the first person arrives.
+
+Two rules do the work, and the important one is a refusal:
+
+- **They come to a claim worth coming to.** A spare bed — one more than there are people
+  — and a day's food and water put by for the next mouth. Nobody walks into a colony that
+  cannot feed them, because that hands the player a problem dressed as a reward. What you
+  have built decides whether anyone arrives at all, and the board reads back the thing you
+  are short of rather than a greyed-out button.
+- **A loud claim is easier to find.** Claim heat already measures how much attention a
+  base draws, and it draws people as well as zombies — the lights and the generator and
+  the acreage that pull a horde pull a survivor looking for somewhere with walls. Turtling
+  in the dark is quiet in both directions. Even at maximum heat it is never a certainty,
+  or you could farm arrivals by turning every light on.
+
+They arrive overnight, at the turn of the day, at most one every three days. A stranger
+materialising at noon while you watch is a spawn, not an arrival. Turning one away is as
+available as taking them in, and costs the same three days — it is a decision, not a
+reroll.
+
+The cap is six. The brief said three to six, and three was the floor: what you have
+actually built decides the rest.
+
+### The Marker
+
 Not built, as asked. The hook is `ColonyWorld.ForbiddenActions`, an empty set carried on
 purpose: one future thing must be off limits to colonists, and retrofitting that into a
 finished AI is worse than carrying an empty list.
@@ -514,7 +543,7 @@ satisfying version of finding that out at dawn.
 
 ## What the headless checks cover
 
-1221 checks, all passing. The new ones:
+1252 checks, all passing. The new ones:
 
 - **Biomes** — spawn is always farmland; no shelf near spawn but shelf at the edge; all
   five regions appear; the same seed repaints the same map; borders smear; the regions
@@ -537,6 +566,11 @@ satisfying version of finding that out at dawn.
 - **Heat** — the floor, that Quiet Claim shaves it but cannot silence a farm, that a
   blackout is felt within the hour, that it settles at the floor and caps at 100, that
   dawn pulls harder, that an idle trap is silent.
+- **Recruitment** — that nobody stays somewhere that cannot feed or water them, or that
+  has a bed each but none spare; that the first person can still walk into a stocked empty
+  camp; that nobody arrives the morning after the last one; that a loud claim draws several
+  times what a quiet one does but is never a certainty at any heat; and that the last place
+  at the table can actually be filled, so the top of the range is not a lie.
 - **The save schema**, pinned. Saves go through `JsonUtility`, which is quiet in a way
   that matters: it writes public instance fields and silently ignores everything else.
   Turn a save field into a property, mark it readonly, or rename it, and the data stops

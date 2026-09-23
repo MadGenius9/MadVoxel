@@ -115,7 +115,7 @@ resolver and nine call sites — and changes nothing about the Phase 0 loop.
 | **Weather** | **Live.** Six states rolled per region, turning dials on the pump, the panels, the soil, barrels, morale and crops. | Seasons with their own economies. |
 | **Spoilage** | **Live.** Shelf life on the stack, rot, and a fridge that earns its watts. | Compost as a fertiliser input. |
 | **Claim heat** | **Live.** One number fed by lights, the generator, population, acreage and traps, read by the wanderer cap and the horde budget. | — |
-| **Mad Colony** | **Live.** A charter on a board, up to three people with four jobs, needs, morale and a walk-out, fed and watered from the base you built. | The recruit event and trader quest that should bring the first person; pathfinding; The Marker. |
+| **Mad Colony** | **Live.** A charter on a board, up to six people with four jobs, needs, morale and a walk-out, fed and watered from the base you built. Wanderers arrive overnight at a claim with a spare bed, supplies and enough noise to be found. | A trader quest that sends someone; pathfinding; The Marker. |
 | **Furnace** | **Live.** A deployable that smelts unattended on the world clock, one shared inventory for ore, fuel and output, burning cheapest fuel first. Catches up across a save. The campfire smelts stay as the way in. | Steel, and a bellows or a powered furnace that runs faster. |
 | **Ranged combat** | **Live.** A bow you draw and loose, craftable in the first hour. Draw decides speed and damage; arrows sweep rather than teleport, land, and are half recoverable. Stone and iron heads. | A crossbow, a gun tier, and headshots. |
 | **Horde** | **Live.** Budgets on base footprint and heat, and reads the approach: twelve scored lanes round the claim, a wave spread across them by how walkable each is, each zombie given a way in before the base itself. | Ladders, and zombies that dig rather than route around. |
@@ -188,9 +188,9 @@ executed. Worlds record which mods built them and warn on load if one is missing
 - **Developer hotkeys ship enabled.** Untick *Developer Tools* on the `MadVoxel` object
   before a release build.
 - **Audio.** There is none.
-- **The colony's only recruit path is a developer hotkey.** The trader quest and the
-  wanderer-at-the-fence event that should bring the first person are Phase 1; today
-  `Shift+F6` stands in for both.
+- **The colony's second recruit path is unbuilt.** A wanderer turns up at the fence on
+  their own now, but the trader quest that should also send someone is not written.
+  `Shift+F6` still forces one for testing.
 - **Colonists do not path around obstacles.** They walk towards a target and let the
   character controller handle the ground, which works on dug terrain and ramps but
   will wedge them on a wall corner.

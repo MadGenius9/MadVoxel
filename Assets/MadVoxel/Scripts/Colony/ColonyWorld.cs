@@ -132,6 +132,92 @@ namespace MadVoxel.Colony
             return claims.Count > 0 ? claims[0] : null;
         }
 
+        // ---------------------------------------------------------- who turns up
+
+        /// <summary>Someone is standing at the fence waiting for an answer.</summary>
+        public bool WandererWaiting { get; private set; }
+
+        /// <summary>Their name, so the board can ask about a person rather than a slot.</summary>
+        public string WandererName { get; private set; }
+
+        int _lastArrivalDay;
+        int _lastCheckedDay;
+
+        /// <summary>
+        /// Whether the colony could take someone, and why not. The board shows this
+        /// whether or not anyone is at the fence, because it is the thing the player
+        /// can actually do something about.
+        /// </summary>
+        public RecruitReadiness Readiness()
+        {
+            if (!Founded || Rules == null) return RecruitReadiness.NoColony;
+
+            var check = Survey();
+
+            float food = FoodInStore();
+            float water = WaterInStore();
+
+            return ColonyRecruitment.Readiness(Founded, Population, Rules.maxColonists, check.Beds,
+                ColonyRecruitment.DaysOfSupply(food, Population, Rules.foodPerColonistPerDay),
+                ColonyRecruitment.DaysOfSupply(water, Population, Rules.litresPerColonistPerDay));
+        }
+
+        public int DaysSinceArrival
+        {
+            get { return _clock != null ? Mathf.Max(0, _clock.Day - _lastArrivalDay) : 0; }
+        }
+
+        /// <summary>
+        /// Checked once a day, at the turn of it. A wanderer walks in overnight or not
+        /// at all - a stranger materialising at noon while you watch is a spawn, not an
+        /// arrival.
+        /// </summary>
+        void CheckForWanderer()
+        {
+            if (_clock == null || WandererWaiting) return;
+            if (_clock.Day == _lastCheckedDay) return;
+
+            _lastCheckedDay = _clock.Day;
+
+            float heat = _heat != null ? _heat.Heat : 0f;
+            if (!ColonyRecruitment.Arrives(Readiness(), DaysSinceArrival, heat, UnityEngine.Random.value)) return;
+
+            WandererWaiting = true;
+            WandererName = NextName();
+
+            Notifications.PostFormat("{0} is at the fence, asking to stay", WandererName);
+        }
+
+        /// <summary>Takes them in. Returns the person, or null if the colony cannot after all.</summary>
+        public Colonist AcceptWanderer()
+        {
+            if (!WandererWaiting) return null;
+
+            var person = TryRecruit(WandererName);
+            if (person == null) return null;
+
+            WandererWaiting = false;
+            WandererName = "";
+            _lastArrivalDay = _clock != null ? _clock.Day : 0;
+
+            return person;
+        }
+
+        /// <summary>
+        /// Sends them away. They do not come back, and the next one is a few days out -
+        /// turning someone away at the gate is a decision, not a reroll.
+        /// </summary>
+        public void TurnAwayWanderer()
+        {
+            if (!WandererWaiting) return;
+
+            Notifications.PostFormat("{0} moves on", WandererName);
+
+            WandererWaiting = false;
+            WandererName = "";
+            _lastArrivalDay = _clock != null ? _clock.Day : 0;
+        }
+
         // -------------------------------------------------------------- recruiting
 
         /// <summary>
@@ -139,6 +225,11 @@ namespace MadVoxel.Colony
         /// colonist with nowhere to sleep and nothing to eat is a corpse on a timer.
         /// </summary>
         public Colonist TryRecruit()
+        {
+            return TryRecruit(null);
+        }
+
+        public Colonist TryRecruit(string name)
         {
             if (!Founded || Rules == null || Rules.colonist == null) return null;
             if (_colonists.Count >= Rules.maxColonists) return null;
@@ -158,7 +249,7 @@ namespace MadVoxel.Colony
             ColonistVisuals.Build(go.transform);
 
             var colonist = go.AddComponent<Colonist>();
-            colonist.Init(this, Rules.colonist, NextName());
+            colonist.Init(this, Rules.colonist, string.IsNullOrEmpty(name) ? NextName() : name);
             _colonists.Add(colonist);
 
             AssignBed(colonist);
@@ -234,6 +325,8 @@ namespace MadVoxel.Colony
             _sinceSample += Time.deltaTime;
             if (_sinceSample < SampleInterval) return;
             _sinceSample = 0f;
+
+            CheckForWanderer();
 
             double now = _clock.TotalHours;
             float elapsed = Mathf.Max(0f, (float)(now - _lastHours));

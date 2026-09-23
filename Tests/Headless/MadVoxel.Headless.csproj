@@ -45,6 +45,7 @@
     <Compile Include="BallisticsTests.cs" />
     <Compile Include="SiegeTests.cs" />
     <Compile Include="SaveSchemaTests.cs" />
+    <Compile Include="RecruitTests.cs" />
     <Compile Include="FluidTests.cs" />
   </ItemGroup>
 
@@ -120,6 +121,7 @@
     <Compile Include="../../Assets/MadVoxel/Scripts/Colony/ColonyDefinitions.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Colony/ColonyCharter.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Colony/ColonyMorale.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Colony/ColonyRecruitment.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Content/ItemIds.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Content/ContentDatabase.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Content/ContentLibrary.cs" />
