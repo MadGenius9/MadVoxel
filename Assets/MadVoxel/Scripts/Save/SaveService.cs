@@ -209,6 +209,18 @@ namespace MadVoxel.Save
                     }
                 }
 
+                // A furnace is a container too, and its slots go down the same path.
+                var furnace = structure.GetComponent<FurnaceStructure>();
+                if (furnace != null)
+                {
+                    furnace.Catch();
+                    entry.furnaceWorkedToHours = furnace.WorkedToHours;
+                    for (int s = 0; s < furnace.Contents.Size; s++)
+                    {
+                        entry.contents.Add(ToData(furnace.Contents[s]));
+                    }
+                }
+
                 var storage = structure.GetComponent<StorageStructure>();
                 if (storage != null)
                 {
@@ -499,6 +511,18 @@ namespace MadVoxel.Save
                     }
                 }
 
+                var furnace = placed.GetComponent<FurnaceStructure>();
+                if (furnace != null)
+                {
+                    furnace.Content = _content;
+                    furnace.RestoreState(entry.furnaceWorkedToHours);
+                    RestoreSlots(entry.contents, furnace.Contents);
+
+                    // Catch it up now: a furnace loaded and left through a save should
+                    // hand you the metal it made while the world was closed.
+                    furnace.Catch();
+                }
+
                 var storage = placed.GetComponent<StorageStructure>();
                 if (storage != null)
                 {
@@ -669,6 +693,26 @@ namespace MadVoxel.Save
                 // raised: a machine that resumes mid-furrow on load would plough the
                 // line between where it was saved and wherever it settles.
                 implement.RestoreHopper(_content.Crop(entry.hopperCropId), entry.hopperLitres);
+            }
+        }
+
+        /// <summary>Fills a container's slots from saved data, skipping anything unknown.</summary>
+        void RestoreSlots(List<ItemStackData> saved, MadVoxel.Inventory.Inventory into)
+        {
+            if (saved == null || into == null) return;
+
+            int slots = Mathf.Min(saved.Count, into.Size);
+            for (int s = 0; s < slots; s++)
+            {
+                var slot = saved[s];
+                if (slot == null || string.IsNullOrEmpty(slot.itemId) || slot.count <= 0) continue;
+
+                var item = _content.Item(slot.itemId);
+                if (item == null) continue;
+
+                var stack = new ItemStack(item, slot.count, slot.durability);
+                stack.SpoilRemaining = MadVoxel.Inventory.Spoil.SpoilRules.Normalise(item, slot.spoilRemaining);
+                into.SetSlot(s, stack);
             }
         }
 

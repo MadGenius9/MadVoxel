@@ -37,6 +37,7 @@ namespace MadVoxel.Headless
             FieldCoverTests.Run();
             TraderTests.Run(ContentTests.Database);
             QuestTests.Run(ContentTests.Database);
+            FurnaceTests.Run(ContentTests.Database);
             PowerTests.Run();
             FluidTests.Run();
 

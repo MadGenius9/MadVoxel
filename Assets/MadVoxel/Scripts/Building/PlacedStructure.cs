@@ -68,6 +68,7 @@ namespace MadVoxel.Building
                 case StructureKind.FarmPlot: gameObject.AddComponent<Farming.Plots.FarmPlotStructure>().Bind(this); break;
                 case StructureKind.Silo: gameObject.AddComponent<Farming.Plots.SiloStructure>().Bind(this); break;
                 case StructureKind.ColonyBoard: gameObject.AddComponent<Colony.ColonyBoardStructure>().Bind(this); break;
+                case StructureKind.Furnace: gameObject.AddComponent<FurnaceStructure>().Bind(this); break;
                 case StructureKind.PowerDevice: break;  // handled below
                 case StructureKind.FluidDevice: break;
             }

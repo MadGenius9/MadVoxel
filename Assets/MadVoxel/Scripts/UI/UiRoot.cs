@@ -152,6 +152,7 @@ namespace MadVoxel.UI
             ColonyBoardStructure.OpenRequested += OnBoardOpen;
             MadVoxel.Traders.TraderPost.OpenRequested += OnTraderOpen;
             SiloStructure.OpenRequested += OnSiloOpen;
+            FurnaceStructure.OpenRequested += OnFurnaceOpen;
         }
 
         public void DestroyGameplayUi()
@@ -162,6 +163,7 @@ namespace MadVoxel.UI
             ColonyBoardStructure.OpenRequested -= OnBoardOpen;
             MadVoxel.Traders.TraderPost.OpenRequested -= OnTraderOpen;
             SiloStructure.OpenRequested -= OnSiloOpen;
+            FurnaceStructure.OpenRequested -= OnFurnaceOpen;
 
             if (_gameplayUi != null) Destroy(_gameplayUi);
             _gameplayUi = null;
@@ -178,6 +180,19 @@ namespace MadVoxel.UI
         {
             if (Inventory == null || State == UiState.Dead) return;
             Inventory.OpenContainer(storage);
+            SetState(UiState.Inventory);
+        }
+
+        /// <summary>
+        /// A furnace is a container that also works, so it opens the container screen
+        /// with the forge's orders beside it - you can smelt a batch by hand while it
+        /// works through the rest on its own.
+        /// </summary>
+        void OnFurnaceOpen(FurnaceStructure furnace)
+        {
+            if (Inventory == null || State == UiState.Dead) return;
+
+            Inventory.OpenContainer(furnace.Contents, furnace.Structure.Definition.displayName, CraftStation.Forge);
             SetState(UiState.Inventory);
         }
 

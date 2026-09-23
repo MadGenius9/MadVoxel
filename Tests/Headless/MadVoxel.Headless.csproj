@@ -40,6 +40,7 @@
     <Compile Include="FieldCoverTests.cs" />
     <Compile Include="TraderTests.cs" />
     <Compile Include="QuestTests.cs" />
+    <Compile Include="FurnaceTests.cs" />
     <Compile Include="FluidTests.cs" />
   </ItemGroup>
 
@@ -76,6 +77,7 @@
 
     <Compile Include="../../Assets/MadVoxel/Scripts/Building/StructureDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Building/BuildGrid.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Building/FurnaceRules.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Building/BuildPieceDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Power/PowerDeviceDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Power/PowerNode.cs" />

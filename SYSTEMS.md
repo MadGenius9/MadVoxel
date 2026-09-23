@@ -386,9 +386,42 @@ cabinet for a postcard.
 
 ---
 
+## The furnace
+
+The campfire is a screen you stand at holding a button; smelting a stack of ore that way
+is twenty seconds of watching a bar. The furnace is the other shape — it costs more to
+build, it is slower per item, and it does not need you.
+
+**One inventory, not three.** Ore, fuel and ingots share the same slots. An input tray, a
+fuel tray and an output tray would be three grids to learn and three ways to put something
+in the wrong one. You tip everything in; fuel is anything that burns, work is anything the
+forge has a recipe for. Opening it shows the container screen with the forge's own work
+orders beside it, so you can smelt a batch by hand while it works through the rest.
+
+**Progress is derived**, for the same reason crop growth is: the player will be two
+hundred metres away in an unloaded chunk for most of it and asleep for the rest. It catches
+up whenever anyone asks — on a tick, on opening it, on saving, and on load, so a furnace
+left running through a closed world hands you the metal when you come back.
+
+The hour it has worked to is advanced by exactly the work that completed, so a partly
+finished batch is still owed next time. The seconds-to-hours conversion is checked to be an
+exact inverse: a furnace opened every minute must neither lose time nor invent it.
+
+Fuel burns cheapest-first, so a furnace does not spend your coal while there is wood in it.
+Fuel is taken before ore, so a batch that runs out of burn mid-way has not already consumed
+an ore it cannot finish. And no forge recipe may list a fuel as an ingredient — the
+campfire smelts charge a coal per ingot, the furnace charges burn time, and a recipe doing
+both would charge twice. There is a check for that.
+
+The campfire smelts stay exactly as they were. They are how you get the first ingots, and
+four of those go into the furnace — a check asserts nothing the furnace is built from can
+only be made in a furnace.
+
+---
+
 ## What the headless checks cover
 
-983 checks, all passing. The new ones:
+1026 checks, all passing. The new ones:
 
 - **Biomes** — spawn is always farmland; no shelf near spawn but shelf at the edge; all
   five regions appear; the same seed repaints the same map; borders smear; the regions
@@ -411,6 +444,12 @@ cabinet for a postcard.
 - **Heat** — the floor, that Quiet Claim shaves it but cannot silence a farm, that a
   blackout is felt within the hour, that it settles at the floor and caps at 100, that
   dawn pulls harder, that an idle trap is silent.
+- **Furnace** — that hours and seconds convert back and forth exactly, so an often-opened
+  furnace cannot drift; that fuel burns cheapest-first and leaves the coal alone while
+  there is wood; that a short burn takes only what was there; that each of the four limits
+  — time, fuel, ore, room — can stop it on its own; that a two-ingredient recipe is limited
+  by the scarcer one whichever it is; that no forge recipe charges for fuel twice; and that
+  the furnace is not built from anything only a furnace can make.
 - **Bulk drawing** — that drawing n sacks costs exactly n sacks' worth for every n, that
   drawing never costs less than what came out, that just under a sack's worth draws
   nothing, and that the bin and the counter agree on what a sack is worth.

@@ -58,6 +58,7 @@ namespace MadVoxel.Content
         public const string PieceBedroll = "madvoxel:piece_bedroll";
         public const string PieceFarmPlot = "madvoxel:piece_farm_plot";
         public const string PieceSilo = "madvoxel:piece_silo";
+        public const string PieceFurnace = "madvoxel:piece_furnace";
 
         // Rust-style snap pieces. Each item places the Twig tier; the hammer upgrades it.
         public const string SnapFoundation = "madvoxel:snap_foundation";
@@ -122,6 +123,7 @@ namespace MadVoxel.Content
         public const string Bedroll = "madvoxel:bedroll";
         public const string FarmPlot = "madvoxel:farm_plot";
         public const string Silo = "madvoxel:silo";
+        public const string Furnace = "madvoxel:furnace";
         public const string DeathBackpack = "madvoxel:death_backpack";
 
         public const string GeneratorBank = "madvoxel:generator_bank";

@@ -47,7 +47,12 @@ namespace MadVoxel.UI
         readonly List<WorkOrder> _orders = new List<WorkOrder>();
 
         ItemStack _cursor = ItemStack.Empty;
-        StorageStructure _openContainer;
+        /// <summary>
+        /// Whatever container is open: a crate, a furnace, anything with slots. Held as
+        /// the inventory rather than the structure so a new kind of container needs no
+        /// change here.
+        /// </summary>
+        MadVoxel.Inventory.Inventory _openContainer;
         CraftStation _station = CraftStation.Hand;
 
         public bool IsOpen { get { return _canvas != null && _canvas.enabled; } }
@@ -238,12 +243,25 @@ namespace MadVoxel.UI
 
         public void OpenContainer(StorageStructure container)
         {
-            _openContainer = container;
-            _station = CraftStation.Hand;
+            OpenContainer(container.Contents, container.Structure.Definition.displayName, CraftStation.Hand);
+        }
+
+        /// <summary>
+        /// Opens any container beside the bag. The station lets a container that is also
+        /// a workplace - a furnace - offer its own work orders in the same screen.
+        /// </summary>
+        public void OpenContainer(MadVoxel.Inventory.Inventory contents, string title, CraftStation station)
+        {
+            if (contents == null) return;
+
+            _openContainer = contents;
+            _station = station;
             ContainerPlate().gameObject.SetActive(true);
-            _containerTitle.text = container.Structure.Definition.displayName.ToUpperInvariant();
-            _craftTitle.text = "WORK ORDERS";
-            container.Contents.Changed += Refresh;
+            _containerTitle.text = (title ?? "CONTAINER").ToUpperInvariant();
+            _craftTitle.text = station == CraftStation.Hand
+                ? "WORK ORDERS"
+                : "WORK ORDERS  -  " + station.ToString().ToUpperInvariant();
+            contents.Changed += Refresh;
             Show();
         }
 
@@ -262,13 +280,13 @@ namespace MadVoxel.UI
             if (!_cursor.IsEmpty)
             {
                 int leftover = _player.Inventory.Bag.Add(_cursor);
-                if (leftover > 0 && _openContainer != null) _openContainer.Contents.Add(_cursor.WithCount(leftover));
+                if (leftover > 0 && _openContainer != null) _openContainer.Add(_cursor.WithCount(leftover));
                 _cursor = ItemStack.Empty;
             }
 
             if (_openContainer != null)
             {
-                _openContainer.Contents.Changed -= Refresh;
+                _openContainer.Changed -= Refresh;
                 _openContainer = null;
             }
 
@@ -287,7 +305,7 @@ namespace MadVoxel.UI
         void OnContainerSlotClicked(int index, PointerEventData.InputButton button)
         {
             if (_openContainer == null) return;
-            HandleSlotClick(_openContainer.Contents, index, button);
+            HandleSlotClick(_openContainer, index, button);
         }
 
         void HandleSlotClick(MadVoxel.Inventory.Inventory inventory, int index, PointerEventData.InputButton button)
@@ -454,7 +472,7 @@ namespace MadVoxel.UI
 
             if (_openContainer != null)
             {
-                var contents = _openContainer.Contents;
+                var contents = _openContainer;
                 for (int i = 0; i < _containerSlots.Count; i++)
                 {
                     bool exists = i < contents.Size;

@@ -45,6 +45,9 @@ namespace MadVoxel.Building
                 case StructureKind.FarmPlot:
                     BuildFarmPlot(body.transform, def);
                     break;
+                case StructureKind.Furnace:
+                    BuildFurnace(body.transform, mat);
+                    break;
                 case StructureKind.Silo:
                     BuildSilo(body.transform, mat);
                     break;
@@ -91,6 +94,26 @@ namespace MadVoxel.Building
         }
 
 
+
+        /// <summary>
+        /// A squat stone box with a black mouth and a chimney. The mouth is the point:
+        /// it is what tells you this is the thing that eats ore, from across a base.
+        /// </summary>
+        static void BuildFurnace(Transform parent, Material mat)
+        {
+            var stone = MaterialLibrary.Get(SurfaceFamily.Stone, new Color(0.38f, 0.36f, 0.34f), 0.05f);
+            var iron = MaterialLibrary.Get(SurfaceFamily.Metal, new Color(0.24f, 0.22f, 0.21f), 0.3f, 0.7f);
+
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.45f, 0.5f), new Vector3(1.0f, 0.9f, 1.0f), stone, "Body");
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.94f, 0.5f), new Vector3(1.06f, 0.1f, 1.06f), stone, "Cap");
+
+            // The mouth, set into the front face and unlit so it reads as a hole.
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.38f, 0.02f), new Vector3(0.52f, 0.42f, 0.12f),
+                MaterialLibrary.GetUnlit(new Color(0.08f, 0.05f, 0.04f)), "Mouth");
+
+            PrimitiveBuilder.Cylinder(parent, new Vector3(0.74f, 1.3f, 0.74f), new Vector3(0.22f, 0.4f, 0.22f), iron, "Chimney");
+            PrimitiveBuilder.Box(parent, new Vector3(0.5f, 0.06f, 0.5f), new Vector3(1.1f, 0.12f, 1.1f), stone, "Base");
+        }
 
         static void BuildCrate(Transform parent, Material mat)
         {

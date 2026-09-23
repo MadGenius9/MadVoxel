@@ -23,7 +23,9 @@ namespace MadVoxel.Building
         /// <summary>Anything on the water side: pipes, tanks, taps, sprinklers.</summary>
         FluidDevice,
         /// <summary>The colony charter. One per claim.</summary>
-        ColonyBoard
+        ColonyBoard,
+        /// <summary>A furnace: a container that works on its own while you are away.</summary>
+        Furnace
     }
 
     /// <summary>

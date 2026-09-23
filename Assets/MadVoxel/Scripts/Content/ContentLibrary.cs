@@ -344,6 +344,7 @@ namespace MadVoxel.Content
             Add(Item(ItemIds.PieceBedroll, "Bedroll", ItemCategory.Structure, 2, SurfaceFamily.Cloth, new Color(0.45f, 0.42f, 0.36f), 30));
             Add(Item(ItemIds.PieceFarmPlot, "Farm Plot", ItemCategory.Structure, 16, SurfaceFamily.Dirt, new Color(0.33f, 0.24f, 0.16f), 14));
             Add(Item(ItemIds.PieceSilo, "Grain Bin", ItemCategory.Structure, 2, SurfaceFamily.Metal, new Color(0.55f, 0.53f, 0.49f), 240));
+            Add(Item(ItemIds.PieceFurnace, "Furnace", ItemCategory.Structure, 2, SurfaceFamily.Stone, new Color(0.38f, 0.36f, 0.34f), 90));
 
             // Phase 1 economy and vehicle parts.
             Add(Item(ItemIds.TradeToken, "Trade Token", ItemCategory.Misc, 999, SurfaceFamily.Metal, new Color(0.72f, 0.62f, 0.30f), 1));
@@ -466,6 +467,7 @@ namespace MadVoxel.Content
             items[ItemIds.PieceToolCupboard].placeableStructure = structures[StructureIds.ToolCupboard];
             items[ItemIds.PieceFarmPlot].placeableStructure = structures[StructureIds.FarmPlot];
             items[ItemIds.PieceSilo].placeableStructure = structures[StructureIds.Silo];
+            items[ItemIds.PieceFurnace].placeableStructure = structures[StructureIds.Furnace];
             items[ItemIds.PieceBedroll].placeableStructure = structures[StructureIds.Bedroll];
         }
 
@@ -571,6 +573,12 @@ namespace MadVoxel.Content
             plot.salvageItem = items[ItemIds.PieceFarmPlot];
             map[plot.stringId] = plot;
 
+            var furnaceStructure = Structure(StructureIds.Furnace, "Furnace", StructureKind.Furnace,
+                new Vector3Int(1, 2, 1), SurfaceFamily.Stone, new Color(0.38f, 0.36f, 0.34f), 420f);
+            furnaceStructure.storageSlots = 12;
+            furnaceStructure.salvageItem = items[ItemIds.PieceFurnace];
+            map[furnaceStructure.stringId] = furnaceStructure;
+
             var silo = Structure(StructureIds.Silo, "Grain Bin", StructureKind.Silo, new Vector3Int(2, 4, 2), SurfaceFamily.Metal, new Color(0.55f, 0.53f, 0.49f), 600f);
             silo.siloCapacityLitres = 20000f;
             silo.salvageItem = items[ItemIds.PieceSilo];
@@ -650,7 +658,10 @@ namespace MadVoxel.Content
             list.Add(Recipe("madvoxel:craft_block_cobble", it[ItemIds.BlockCobblestone], 4, CraftStation.Hand, 1.0f,
                 Ing(it[ItemIds.Stone], 4)));
 
-            // Smelting happens at the campfire in Phase 0; the forge arrives in Phase 2.
+            // Smelting by hand, at a campfire, a batch at a time with coal per batch.
+            // The furnace below does the same job unattended and burns fuel by the hour
+            // instead - the campfire stays because it is how you get the first ingots
+            // the furnace itself is built from.
             list.Add(Recipe("madvoxel:smelt_iron", it[ItemIds.IronIngot], 1, CraftStation.Campfire, 6f,
                 Ing(it[ItemIds.IronOre], 2), Ing(it[ItemIds.Coal], 1)));
             list.Add(Recipe("madvoxel:smelt_scrap", it[ItemIds.IronIngot], 1, CraftStation.Campfire, 5f,
@@ -668,6 +679,21 @@ namespace MadVoxel.Content
 
             list.Add(Recipe("madvoxel:smelt_glass", it[ItemIds.BlockGlass], 2, CraftStation.Campfire, 4f,
                 Ing(it[ItemIds.Sand], 3), Ing(it[ItemIds.Coal], 1)));
+
+            // The forge. Same ore for the same metal, but no coal per batch: the
+            // furnace burns whatever is in it over time, so a single lump of coal
+            // carries a run rather than one ingot.
+            list.Add(Recipe("madvoxel:forge_iron", it[ItemIds.IronIngot], 1, CraftStation.Forge, 9f,
+                Ing(it[ItemIds.IronOre], 2)));
+            list.Add(Recipe("madvoxel:forge_scrap", it[ItemIds.IronIngot], 1, CraftStation.Forge, 8f,
+                Ing(it[ItemIds.ScrapMetal], 5)));
+            list.Add(Recipe("madvoxel:forge_glass", it[ItemIds.BlockGlass], 2, CraftStation.Forge, 6f,
+                Ing(it[ItemIds.Sand], 3)));
+
+            // Not perk-gated. The workbench it is built at is the gate, and a station
+            // this basic being locked behind a skill point is friction, not a decision.
+            list.Add(Recipe("madvoxel:craft_furnace", it[ItemIds.PieceFurnace], 1, CraftStation.Workbench, 8f,
+                Ing(it[ItemIds.Stone], 40), Ing(it[ItemIds.Clay], 20), Ing(it[ItemIds.IronIngot], 4)));
 
             list.Add(Recipe("madvoxel:craft_storage_box", it[ItemIds.PieceStorageBox], 1, CraftStation.Workbench, 4f,
                 Ing(it[ItemIds.Plank], 12), Ing(it[ItemIds.IronIngot], 1)));

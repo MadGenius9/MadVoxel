@@ -96,6 +96,10 @@ namespace MadVoxel.Save
         public string cropId = "";
         public double plantedAtHours;
 
+        // Furnace: the hour its work is accounted up to. Everything after it is owed,
+        // so a furnace loaded and left through a save comes back with the metal made.
+        public double furnaceWorkedToHours;
+
         // Grain bin contents, in litres.
         public List<SiloEntryData> silo = new List<SiloEntryData>();
 

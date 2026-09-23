@@ -116,7 +116,7 @@ resolver and nine call sites — and changes nothing about the Phase 0 loop.
 | **Spoilage** | **Live.** Shelf life on the stack, rot, and a fridge that earns its watts. | Compost as a fertiliser input. |
 | **Claim heat** | **Live.** One number fed by lights, the generator, population, acreage and traps, read by the wanderer cap and the horde budget. | — |
 | **Mad Colony** | **Live.** A charter on a board, up to three people with four jobs, needs, morale and a walk-out, fed and watered from the base you built. | The recruit event and trader quest that should bring the first person; pathfinding; The Marker. |
-| **Furnace** | Smelting exists as campfire recipes (ore → ingot, sand → glass). | A dedicated furnace deployable and its throughput. |
+| **Furnace** | **Live.** A deployable that smelts unattended on the world clock, one shared inventory for ore, fuel and output, burning cheapest fuel first. Catches up across a save. The campfire smelts stay as the way in. | Steel, and a bellows or a powered furnace that runs faster. |
 | **Horde** | Live, and already budgets on base footprint. | Waves that actively exploit an open dig rather than pathing at the cupboard. |
 
 ---
@@ -227,8 +227,7 @@ Every step has an implementation behind it. The test itself needs a Unity editor
 
 ## Next milestone
 
-1. **Furnace** — a proper smelter, and the iron economy that feeds metal tier. It is the
-   last Phase 1 station with no runtime behind it.
-2. **Script mods** — a sandboxed hook layer on top of the data loader.
-3. **Horde that reads the dig** — prefer an open ramp or an unfinished wall over chewing
+1. **Script mods** — a sandboxed hook layer on top of the data loader. Everything else on
+   this list is content; this is the one that changes what mods can be.
+2. **Horde that reads the dig** — prefer an open ramp or an unfinished wall over chewing
    the strongest face.
