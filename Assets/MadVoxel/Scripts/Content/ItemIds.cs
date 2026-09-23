@@ -80,6 +80,13 @@ namespace MadVoxel.Content
         public const string GasCan = "madvoxel:gas_can";
         public const string BuggyKit = "madvoxel:buggy_kit";
 
+        // Field machines. The kit deploys the tractor; the rest hitch to the back of it.
+        public const string TractorKit = "madvoxel:tractor_kit";
+        public const string ImplementPlow = "madvoxel:implement_plow";
+        public const string ImplementCultivator = "madvoxel:implement_cultivator";
+        public const string ImplementSeeder = "madvoxel:implement_seeder";
+        public const string ImplementHarvester = "madvoxel:implement_harvester";
+
         // Electricity. The wire tool is how every connection gets made.
         public const string WireTool = "madvoxel:wire_tool";
         public const string CopperWire = "madvoxel:copper_wire";

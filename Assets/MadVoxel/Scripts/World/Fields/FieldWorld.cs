@@ -10,11 +10,11 @@ namespace MadVoxel.World.Fields
     /// <summary>
     /// Owns the field grid and connects it to the terrain.
     ///
-    /// Phase 0 exposes the first step by hand: a hoe plows one cell, the terrain block
-    /// turns to tilled soil so the work is visible and persists in the chunk file, and
-    /// the agronomic state lands in the grid. Phase 1's tractor and implements call the
-    /// same operations across a swath - the state machine, growth timing and litre yield
-    /// are already here.
+    /// A hoe plows one cell by hand: the terrain block turns to tilled soil so the work
+    /// is visible and persists in the chunk file, and the agronomic state lands in the
+    /// grid. The tractor's implements call these same operations across a swath - the
+    /// state machine, growth timing and litre yield are shared, so the fast way and the
+    /// slow way cannot drift apart.
     /// </summary>
     public class FieldWorld : MonoBehaviour
     {

@@ -28,7 +28,7 @@ namespace MadVoxel.World.Fields
         public FieldCellState State;
         /// <summary>Index into the field crop table. 0 means nothing sown.</summary>
         public byte CropIndex;
-        /// <summary>0..1. Phase 1 uses it; Phase 0 leaves it at a sensible default.</summary>
+        /// <summary>0..1. Scales the litres a cell yields; fertiliser is not built yet.</summary>
         public float Moisture;
         /// <summary>0..1.</summary>
         public float Fertiliser;

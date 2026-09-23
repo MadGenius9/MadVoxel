@@ -4,8 +4,9 @@ using UnityEngine;
 namespace MadVoxel.Vehicles
 {
     /// <summary>
-    /// A land vehicle. Phase 0 ships the data and the craft recipe hook; Phase 1 adds
-    /// the driving controller, the fuel burn and the storage crate.
+    /// A land vehicle: the numbers <see cref="VehicleRig"/> drives by. The buggy is
+    /// transport; the tractor is the only one an implement will hitch to, and it is
+    /// slower and tougher for exactly that reason.
     /// </summary>
     [CreateAssetMenu(menuName = "MadVoxel/Vehicle", fileName = "Vehicle")]
     public class VehicleDefinition : ScriptableObject

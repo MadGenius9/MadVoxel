@@ -8,8 +8,9 @@ namespace MadVoxel.Farming.Plots
     /// A grain bin. Bulk produce is measured in litres, not stacks, which is the whole
     /// point of the field layer: a garden fills your bag, a field fills this.
     ///
-    /// Phase 0 ships the store and its readout so the field harvester has somewhere to
-    /// dump into; the tipping and selling flow is Phase 1.
+    /// A harvester tips into it with V while parked within
+    /// <see cref="MadVoxel.Vehicles.VehicleWorld.TipRange"/> metres; selling what is in
+    /// it is the trader's job and is not built yet.
     /// </summary>
     public class SiloStructure : MonoBehaviour, IInteractable
     {

@@ -82,6 +82,7 @@ namespace MadVoxel.Content
             db.quests = BuildQuests(itemMap);
             db.traders = BuildTraders(itemMap, db.quests);
             db.vehicles = BuildVehicles(itemMap);
+            db.implements = BuildImplements(itemMap);
 
             db.startingItems = new List<ContentDatabase.StartingStack>
             {
@@ -354,6 +355,14 @@ namespace MadVoxel.Content
             Add(gas);
 
             Add(Item(ItemIds.BuggyKit, "Scrap Buggy Kit", ItemCategory.Misc, 1, SurfaceFamily.Metal, ColRust, 600));
+
+            // Field machines. Each is a one-of-a-kind object you carry to the field and
+            // set down, which is why none of them stack.
+            Add(Item(ItemIds.TractorKit, "Tractor Kit", ItemCategory.Misc, 1, SurfaceFamily.Metal, ColRust, 900));
+            Add(Item(ItemIds.ImplementPlow, "Disc Plow", ItemCategory.Misc, 1, SurfaceFamily.Metal, ColRust, 220));
+            Add(Item(ItemIds.ImplementCultivator, "Cultivator", ItemCategory.Misc, 1, SurfaceFamily.Metal, ColRust, 260));
+            Add(Item(ItemIds.ImplementSeeder, "Seed Drill", ItemCategory.Misc, 1, SurfaceFamily.Metal, ColRust, 380));
+            Add(Item(ItemIds.ImplementHarvester, "Harvester", ItemCategory.Misc, 1, SurfaceFamily.Metal, ColRust, 720));
 
             return map;
         }
@@ -698,7 +707,56 @@ namespace MadVoxel.Content
             buggy.requiredPerkRank = 1;
             list.Add(buggy);
 
+            AddMachineRecipes(it, list);
             return list;
+        }
+
+        /// <summary>
+        /// The field machines, gated behind Grease Monkey. Deliberately expensive in
+        /// iron: the tractor is meant to be the thing you build once the claim is
+        /// standing, not the thing you start with.
+        /// </summary>
+        static void AddMachineRecipes(Dictionary<string, ItemDefinition> it, List<RecipeDefinition> list)
+        {
+            var tractor = Recipe("madvoxel:craft_tractor_kit", it[ItemIds.TractorKit], 1, CraftStation.Workbench, 20f,
+                Ing(it[ItemIds.EngineBlock], 2), Ing(it[ItemIds.Wheel], 4),
+                Ing(it[ItemIds.IronIngot], 40), Ing(it[ItemIds.ScrapMetal], 60));
+            tractor.unlockedByDefault = false;
+            tractor.requiredPerkId = "madvoxel:perk_grease_monkey";
+            tractor.requiredPerkRank = 2;
+            list.Add(tractor);
+
+            var plow = Recipe("madvoxel:craft_implement_plow", it[ItemIds.ImplementPlow], 1, CraftStation.Workbench, 10f,
+                Ing(it[ItemIds.IronIngot], 16), Ing(it[ItemIds.ScrapMetal], 20));
+            plow.unlockedByDefault = false;
+            plow.requiredPerkId = PerkIds.Agronomist;
+            plow.requiredPerkRank = 2;
+            list.Add(plow);
+
+            var cultivator = Recipe("madvoxel:craft_implement_cultivator", it[ItemIds.ImplementCultivator], 1,
+                CraftStation.Workbench, 10f,
+                Ing(it[ItemIds.IronIngot], 14), Ing(it[ItemIds.ScrapMetal], 24));
+            cultivator.unlockedByDefault = false;
+            cultivator.requiredPerkId = PerkIds.Agronomist;
+            cultivator.requiredPerkRank = 3;
+            list.Add(cultivator);
+
+            var seeder = Recipe("madvoxel:craft_implement_seeder", it[ItemIds.ImplementSeeder], 1,
+                CraftStation.Workbench, 14f,
+                Ing(it[ItemIds.IronIngot], 20), Ing(it[ItemIds.ScrapMetal], 30), Ing(it[ItemIds.Plank], 20));
+            seeder.unlockedByDefault = false;
+            seeder.requiredPerkId = PerkIds.Agronomist;
+            seeder.requiredPerkRank = 4;
+            list.Add(seeder);
+
+            var harvester = Recipe("madvoxel:craft_implement_harvester", it[ItemIds.ImplementHarvester], 1,
+                CraftStation.Workbench, 22f,
+                Ing(it[ItemIds.EngineBlock], 1), Ing(it[ItemIds.IronIngot], 34),
+                Ing(it[ItemIds.ScrapMetal], 50));
+            harvester.unlockedByDefault = false;
+            harvester.requiredPerkId = PerkIds.Agronomist;
+            harvester.requiredPerkRank = 5;
+            list.Add(harvester);
         }
 
         // ----------------------------------------------------------------- zombies
@@ -828,6 +886,7 @@ namespace MadVoxel.Content
                 "Build and maintain vehicles.", 3, 5,
                 Effect(PerkEffectType.RepairSpeedMultiplier, 0.15f));
             grease.unlocksRecipeIds.Add("madvoxel:craft_buggy_kit");
+            grease.unlocksRecipeIds.Add("madvoxel:craft_tractor_kit");
             tree.perks.Add(grease);
 
             var farming = Perk(PerkIds.Farming, "Living Off The Land", PerkCategory.Farming,
@@ -844,10 +903,16 @@ namespace MadVoxel.Content
                 "Hedges, baffles and habit. Your claim draws less attention after dark.", 3, 4,
                 Effect(PerkEffectType.ClaimHeatReduction, 0.14f)));
 
+            // The field line, in the order a field wants it: somewhere to put the grain,
+            // then break the ground, then work it down, then sow it, then cut it.
             var agronomist = Perk(PerkIds.Agronomist, "Agronomist", PerkCategory.Farming,
-                "Unlocks field implements and lifts the yield an acre returns.", 3, 6,
+                "Unlocks field implements and lifts the yield an acre returns.", 5, 6,
                 Effect(PerkEffectType.FieldYieldMultiplier, 0.12f));
             agronomist.unlocksRecipeIds.Add("madvoxel:craft_silo");
+            agronomist.unlocksRecipeIds.Add("madvoxel:craft_implement_plow");
+            agronomist.unlocksRecipeIds.Add("madvoxel:craft_implement_cultivator");
+            agronomist.unlocksRecipeIds.Add("madvoxel:craft_implement_seeder");
+            agronomist.unlocksRecipeIds.Add("madvoxel:craft_implement_harvester");
             tree.perks.Add(agronomist);
 
             // The grid perk. Rank 1 is the battery bank, because the first thing anyone
@@ -1034,7 +1099,78 @@ namespace MadVoxel.Content
             buggy.maxHealth = 420f;
             buggy.tint = new Color(0.44f, 0.31f, 0.22f);
 
-            return new List<VehicleDefinition> { buggy };
+            // The tractor. Slower than the buggy, tougher, and the only thing that can
+            // drag an implement - the whole field layer hangs off this one object.
+            var tractor = ScriptableObject.CreateInstance<VehicleDefinition>();
+            tractor.name = "Vehicle_Tractor";
+            tractor.stringId = "madvoxel:vehicle_tractor";
+            tractor.displayName = "Tractor";
+            tractor.maxSpeed = 9f;
+            tractor.acceleration = 3.5f;
+            tractor.turnRate = 58f;
+            tractor.climbHeight = 1.05f;
+            tractor.fuelCapacity = 140f;
+            tractor.fuelPerSecond = 0.42f;
+            tractor.fuelItem = it[ItemIds.GasCan];
+            tractor.fuelPerItem = 25f;
+            tractor.seats = 1;
+            tractor.storageSlots = 12;
+            tractor.maxHealth = 650f;
+            tractor.tint = new Color(0.40f, 0.30f, 0.20f);
+            tractor.chassisSize = new Vector3(1.3f, 0.75f, 2.4f);
+
+            it[ItemIds.BuggyKit].placeableVehicle = buggy;
+            it[ItemIds.TractorKit].placeableVehicle = tractor;
+
+            return new List<VehicleDefinition> { buggy, tractor };
+        }
+
+        // ------------------------------------------------------------- implements
+
+        static ImplementDefinition Implement(string id, string name, ImplementKind kind, ItemDefinition item,
+                                             float width, float speedMultiplier, float fuelPerHour)
+        {
+            var def = ScriptableObject.CreateInstance<ImplementDefinition>();
+            def.name = "Implement_" + ShortName(id);
+            def.stringId = id;
+            def.displayName = name;
+            def.kind = kind;
+            def.workingWidth = width;
+            def.speedMultiplier = speedMultiplier;
+            def.fuelLitresPerHour = fuelPerHour;
+            def.item = item;
+
+            item.hitchImplement = def;
+            return def;
+        }
+
+        /// <summary>
+        /// The four passes, in the order a field wants them. Width and speed are the
+        /// only knobs that matter: a wide slow plough and a narrow fast drill cover the
+        /// same ground in the same time, and which one you want depends on the field.
+        /// </summary>
+        static List<ImplementDefinition> BuildImplements(Dictionary<string, ItemDefinition> it)
+        {
+            var plow = Implement("madvoxel:implement_plow", "Disc Plow", ImplementKind.Plow,
+                it[ItemIds.ImplementPlow], 3f, 0.5f, 3.5f);
+
+            var cultivator = Implement("madvoxel:implement_cultivator", "Cultivator", ImplementKind.Cultivator,
+                it[ItemIds.ImplementCultivator], 4f, 0.7f, 2.4f);
+
+            var seeder = Implement("madvoxel:implement_seeder", "Seed Drill", ImplementKind.Seeder,
+                it[ItemIds.ImplementSeeder], 3f, 0.75f, 2f);
+            seeder.hopperCapacityLitres = 120f;
+            seeder.seedLitresPerCell = 0.05f;
+            seeder.litresPerSeedItem = 8f;
+
+            // The harvester is the slow one and the one that has to stop. Its hopper is
+            // a few hundred metres of a good crop, not a field, so tipping into the bin
+            // is part of the job rather than something you do once at the end.
+            var harvester = Implement("madvoxel:implement_harvester", "Harvester", ImplementKind.Harvester,
+                it[ItemIds.ImplementHarvester], 3f, 0.45f, 5.5f);
+            harvester.hopperCapacityLitres = 6000f;
+
+            return new List<ImplementDefinition> { plow, cultivator, seeder, harvester };
         }
 
 

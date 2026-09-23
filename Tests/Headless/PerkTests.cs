@@ -328,15 +328,15 @@ namespace MadVoxel.Headless
                 PerkEffectType.TrapDamageMultiplier,    // PowerTrap.Bite
                 PerkEffectType.StormResistance,         // WeatherEffects.RollBreakage
                 PerkEffectType.DroughtResistance,       // FarmPlotStructure.DryLoss
-                PerkEffectType.ClaimHeatReduction       // ClaimHeatTracker.QuietFraction
+                PerkEffectType.ClaimHeatReduction,      // ClaimHeatTracker.QuietFraction
+                PerkEffectType.FieldYieldMultiplier,    // ImplementController.Reap
+                PerkEffectType.VehicleFuelEfficiency    // VehicleRig.Drive
             };
 
             // Declared in content, read by nothing until the Phase 1 system lands.
             var deferred = new HashSet<PerkEffectType>
             {
-                PerkEffectType.RangedDamageMultiplier,  // no ranged weapons yet
-                PerkEffectType.VehicleFuelEfficiency,   // no driveable vehicle yet
-                PerkEffectType.FieldYieldMultiplier     // FieldWorld.TryHarvest has no caller yet
+                PerkEffectType.RangedDamageMultiplier   // no ranged weapons yet
             };
 
             var used = new HashSet<PerkEffectType>();

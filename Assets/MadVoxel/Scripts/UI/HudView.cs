@@ -25,7 +25,7 @@ namespace MadVoxel.UI
         OnFoot,
         /// <summary>A snap piece is in hand, so the placement readout earns its corner.</summary>
         Building,
-        /// <summary>Phase 1. The gauge cluster exists but never switches on yet.</summary>
+        /// <summary>Sitting on a machine: the gauge cluster, and no build layer.</summary>
         Tractor
     }
 
@@ -75,6 +75,7 @@ namespace MadVoxel.UI
         Image _pointPip;
 
         Text _lookLabel, _lookDetail;
+        RectTransform _crosshair;
         Image _miningFill;
         RectTransform _miningRoot;
 
@@ -95,6 +96,9 @@ namespace MadVoxel.UI
         readonly List<float> _toastExpiry = new List<float>();
 
         public HudMode Mode { get; private set; }
+
+        /// <summary>The gauge cluster. VehicleWorld mounts it and feeds it.</summary>
+        public TractorPanel Tractor { get { return _tractor; } }
 
         public void Init(PlayerRig player, WorldClock clock, HordeDirector horde,
                          StructureWorld structures, SpawnDirector spawner, TerrainWorld voxels,
@@ -202,6 +206,7 @@ namespace MadVoxel.UI
         {
             var root = ClaimSlate.Rect(_canvas.transform, "Crosshair");
             ClaimSlate.Place(root, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(26f, 26f));
+            _crosshair = root;
 
             // A gap in the middle, so the crosshair never hides the block it is on.
             Tick(root, "Left", new Vector2(-9f, 0f), new Vector2(8f, 2f));
@@ -576,7 +581,20 @@ namespace MadVoxel.UI
         void UpdateLookReadout()
         {
             var interaction = _player.Interaction;
-            if (interaction == null) return;
+
+            // Driving, the player's own interaction is switched off and its last target
+            // is stale. A frozen readout and a crosshair over the gauge cluster would be
+            // worse than nothing, so the whole on-foot layer goes away.
+            bool aiming = Mode != HudMode.Tractor && interaction != null && interaction.enabled;
+            if (_crosshair.gameObject.activeSelf != aiming) _crosshair.gameObject.SetActive(aiming);
+
+            if (!aiming)
+            {
+                if (_miningRoot.gameObject.activeSelf) _miningRoot.gameObject.SetActive(false);
+                _lookLabel.text = "";
+                _lookDetail.text = "";
+                return;
+            }
 
             float mining = interaction.MiningProgress01;
             bool showMining = mining > 0.001f;

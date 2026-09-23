@@ -107,6 +107,12 @@ namespace MadVoxel.Core.Player
 
         public event Action<Vector3Int, BlockDefinition> BlockMined;
 
+        /// <summary>
+        /// Set after construction: the machine yard is built once the player and the HUD
+        /// both exist, which is after this component is created.
+        /// </summary>
+        public Vehicles.VehicleWorld Vehicles { get; set; }
+
         public void Init(GameConfig config, TerrainWorld voxels, StructureWorld structures, BuildingWorld buildings,
                          FieldWorld fields, PlayerInventory inventory, PlayerStats stats,
                          PlayerProgression progression, Camera camera)
@@ -279,6 +285,15 @@ namespace MadVoxel.Core.Player
                 {
                     footprint = held.placeableStructure.footprint;
                     valid = _structures.CanPlace(held.placeableStructure, cell, _placeRotation) && !IntersectsPlayer(cell, footprint, _placeRotation);
+                }
+                else if (held.placeableVehicle != null)
+                {
+                    var chassis = held.placeableVehicle.chassisSize;
+                    footprint = new Vector3Int(
+                        Mathf.Max(1, Mathf.CeilToInt(chassis.x * 2f)),
+                        Mathf.Max(1, Mathf.CeilToInt(chassis.y * 2f)),
+                        Mathf.Max(1, Mathf.CeilToInt(chassis.z * 2f)));
+                    valid = _voxels.IsSolid(cell.x, cell.y - 1, cell.z) && !IntersectsPlayer(cell, footprint, 0);
                 }
                 else
                 {
@@ -605,6 +620,7 @@ namespace MadVoxel.Core.Player
 
             if (held.Item.placeableBuildPiece != null) PlaceBuildPiece(held.Item);
             else if (held.Item.placeableStructure != null) PlaceStructure(held.Item);
+            else if (held.Item.placeableVehicle != null) PlaceVehicle(held.Item);
             else if (held.Item.placeableBlock != null) PlaceBlock(held.Item);
         }
 
@@ -711,6 +727,44 @@ namespace MadVoxel.Core.Player
             {
                 Notifications.PostFormat("Land claimed - {0}m protected", Mathf.RoundToInt(placed.Definition.claimRadius > 0f ? placed.Definition.claimRadius : _config.claimRadius));
             }
+        }
+
+        /// <summary>
+        /// Sets a machine down where you are looking. Unlike a deployable it does not
+        /// occupy cells - it drives away - so the only check is that there is ground
+        /// under it and the player is not standing in it.
+        /// </summary>
+        void PlaceVehicle(ItemDefinition item)
+        {
+            if (Vehicles == null) return;
+
+            var def = item.placeableVehicle;
+            var cell = Target.PlaceCell;
+            var footprint = new Vector3Int(
+                Mathf.Max(1, Mathf.CeilToInt(def.chassisSize.x * 2f)),
+                Mathf.Max(1, Mathf.CeilToInt(def.chassisSize.y * 2f)),
+                Mathf.Max(1, Mathf.CeilToInt(def.chassisSize.z * 2f)));
+
+            if (IntersectsPlayer(cell, footprint, 0))
+            {
+                Notifications.Post("Stand back to set it down");
+                return;
+            }
+
+            if (!_voxels.IsSolid(cell.x, cell.y - 1, cell.z))
+            {
+                Notifications.Post("Nothing to set it down on");
+                return;
+            }
+
+            // Facing away from the player, so you step off and it is pointing at the field.
+            float yaw = transform.eulerAngles.y;
+            var spawn = new Vector3(cell.x + 0.5f, cell.y + 0.1f, cell.z + 0.5f);
+
+            if (Vehicles.Spawn(def, spawn, yaw) == null) return;
+
+            _inventory.ConsumeSelected(1);
+            Notifications.PostFormat("{0} set down - E to get on", def.displayName);
         }
 
         bool IntersectsPlayer(Vector3Int cell, Vector3Int footprint, int rotationSteps)

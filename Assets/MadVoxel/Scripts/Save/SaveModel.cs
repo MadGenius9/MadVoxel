@@ -155,9 +155,29 @@ namespace MadVoxel.Save
         public bool open;
     }
 
+    /// <summary>
+    /// A parked machine. The implement is stored with it rather than as an object of
+    /// its own, because an implement only exists hitched.
+    /// </summary>
+    [Serializable]
+    public class VehicleSaveData
+    {
+        public string definitionId = "";
+        public float posX, posY, posZ;
+        public float yaw;
+        public float fuelLitres;
+        public float health;
+
+        public string implementId = "";
+        public string hopperCropId = "";
+        public float hopperLitres;
+    }
+
     [Serializable]
     public class StructuresSaveData
     {
+        public List<VehicleSaveData> vehicles = new List<VehicleSaveData>();
+
         public List<StructureSaveData> structures = new List<StructureSaveData>();
         public List<BuildPieceSaveData> pieces = new List<BuildPieceSaveData>();
         public List<FieldCellSaveData> fieldCells = new List<FieldCellSaveData>();

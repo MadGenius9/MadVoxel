@@ -48,6 +48,13 @@ namespace MadVoxel.Core
         public static bool InteractDown { get { return Enabled && Input.GetKeyDown(KeyCode.E); } }
         public static bool RotatePieceDown { get { return Enabled && Input.GetKeyDown(KeyCode.R); } }
 
+        /// <summary>Lower or raise the implement on the back of the machine you are driving.</summary>
+        public static bool ImplementToggleDown { get { return Enabled && Input.GetKeyDown(KeyCode.F); } }
+        /// <summary>Hitch what you are carrying, or drop what is hitched.</summary>
+        public static bool HitchDown { get { return Enabled && Input.GetKeyDown(KeyCode.G); } }
+        /// <summary>Fill or empty the hopper: seed in, harvest out.</summary>
+        public static bool HopperDown { get { return Enabled && Input.GetKeyDown(KeyCode.V); } }
+
         // Menu keys stay live even when gameplay input is suppressed.
         public static bool InventoryDown { get { return Input.GetKeyDown(KeyCode.Tab) || Input.GetKeyDown(KeyCode.I); } }
         public static bool PerksDown { get { return Input.GetKeyDown(KeyCode.P); } }

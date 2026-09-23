@@ -79,7 +79,7 @@ dimmer colour. The board's founding checklist uses `[X]` and `[ ]`, not green an
 | **Utilities look-at** | Crosshair on a device or fitting | The device answers for itself: `GEN BANK  31/100 W  FUEL 7L`, `RELAY  30M`, `PUMP  NEEDS 18 W`, `TANK  412 / 800 L`, `TAP  FROZEN`. Rust when it is broken, frozen or unpowered. |
 | **Wiring** | Wire tool in hand with a line started | `RUNNING A LINE   REACH 30M   RMB TO DROP`, which takes the look-at line because it is the only thing you are thinking about. |
 | **Colonist look-at** | Crosshair on a person | `JULES  FARM  HUNGRY`, and `NO BED ASSIGNED` under it when that is why. |
-| **Tractor** | Phase 1 | Speed, fuel in litres, hopper in litres, implement lamp. Built and wired; `IsDriving` is never true yet. |
+| **Tractor** | Sitting on a machine | Speed as one big number, fuel in litres, hopper in litres, and an implement lamp with a word beside it: `SEED DRILL  WORKING`, `HARVESTER  HOPPER FULL`, `DISC PLOW  RAISED`. Colour and shape together, as everywhere else. The on-foot crosshair and look-at readout go away entirely — the player's own interaction is switched off while their hands are on the wheel, so leaving either up would show a frozen target over the gauges. |
 
 ## Menus
 
@@ -103,11 +103,17 @@ dimmer colour. The board's founding checklist uses `[X]` and `[ ]`, not green an
 
 ## Not built yet
 
-**Trader (ticket + price board)** is specified but not built. Neither system has a runtime behind it — there is no trader NPC to talk to and
-no silo to fill — and a screen with nothing behind it is dead UI that rots before its
-system arrives. They land with their systems in Phase 1. The tractor cluster is the
-exception, and only because it was asked for explicitly: it exists, disabled, so the
-mode it belongs to is not an empty branch.
+**Trader (ticket + price board)** is specified but not built: there is no trader NPC to
+talk to, and a screen with nothing behind it is dead UI that rots before its system
+arrives. It lands with the trader runtime.
+
+**The silo screen** is specified and not built either, but the grain bin now has a
+runtime — a harvester tips into it — so its contents are still read out one line at a
+time through notifications rather than on a plate. That is the next screen worth building.
+
+The tractor cluster was built ahead of its system, and only because it was asked for
+explicitly. It paid off: when the machines landed it needed no HUD surgery and no second
+layout pass.
 
 **The toolbelt is nine slots, not ten.** `PlayerInventory` is 9 hotbar + 27 bag = 36, the
 bag grid is 4 × 9, the save file stores 36 slots and the keys are `1`–`9`. Going to ten
@@ -123,7 +129,7 @@ rather than a coat of paint, so it is yours to call.
     UI/CompassMath.cs          bearings and tape placement, testable without a canvas
     UI/CompassStrip.cs         the tape itself: ticks, cardinals, pips, day and clock
     UI/HudView.cs              the visor, and which layer each mode is allowed
-    UI/TractorPanel.cs         the Phase 1 cluster, built and switched off
+    UI/TractorPanel.cs         the gauge cluster, fed by VehicleWorld while driving
     UI/InventoryScreen.cs      bag, container, work-order strip
     UI/PerkScreen.cs           the wiring diagram
     UI/MenuScreens.cs          title, pause, death

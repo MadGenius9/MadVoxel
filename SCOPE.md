@@ -77,9 +77,9 @@ does. Plots are low-health on purpose, so a horde that reaches them costs you di
 (wild → plowed → cultivated → seeded → growing → ready → stubble), moisture, fertiliser
 and a per-cell yield factor, harvesting to **litres** and a grain bin that stores them.
 Repeated cropping without fertiliser measurably reduces yield, and trampling knocks a
-growing cell back to stubble. All of it is implemented and tested; what Phase 1 adds is
-the tractor and implements that drive it across a swath. The hoe already plows one cell
-by hand, turning the block to tilled soil so the work is visible and persists.
+growing cell back to stubble. The hoe plows one cell by hand, turning the block to tilled
+soil so the work is visible and persists; the tractor and its four implements drive the
+same operations across a swath.
 
 **Death.** You keep your hotbar; the rest of the bag goes into a lootable backpack where
 you fell, which persists like any other container.
@@ -103,11 +103,11 @@ resolver and nine call sites — and changes nothing about the Phase 0 loop.
 
 | Area | Shipped | Still to write |
 | --- | --- | --- |
-| **Perks** | 14 perks across Mining, Construction, Combat, Scavenging, Medicine, Vehicles and Farming. XP, levelling, point accrual, **the skills screen** (`P`) and the buy rules are live, and nine of the twelve effect types are applied in play: dig speed, block and crop yield, salvage, building tier, stamina pool and drain, melee damage, healing and repair. Ranks and unlocked recipes save and reload. | Ranged damage, vehicle fuel economy and field yield — each waiting on the system that would read it. |
+| **Perks** | 14 perks across Mining, Construction, Combat, Scavenging, Medicine, Vehicles and Farming. XP, levelling, point accrual, **the skills screen** (`P`) and the buy rules are live, and every effect type but one is applied in play: dig speed, block and crop yield, salvage, building tier, stamina pool and drain, melee damage, healing, repair, wire reach, pump rate, trap damage, storm and drought resistance, claim heat, field yield and fuel economy. Ranks and unlocked recipes save and reload. | Ranged damage — waiting on a ranged weapon. |
 | **Traders** | 2 outposts standing in the world, with stock lists, price multipliers, reputation gates, restock interval and currency. | Trader NPC, shop UI, buy/sell, restock, reputation. |
 | **Quests** | 3 contracts (fetch 20 scrap, clear 12 shamblers, survive 2 nights) with XP, reputation and item rewards. | Accept/track/turn-in, the journal, and a mining contract. |
-| **Vehicles** | Scrap Buggy: speed, acceleration, climb height, fuel economy, seats, storage, health, parts and a perk-gated recipe. | Driving, fuel burn, seats and storage, collision against edited terrain and foundations. |
-| **Field machines** | The whole grid, state machine, growth timing, litre yield and the grain bin. A sprinkler already wets field cells. | Tractor, plow, seeder and harvester; working width and a hopper; sowing and harvesting a swath. |
+| **Vehicles** | **Live.** A tractor you craft, set down and drive, on a character controller so a dug ramp behaves; fuel burn that Economiser actually changes; damage, wrecking and save/reload where it was parked. The Scrap Buggy shares the rig. | Seats for more than one, the on-board storage crate, and a machine that reacts to being rammed. |
+| **Field machines** | **Live.** Plough, cultivator, seed drill and harvester, hitched from the hand and raised or lowered on a key; a swept swath that cannot stripe a field; hopper accounting that refuses to sow what it cannot pay for; tipping litres into the grain bin; Agronomist's field yield. | A field irrigator, and crop cover you can see from the seat. |
 | **Electricity** | **Live.** Generator, battery and solar banks, relays, switches and splitters, lights, a fridge, a blade trap and a fence post, all on one graph with a wire tool, a predictable brown-out and a real fuel economy. | A dart trap, a turret, and the timer-relay puzzles this pass deliberately skipped. |
 | **Water** | **Live.** A dug well on a water-table block, electric pump, pipes, tanks, barrels, taps and plot sprinklers on one fluid graph, with breaks, freezes and drought. | A field irrigator on the FS-style cells, and surface ponds as a source. |
 | **Weather** | **Live.** Six states rolled per region, turning dials on the pump, the panels, the soil, barrels, morale and crops. | Seasons with their own economies. |
@@ -170,16 +170,16 @@ executed. Worlds record which mods built them and warn on load if one is missing
   trader NPCs yet.
 - **Field crops have no visuals.** Plowing shows as tilled soil, but a sown or growing
   field cell looks the same as a plowed one. Rendering crop cover across thousands of
-  cells needs an instanced mesh pass, which belongs with the tractor in Phase 1.
+  cells needs an instanced mesh pass. This is the biggest gap in the field layer now
+  that the machines work: you can sow an acre and have nothing to look at.
 - **No water or fertiliser gameplay.** The cell fields exist and fertility does fall
   with each crop, but nothing adds it back yet.
 - **Farm snap pieces are limited to the fence.** Barn, shed, pen and greenhouse frame
   are Phase 1; the grain bin ships as a deployable rather than a snap piece.
 - **The seed bag is just the seed stack.** No dedicated seeding container.
-- **Three perk effects are inert.** Ranged damage, vehicle fuel economy and field yield
-  are authored and shown on the skills screen but nothing reads them yet: there is no
-  ranged weapon, no drivable buggy and no harvester. A headless test asserts exactly
-  that list, so a fourth cannot join it quietly.
+- **One perk effect is inert.** Ranged damage is authored and shown on the skills screen
+  but nothing reads it: there is no ranged weapon. A headless test asserts exactly that
+  list, so a second cannot join it quietly.
 - **XP farming guard is session-only.** Blocks you placed are remembered in memory and
   pay no XP when re-mined, but the set is not saved. Crafted building blocks pay no
   harvest XP at all, which covers the common case.
@@ -194,17 +194,20 @@ executed. Worlds record which mods built them and warn on load if one is missing
   character controller handle the ground, which works on dug terrain and ramps but
   will wedge them on a wall corner.
 - **The Marker is not built**, as asked. `ColonyWorld.ForbiddenActions` is the hook.
-- **Field irrigation is still Phase 1.** A sprinkler wets field cells, but no
-  implement sows or harvests them.
+- **Field irrigation is still unbuilt.** A sprinkler wets field cells, but there is no
+  implement or boom that waters an acre.
 - **Surface ponds are not a pump source.** A well is dug to the water table; standing
   water has no fluid rendering and is not modelled.
 - **The Claim Slate trader and silo screens are unbuilt.** Both are specified in
-  `UI.md`, and both wait on a runtime to sit behind them. The tractor cluster is
-  built but permanently switched off until something drives.
+  `UI.md`, and both wait on a runtime to sit behind them. The tractor cluster is live.
 - **The toolbelt is nine slots.** The inventory is 9 + 27 and the save stores 36
   slots; ten would be a model and save change, not a UI change.
 - **The UI has never been rendered.** Every layout number in Claim Slate is a
   considered guess at a 1920x1080 reference canvas. Nobody has seen it draw.
+- **A hopper holds one crop.** The seed drill sows one crop at a time and a harvester
+  stops rather than mixing two. The grain bin is the thing that holds more than one.
+- **Implements have no collision of their own.** The one hanging off the drawbar is a
+  visual and a swath; it will pass through a fence the tractor would hit.
 - **Mods are data only.** A mod can add a crop or a zombie because the game already
   knows how to grow and fight; it cannot add new behaviour. Script mods are the next
   layer and the loader is shaped for them.
@@ -223,14 +226,12 @@ Every step has an implementation behind it. The test itself needs a Unity editor
 
 ## Next milestone
 
-1. **Field machines** — tractor, plow and seeder or harvester; fuel, hitch, working
-   width and a hopper that tips litres into the grain bin. Agronomist's field-yield
-   perk lands with it.
-2. **Trader runtime** — NPC in the strongroom, shop UI, restock, reputation.
+1. **Field crop cover** — an instanced mesh pass so a sown acre looks sown. The field
+   machines now make acres, and an acre you cannot see is the weakest thing in the loop.
+2. **Trader runtime** — NPC in the strongroom, shop UI, restock, reputation. Selling
+   what is in the grain bin is what makes the field layer pay.
 3. **Quest flow** — accept, track, turn in; add the mining contract.
 4. **Furnace** — a proper smelter, and the iron economy that feeds metal tier.
-5. **Vehicle** — drive the buggy over edited terrain without falling through it, and
-   burn fuel at the rate Economiser claims to change.
-6. **Script mods** — a sandboxed hook layer on top of the data loader.
-7. **Horde that reads the dig** — prefer an open ramp or an unfinished wall over chewing
+5. **Script mods** — a sandboxed hook layer on top of the data loader.
+6. **Horde that reads the dig** — prefer an open ramp or an unfinished wall over chewing
    the strongest face.

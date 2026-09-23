@@ -18,7 +18,7 @@ without a Unity editor available. Everything was verified two ways instead:
 
 1. **Compile check** against real Unity reference assemblies (2021.3 — the newest on
    NuGet, while the project targets Unity 6, so API drift between them is a real gap).
-2. **731 headless checks** that run the *actual* gameplay sources against an executable
+2. **794 headless checks** that run the *actual* gameplay sources against an executable
    `UnityEngine` shim in `Tests/Headless/`.
 
 Those caught eight genuine bugs a compile could not see. They cannot tell you whether
@@ -34,7 +34,7 @@ the tests.** The tests are strong on logic and silent on everything else.
 Always, before saying anything is done:
 
 ```bash
-cd Tests/Headless && dotnet run      # 731 checks, exit 0 when clean
+cd Tests/Headless && dotnet run      # 794 checks, exit 0 when clean
 ```
 
 If .NET is missing, `dotnet` is a free install and worth it — this suite is the only
@@ -78,7 +78,8 @@ If you add a system, add the check that would have caught you getting it wrong.
     World/Terrain/   chunked voxels, generation, greedy mesher, streaming, POIs
     World/Biomes/    five regions; the paint is pure and never saved
     World/Weather/   six states that turn dials on other systems
-    World/Fields/    FS-style tillage grid (Phase 1 machines not built)
+    World/Fields/    FS-style tillage grid
+    Vehicles/        tractor, implements, swath sweep, hopper accounting
     Building/        snap grid, stability, deployables, claim ring
     Farming/         garden plots and crops
     Power/ Fluid/    the grid and the plumbing, one graph each
@@ -126,6 +127,11 @@ If you add a system, add the check that would have caught you getting it wrong.
 `F11` invulnerable · `F12` ripen crops
 `Shift+F5` cycle weather · `Shift+F6` found colony + recruit · `Shift+F7` +25 heat
 
+### Player keys worth knowing
+
+`E` interact / mount / dismount · `F` lower or raise the implement · `G` hitch or
+unhitch · `V` load the drill from your hand, or tip a harvester into a bin within 8 m
+
 ### Editor log (when the user cannot paste a stack trace)
 
 - Windows: `%LOCALAPPDATA%\Unity\Editor\Editor.log`
@@ -143,6 +149,9 @@ If you add a system, add the check that would have caught you getting it wrong.
 - **Every UI number is a guess** at a 1920×1080 canvas. Nobody has seen it lay out.
 - **Colonists do not pathfind.** They walk at a target and let the character controller
   handle terrain. Fine on dug ground and ramps; they will wedge on a wall corner.
+- **No machine has ever been driven.** The swath, the hopper and the tillage cycle are
+  covered by tests; how a `CharacterController` tractor actually climbs a dug field, and
+  whether the seat camera is anywhere sensible, are pure guesses.
 
 ---
 

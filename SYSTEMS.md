@@ -214,9 +214,59 @@ finished AI is worse than carrying an empty list.
 
 ---
 
+## Field machines
+
+The FS-style half of farming: a tractor and four implements that work the field grid in
+bulk. Everything they do goes through `FieldWorld`, the same operations the hoe calls one
+cell at a time — the tractor is a faster hand, not a second rule set.
+
+**The tractor** (`VehicleRig`) is a `CharacterController`, not a `Rigidbody`, for the same
+reason the player is: the ground is voxels the player has been digging, and a controller
+climbs a dug ramp predictably where a physics body catches on a step and flips. It is slow,
+heavy, turns on the spot only sluggishly, and burns fuel whenever it is moving. Getting on
+disables `PlayerMotor` and `PlayerInteraction` — hands on the wheel — and the rig reads its
+own keys from there. It is placed from a crafted kit and can be driven away, which makes it
+the only placed thing in the game that is not saved against a cell.
+
+**The implements** (`ImplementController`) hitch to the drawbar from your hand with `G`,
+lower and raise with `F`, and load or tip with `V`. An unhitched implement is an item in a
+bag, not an object in the world, which is the same rule every other deployable follows.
+One operation each — plough, cultivator, seed drill, harvester. A combine that ploughed,
+sowed and cut in one pass would collapse the whole tillage cycle into a single button.
+
+Three decisions are doing the real work, and all three are invisible until it is too late:
+
+1. **Where it worked.** `FieldSwath` sweeps the cells along the segment travelled since the
+   last tick rather than sampling under the machine this frame. Sampling stripes a field at
+   speed or at low frame rates, and the player finds out two in-game days later when the
+   crop comes up in rows. The sweep is capped at 12 m so a lag spike or a teleport cannot
+   ask for a million cells.
+2. **What it could pay for.** `ImplementWork` decides how many of those cells the hopper
+   covers *before* a single one is touched. A cell is worked only if it can be paid for in
+   full, so a drill running out of seed leaves bare ground rather than ground that looks
+   sown and comes up empty.
+3. **When to stop.** A harvester that fills mid-swath stops there and says so. What will
+   not fit is spilled and reported, never quietly pocketed.
+
+The seed drill holds one crop at a time. Mixing would need a per-crop store on the machine
+and a way to show it; the grain bin behind you is the thing that holds more than one crop.
+A harvester that meets a different crop stops rather than mixing. Tipping is `V` within 8 m
+of a bin, and the perk `Agronomist` scales what the field returns — the field harvest only,
+not the hand one.
+
+Fuel is written per in-game hour on the implement and converted to a burn rate with the
+clock's day length, because a day's work is the unit a farmer reasons in. `Economiser`
+divides that burn rather than multiplying it: better economy is less fuel.
+
+Saved state is the machine's position, fuel and health, plus the implement hitched to it
+and what is in its hopper. It comes back raised, deliberately — a machine that resumed
+mid-furrow would plough the line between where it was saved and wherever it settles.
+
+---
+
 ## What the headless checks cover
 
-731 checks, all passing. The new ones:
+794 checks, all passing. The new ones:
 
 - **Biomes** — spawn is always farmland; no shelf near spawn but shelf at the edge; all
   five regions appear; the same seed repaints the same map; borders smear; the regions
@@ -239,6 +289,13 @@ finished AI is worse than carrying an empty list.
 - **Heat** — the floor, that Quiet Claim shaves it but cannot silence a farm, that a
   blackout is felt within the hour, that it settles at the floor and caps at 100, that
   dawn pulls harder, that an idle trap is silent.
+- **Field machines** — that a stationary implement still covers its full width and hangs
+  square across the heading; that a fast sweep works contiguous rows rather than a comb;
+  that the 12 m cap trims the near end and not the far one; the whole four-pass cycle over
+  one strip, checking the worked ground is a solid rectangle, that half a hopper of seed
+  leaves the rest plainly bare, that a full harvester reports its spillage, and that every
+  cut cell is left as stubble; and that each implement is carried, hitched, sized sanely
+  and reachable through a rank of a skill you can actually buy.
 - **Colony** — every founding refusal and its wording, cupboard checked first, supplies in
   days, morale rising when settled and falling when not, thirst worse than hunger, the
   slide to downing tools taking hours not minutes, and that they always sulk before they

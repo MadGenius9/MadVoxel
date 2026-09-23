@@ -12,6 +12,7 @@ using MadVoxel.Colony;
 using MadVoxel.Fluid;
 using MadVoxel.Inventory;
 using MadVoxel.Power;
+using MadVoxel.Vehicles;
 using MadVoxel.World.Terrain;
 using UnityEngine;
 
@@ -49,6 +50,8 @@ namespace MadVoxel.Save
         public ColonyWorld Colony { get; set; }
         public MadVoxel.World.Weather.WeatherDirector Weather { get; set; }
         public MadVoxel.Claim.ClaimHeatTracker Heat { get; set; }
+        /// <summary>The machine yard. Set by the session once the HUD exists.</summary>
+        public VehicleWorld Vehicles { get; set; }
 
         public void Init(ContentDatabase content, ChunkStreamer streamer, StructureWorld structures,
                          BuildingWorld buildings, FieldWorld fields, WorldClock clock, HordeDirector horde, PlayerRig player,
@@ -227,6 +230,7 @@ namespace MadVoxel.Save
             CaptureFields(data);
             CaptureLinks(data);
             CaptureColony(data);
+            CaptureVehicles(data);
             return data;
         }
 
@@ -502,6 +506,82 @@ namespace MadVoxel.Save
             RestoreFields(data);
             RestoreLinks(data, powerRemap, fluidRemap);
             RestoreColony(data);
+            RestoreVehicles(data);
+        }
+
+        /// <summary>
+        /// Machines are saved where they were parked rather than on a cell, because they
+        /// are the one placed thing in the game that moves.
+        /// </summary>
+        void CaptureVehicles(StructuresSaveData data)
+        {
+            if (Vehicles == null) return;
+
+            var all = Vehicles.All;
+            for (int i = 0; i < all.Count; i++)
+            {
+                var rig = all[i];
+                if (rig == null || rig.Definition == null) continue;
+
+                var entry = new VehicleSaveData
+                {
+                    definitionId = rig.Definition.stringId,
+                    posX = rig.transform.position.x,
+                    posY = rig.transform.position.y,
+                    posZ = rig.transform.position.z,
+                    yaw = rig.transform.eulerAngles.y,
+                    fuelLitres = rig.FuelLitres,
+                    health = rig.Health
+                };
+
+                var implement = rig.Implement;
+                if (implement != null && implement.Definition != null)
+                {
+                    entry.implementId = implement.Definition.stringId;
+                    entry.hopperLitres = implement.HopperLitres;
+                    entry.hopperCropId = implement.Cargo != null ? implement.Cargo.stringId : "";
+                }
+
+                data.vehicles.Add(entry);
+            }
+        }
+
+        void RestoreVehicles(StructuresSaveData data)
+        {
+            if (Vehicles == null || data.vehicles == null) return;
+
+            for (int i = 0; i < data.vehicles.Count; i++)
+            {
+                var entry = data.vehicles[i];
+                var def = Vehicles.FindDefinition(entry.definitionId);
+                if (def == null)
+                {
+                    Debug.LogWarningFormat("Save references unknown vehicle '{0}'.", entry.definitionId);
+                    continue;
+                }
+
+                var rig = Vehicles.Spawn(def, new Vector3(entry.posX, entry.posY, entry.posZ), entry.yaw);
+                if (rig == null) continue;
+
+                rig.RestoreState(entry.fuelLitres, entry.health);
+
+                if (string.IsNullOrEmpty(entry.implementId)) continue;
+
+                var implementDef = Vehicles.FindImplement(entry.implementId);
+                if (implementDef == null)
+                {
+                    Debug.LogWarningFormat("Save references unknown implement '{0}'.", entry.implementId);
+                    continue;
+                }
+
+                var implement = Vehicles.Hitch(rig, implementDef);
+                if (implement == null) continue;
+
+                // A hopper of grain is an afternoon's work. It comes back loaded, and
+                // raised: a machine that resumes mid-furrow on load would plough the
+                // line between where it was saved and wherever it settles.
+                implement.RestoreHopper(_content.Crop(entry.hopperCropId), entry.hopperLitres);
+            }
         }
 
         /// <summary>Puts a device's own state back, and records its new node id.</summary>

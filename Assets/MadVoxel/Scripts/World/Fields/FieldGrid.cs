@@ -7,9 +7,9 @@ namespace MadVoxel.World.Fields
     /// The FS25-style acreage layer: a sparse one-metre cell grid laid over the terrain.
     ///
     /// It is deliberately plain C# and holds no Unity references, so the tractor and
-    /// implements Phase 1 adds are just callers that work many cells at once - the state
-    /// machine, the growth timing and the litre yield all already live here and are
-    /// exercised by a single hoe today.
+    /// its implements are just callers that work many cells at once - the state machine,
+    /// the growth timing and the litre yield all live here, and a hoe and a plough put
+    /// the same ground through the same rules.
     /// </summary>
     public class FieldGrid
     {
@@ -167,8 +167,8 @@ namespace MadVoxel.World.Fields
         // ---------------------------------------------------------------- swaths
 
         /// <summary>
-        /// Works a rectangle of cells. Implements in Phase 1 call this with their working
-        /// width; the hoe calls the single-cell versions above.
+        /// Works a rectangle of cells. The hoe calls the single-cell versions above;
+        /// implements sweep a swath and call those too, one cell at a time.
         /// </summary>
         public int Apply(RectInt swath, System.Func<int, int, bool> operation)
         {

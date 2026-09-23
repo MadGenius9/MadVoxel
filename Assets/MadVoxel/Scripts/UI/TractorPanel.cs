@@ -4,13 +4,13 @@ using UnityEngine.UI;
 namespace MadVoxel.UI
 {
     /// <summary>
-    /// The tractor gauge cluster. It is built once and stays switched off: nothing in
-    /// the game drives yet, so <see cref="IsDriving"/> is never true in Phase 0.
+    /// The tractor gauge cluster. Built once and switched off until the player gets on
+    /// a machine; <see cref="MadVoxel.Vehicles.VehicleWorld"/> calls <see cref="Mount"/>
+    /// and feeds <see cref="SetReadout"/> every frame while they are driving.
     ///
-    /// It exists now, disabled, for one reason - the HUD is mode-aware by construction,
-    /// and a mode with no layer behind it is a mode that quietly rots. When the tractor
-    /// lands, Phase 1 calls <see cref="Mount"/> and feeds <see cref="SetReadout"/>; no
-    /// HUD surgery, no second layout pass.
+    /// It was built before anything drove, deliberately: the HUD is mode-aware by
+    /// construction, and a mode with no layer behind it is a mode that quietly rots.
+    /// When the tractor landed it needed no HUD surgery and no second layout pass.
     ///
     /// Claim Slate rules still bind here. No lime FS25 widgets: the cluster is the same
     /// oil-black plate with sodium-gold needles, and it never appears on foot.
@@ -25,7 +25,7 @@ namespace MadVoxel.UI
         ClaimSlate.Gauge _fuel, _hopper;
         Image _implementLamp;
 
-        /// <summary>True only while the player is actually on a machine. Phase 1.</summary>
+        /// <summary>True only while the player is actually on a machine.</summary>
         public bool IsDriving { get; private set; }
 
         public void Build(Transform parent)
@@ -72,7 +72,7 @@ namespace MadVoxel.UI
             _root.gameObject.SetActive(false);
         }
 
-        /// <summary>Phase 1 entry point: the player got on a machine.</summary>
+        /// <summary>The player got on a machine.</summary>
         public void Mount()
         {
             IsDriving = true;

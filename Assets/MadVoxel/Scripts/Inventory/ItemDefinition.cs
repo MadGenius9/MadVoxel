@@ -61,6 +61,10 @@ namespace MadVoxel.Inventory
         public Building.StructureDefinition placeableStructure;
         [Tooltip("Rust-style snap piece. Always the Twig tier; the hammer upgrades from there.")]
         public Building.BuildPieceDefinition placeableBuildPiece;
+        [Tooltip("Deploys a drivable machine rather than a static piece.")]
+        public Vehicles.VehicleDefinition placeableVehicle;
+        [Tooltip("Hitches to the back of a machine instead of standing on the ground.")]
+        public Vehicles.ImplementDefinition hitchImplement;
 
         [Header("Consumable")]
         public float foodRestore;
@@ -83,7 +87,11 @@ namespace MadVoxel.Inventory
 
         public bool IsPlaceable
         {
-            get { return placeableBlock != null || placeableStructure != null || placeableBuildPiece != null; }
+            get
+            {
+                return placeableBlock != null || placeableStructure != null
+                    || placeableBuildPiece != null || placeableVehicle != null;
+            }
         }
 
         public bool HasDurability

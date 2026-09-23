@@ -47,6 +47,7 @@ namespace MadVoxel.Content
         public List<TraderDefinition> traders = new List<TraderDefinition>();
         public List<QuestDefinition> quests = new List<QuestDefinition>();
         public List<VehicleDefinition> vehicles = new List<VehicleDefinition>();
+        public List<ImplementDefinition> implements = new List<ImplementDefinition>();
 
         [Header("New world loadout")]
         public List<StartingStack> startingItems = new List<StartingStack>();

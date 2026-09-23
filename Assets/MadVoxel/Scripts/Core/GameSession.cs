@@ -15,6 +15,7 @@ using MadVoxel.World.Biomes;
 using MadVoxel.World.Fields;
 using MadVoxel.World.Weather;
 using MadVoxel.UI;
+using MadVoxel.Vehicles;
 using MadVoxel.World.Terrain;
 using UnityEngine;
 
@@ -36,6 +37,7 @@ namespace MadVoxel.Core
         StructureWorld _structures;
         BuildingWorld _buildings;
         FieldWorld _fields;
+        Vehicles.VehicleWorld _vehicles;
         BlockDamageTracker _blockDamage;
         WorldClock _clock;
         SkyController _sky;
@@ -256,6 +258,13 @@ namespace MadVoxel.Core
             _ui.CreateGameplayUi(_player, _clock, _horde, _content, _voxels, _streamer,
                                  _structures, _spawner, _weather, _colony, _heat,
                                  _seed, DeveloperToolsEnabled);
+
+            // Machines last of all: the yard needs the field grid to work and the HUD to
+            // report into, and the HUD only exists once the gameplay UI is up.
+            _vehicles = _worldRoot.AddComponent<VehicleWorld>();
+            _vehicles.Init(_content, _structures, _voxels, _fields, _player, _ui.Hud);
+            _player.Interaction.Vehicles = _vehicles;
+            _save.Vehicles = _vehicles;
 
             // The claim ring lives in the world, not on the visor, so it hangs off the
             // world root and dies with it.
@@ -563,6 +572,7 @@ namespace MadVoxel.Core
             _structures = null;
             _buildings = null;
             _fields = null;
+            _vehicles = null;
             _blockDamage = null;
             _clock = null;
             _sky = null;

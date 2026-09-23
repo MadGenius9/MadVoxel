@@ -149,6 +149,16 @@ namespace UnityEngine
         public float sqrMagnitude { get { return x * x + y * y + z * z; } }
         public float magnitude { get { return Mathf.Sqrt(sqrMagnitude); } }
         public void Normalize() { float m = magnitude; if (m > 1e-6f) { x /= m; y /= m; z /= m; } }
+        public Vector3 normalized { get { var v = this; v.Normalize(); return v; } }
+        public static Vector3 Lerp(Vector3 a, Vector3 b, float t)
+        {
+            t = Mathf.Clamp01(t);
+            return new Vector3(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t);
+        }
+        public static Vector3 LerpUnclamped(Vector3 a, Vector3 b, float t)
+        {
+            return new Vector3(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t);
+        }
         public static Vector3 operator -(Vector3 a, Vector3 b) { return new Vector3(a.x - b.x, a.y - b.y, a.z - b.z); }
         public static Vector3 operator +(Vector3 a, Vector3 b) { return new Vector3(a.x + b.x, a.y + b.y, a.z + b.z); }
         public static Vector3 operator *(Vector3 a, float f) { return new Vector3(a.x * f, a.y * f, a.z * f); }
