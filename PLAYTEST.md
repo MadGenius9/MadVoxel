@@ -1,6 +1,6 @@
 # What to try first
 
-None of what follows has ever been rendered. It compiles, and 1,100 headless checks say
+None of what follows has ever been rendered. It compiles, and 1,128 headless checks say
 the logic is right, but the tests are silent on whether anything *looks* right, sits at a
 sensible height, or is reachable with the camera where it is. If something looks wrong,
 it probably is — believe your eyes over this file.
@@ -131,6 +131,26 @@ there is no counter nearby.
   no health and the interaction probe was only looking for things that do.
 - Contract lines in the top right of the HUD, going sage when one is ready.
 - The price board's `SHORT` / `LOCKED` wording rather than just a greyed button.
+
+---
+
+## 6b. A blood moon, and whether your wall matters (10 minutes)
+
+`F7` starts one. Craft a bow first — see step 2b.
+
+1. Build a wall or dig a trench around your cupboard, and deliberately leave one gap.
+2. Start a blood moon and watch where they come from.
+
+**Expected:** most of the wave funnels through the gap rather than spreading evenly, and
+the blood moon line reads `BREACHED` while an unchewed way in exists. Seal the gap and
+they should switch to the thinnest part of the wall instead of the nearest.
+
+**Watch for:**
+- Zombies stopping *at* the gap instead of coming through it. They take the lane first
+  and the base second; if they mill around on the ring, that handoff is broken.
+- The lane sampling reading a dug trench as a wall. It probes at chest height precisely so
+  a trench you can drop into does not count — if they refuse to enter a trench, that check
+  is measuring the wrong height.
 
 ---
 

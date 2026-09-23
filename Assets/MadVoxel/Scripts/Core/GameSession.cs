@@ -227,6 +227,7 @@ namespace MadVoxel.Core
             // Heat is read by the horde and the wanderer cap, so it is handed over once
             // both of them exist rather than before they do.
             _horde.Heat = _heat;
+            _horde.Voxels = _voxels;
             _spawner.Heat = _heat;
 
             // The colony last: it asks every other system questions and answers none,

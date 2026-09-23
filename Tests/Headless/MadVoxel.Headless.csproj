@@ -43,6 +43,7 @@
     <Compile Include="FurnaceTests.cs" />
     <Compile Include="ProgressionTests.cs" />
     <Compile Include="BallisticsTests.cs" />
+    <Compile Include="SiegeTests.cs" />
     <Compile Include="FluidTests.cs" />
   </ItemGroup>
 
@@ -95,6 +96,7 @@
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Fields/FieldCoverMesh.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/AI/ZombieDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Horde/HordeSchedule.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Horde/SiegeApproach.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Horde/BloodMoonClock.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/UI/ClaimSlate.Palette.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/UI/CompassMath.cs" />

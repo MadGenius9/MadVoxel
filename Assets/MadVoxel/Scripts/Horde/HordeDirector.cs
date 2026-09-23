@@ -39,6 +39,21 @@ namespace MadVoxel.Horde
 
         public event Action<bool> BloodMoonChanged;
 
+        /// <summary>The terrain, so a wave can tell a ramp from a wall. Set by the session.</summary>
+        public MadVoxel.World.Terrain.TerrainWorld Voxels { get; set; }
+
+        readonly System.Collections.Generic.List<SiegeLane> _lanes = new System.Collections.Generic.List<SiegeLane>();
+
+        /// <summary>The ways in the last wave found, for the readout and the tests.</summary>
+        public System.Collections.Generic.IReadOnlyList<SiegeLane> Lanes { get { return _lanes; } }
+
+        /// <summary>
+        /// True when the last wave found a way in that needs no chewing. Worth telling
+        /// the player: you can hear a horde walking in through a door you left open,
+        /// and there is no satisfying version of finding that out at dawn.
+        /// </summary>
+        public bool IsBreached { get { return _lanes.Count > 0 && SiegeApproach.HasOpenLane(_lanes); } }
+
         public void Init(HordeSchedule schedule, WorldClock clock, SpawnDirector spawner,
                          StructureWorld structures, BuildingWorld buildings, SkyController sky,
                          PlayerProgression progression, Transform player)
@@ -148,6 +163,10 @@ namespace MadVoxel.Horde
                 baseSize += _buildings.CountNear(siege, 30f);
             }
 
+            // Where they come from, before how many. A wall that moves the pressure
+            // somewhere else is the whole point of building one.
+            PlanApproach(siege);
+
             int level = _progression != null ? _progression.Level : 1;
             int target = _schedule.WaveSize(level, baseSize);
             if (Heat != null) target += ClaimHeatMath.HordeBonus(Heat.Heat, target);
@@ -164,8 +183,72 @@ namespace MadVoxel.Horde
                 if (zombie == null) continue;
 
                 zombie.HasSiegeTarget = true;
-                zombie.SiegeTarget = siege;
+                zombie.SiegeTarget = LaneTargetFor(siege);
+                zombie.SiegeCentre = siege;
             }
+        }
+
+        // ------------------------------------------------------------------ approach
+
+        /// <summary>
+        /// Samples the ring around the base and scores each way in by what stands
+        /// between it and the middle.
+        /// </summary>
+        void PlanApproach(Vector3 siege)
+        {
+            float radius = 26f;
+            if (_structures != null && _structures.Claims.Any)
+            {
+                var claim = _structures.Claims.Nearest(siege);
+                if (claim != null) radius = Mathf.Max(8f, claim.Radius);
+            }
+
+            SiegeApproach.Plan(siege, radius, SiegeApproach.DefaultLanes, CountBlocking, _lanes);
+        }
+
+        /// <summary>
+        /// Walks a metre at a time from outside the base to the middle, counting the
+        /// steps where something solid stands at chest height.
+        ///
+        /// Chest height rather than the ground is deliberate: a trench the player dug
+        /// is not an obstacle to a zombie that can drop into it, but the wall they
+        /// raised is. What this measures is "could I walk this line", which is the
+        /// question a horde actually has.
+        /// </summary>
+        int CountBlocking(Vector3 from, Vector3 to)
+        {
+            if (Voxels == null) return 0;
+
+            Vector3 run = to - from;
+            run.y = 0f;
+
+            float distance = run.magnitude;
+            if (distance < 1f) return 0;
+
+            Vector3 step = run / distance;
+            int blocked = 0;
+
+            for (float travelled = 0f; travelled < distance; travelled += 1f)
+            {
+                Vector3 at = from + step * travelled;
+                int ground = Voxels.GetSurfaceY(Mathf.FloorToInt(at.x), Mathf.FloorToInt(at.z));
+
+                // One block above the surface is where a body would be. Solid there and
+                // the line is walled, not merely uneven.
+                if (Voxels.IsSolid(Mathf.FloorToInt(at.x), ground + 1, Mathf.FloorToInt(at.z))) blocked++;
+            }
+
+            return blocked;
+        }
+
+        /// <summary>
+        /// A point on the ring for one zombie to head for, chosen by lane weight. They
+        /// spread across the ways in rather than all piling onto the same wall.
+        /// </summary>
+        Vector3 LaneTargetFor(Vector3 fallback)
+        {
+            int index = SiegeApproach.Pick(_lanes, UnityEngine.Random.value);
+            return index >= 0 ? _lanes[index].Point : fallback;
         }
 
         ZombieDefinition PickDefinition(int index, int total)

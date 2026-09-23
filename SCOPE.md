@@ -118,7 +118,7 @@ resolver and nine call sites — and changes nothing about the Phase 0 loop.
 | **Mad Colony** | **Live.** A charter on a board, up to three people with four jobs, needs, morale and a walk-out, fed and watered from the base you built. | The recruit event and trader quest that should bring the first person; pathfinding; The Marker. |
 | **Furnace** | **Live.** A deployable that smelts unattended on the world clock, one shared inventory for ore, fuel and output, burning cheapest fuel first. Catches up across a save. The campfire smelts stay as the way in. | Steel, and a bellows or a powered furnace that runs faster. |
 | **Ranged combat** | **Live.** A bow you draw and loose, craftable in the first hour. Draw decides speed and damage; arrows sweep rather than teleport, land, and are half recoverable. Stone and iron heads. | A crossbow, a gun tier, and headshots. |
-| **Horde** | Live, and already budgets on base footprint. | Waves that actively exploit an open dig rather than pathing at the cupboard. |
+| **Horde** | **Live.** Budgets on base footprint and heat, and reads the approach: twelve scored lanes round the claim, a wave spread across them by how walkable each is, each zombie given a way in before the base itself. | Ladders, and zombies that dig rather than route around. |
 
 ---
 
@@ -229,5 +229,7 @@ Every step has an implementation behind it. The test itself needs a Unity editor
 
 1. **Script mods** — a sandboxed hook layer on top of the data loader. Everything else on
    this list is content; this is the one that changes what mods can be.
-2. **Horde that reads the dig** — prefer an open ramp or an unfinished wall over chewing
-   the strongest face.
+2. **Field crop cover at distance** — the cover draws within 96 m; a big farm seen from a
+   hill is still bare ground past that.
+3. **Zombies that dig** — they route around a wall now, and route well. The next step is
+   the ones that go through it rather than round.

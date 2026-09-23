@@ -924,10 +924,14 @@ namespace MadVoxel.UI
         {
             if (_horde == null) return;
 
-            string line = _horde.CountdownLine;
-            _hordeLabel.text = line;
-
             bool active = _horde.IsBloodMoonActive;
+
+            // One word on the line that is already there, not a second indicator. The
+            // compass pips say which way; this says whether the wall is doing anything.
+            string line = _horde.CountdownLine;
+            if (active && _horde.IsBreached) line += "   BREACHED";
+
+            _hordeLabel.text = line;
             _hordeLabel.color = active ? ClaimSlate.Blood : ClaimSlate.OxideRust;
 
             if (_hordeRim.gameObject.activeSelf != active) _hordeRim.gameObject.SetActive(active);

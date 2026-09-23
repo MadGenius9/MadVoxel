@@ -40,6 +40,7 @@ namespace MadVoxel.Headless
             FurnaceTests.Run(ContentTests.Database);
             ProgressionTests.Run(ContentTests.Database);
             BallisticsTests.Run(ContentTests.Database);
+            SiegeTests.Run();
             PowerTests.Run();
             FluidTests.Run();
 

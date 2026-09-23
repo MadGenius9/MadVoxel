@@ -75,7 +75,7 @@ dimmer colour. The board's founding checklist uses `[X]` and `[ ]`, not green an
 | **Garden look-at** | Crosshair on a farm plot | `POTATO   STAGE 3/4   6H`, or `POTATO   READY` with `[E] HARVEST`. |
 | **Build look-at** | Crosshair on a snap piece | `WALL   STONE   84%`, then `STABLE` or `UNSUPPORTED`, then the upgrade cost against what you carry. |
 | **Fields on foot** | — | Nothing. The field grid gets no overlay until there is a machine on it. |
-| **Horde** | Blood moon active | Four oxidised edges (never a full-screen wash), blood threat ticks on the compass, and **one line**: `BLOOD MOON  00:18`. No title card, no skull. |
+| **Horde** | Blood moon active | Four oxidised edges (never a full-screen wash), blood threat ticks on the compass, and **one line**: `BLOOD MOON  00:18`, gaining `BREACHED` when the wave found a way in that needs no chewing. One word on a line that already exists, not a second indicator — the compass pips already say which way. No title card, no skull. |
 | **Utilities look-at** | Crosshair on a device or fitting | The device answers for itself: `GEN BANK  31/100 W  FUEL 7L`, `RELAY  30M`, `PUMP  NEEDS 18 W`, `TANK  412 / 800 L`, `TAP  FROZEN`. Rust when it is broken, frozen or unpowered. |
 | **Wiring** | Wire tool in hand with a line started | `RUNNING A LINE   REACH 30M   RMB TO DROP`, which takes the look-at line because it is the only thing you are thinking about. |
 | **Trader counter** | `E` at a stall | Two tabs, GOODS and CONTRACTS, sharing the same two columns. |

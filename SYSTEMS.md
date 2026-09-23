@@ -470,9 +470,44 @@ on it.
 
 ---
 
+## Where a horde comes from
+
+Every horde zombie used to walk at the same point — the tool cupboard — and chew through
+whatever happened to be in the way. The strongest wall took the same beating as the
+doorway ten metres along it, and nothing the player built or dug changed where the
+pressure landed. **A base was a health pool, not a shape.**
+
+Now the ring around a claim is sampled into twelve lanes, each scored by walking a metre
+at a time from outside to the middle and counting where something solid stands at chest
+height. Chest height rather than ground level is the whole trick: a trench you dug is not
+an obstacle to a zombie that can drop into it, but a wall you raised is. What it measures
+is "could I walk this line", which is the question a horde actually has.
+
+A wave is then spread across the lanes by weight, and each zombie is given its lane first
+and the base second, so it funnels through the gap rather than walking at the nearest
+wall.
+
+The numbers this produces, from the checks:
+
+- Leave a doorway and **70%** of the wave comes through it — but not all of it, so a gap
+  is never a safe funnel to stand in.
+- Wall one side thicker than the other and **90%** goes at the thin side. That is what
+  makes upgrading a particular wall a decision rather than a chore.
+- Leave a trench with one bridge and they come over the bridge.
+- An unwalled base is approached from every side equally, rather than the horde inventing
+  a preference out of floating-point noise.
+
+**No wall is ever thick enough to make a lane impossible.** A sealed base is still
+attacked, at its thinnest point, slowly — because a base you can turtle in forever is a
+base with nothing to defend. The blood moon line says `BREACHED` when a way in needs no
+chewing at all: you can hear a horde walking through a door you left open, and there is no
+satisfying version of finding that out at dawn.
+
+---
+
 ## What the headless checks cover
 
-1100 checks, all passing. The new ones:
+1128 checks, all passing. The new ones:
 
 - **Biomes** — spawn is always farmland; no shelf near spawn but shelf at the edge; all
   five regions appear; the same seed repaints the same map; borders smear; the regions
@@ -495,6 +530,11 @@ on it.
 - **Heat** — the floor, that Quiet Claim shaves it but cannot silence a farm, that a
   blackout is felt within the hour, that it settles at the floor and caps at 100, that
   dawn pulls harder, that an idle trap is silent.
+- **Siege approach** — that every lane lands on the ring and none share a spot; that a
+  clear lane is worth several walled ones but a wall is not ignored; that no wall makes a
+  lane impossible, so turtling cannot work; that a doorway draws most but not all of a
+  wave; that the thin side of an uneven wall takes 90% of it; that they come over the
+  bridge rather than through the trench; and that an open base is approached evenly.
 - **Ballistics** — that a level shot never climbs; that drop is quadratic in distance;
   that range *and* drop are identical at 30 fps and 120, which Euler integration would
   not give; that the flown drop matches the drop the readout predicts, since they are the

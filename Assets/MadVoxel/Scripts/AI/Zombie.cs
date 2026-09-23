@@ -23,7 +23,21 @@ namespace MadVoxel.AI
         public ZombieDefinition Definition { get; private set; }
         public bool IsHordeUnit { get; set; }
         public bool HasSiegeTarget { get; set; }
+
+        /// <summary>
+        /// Where it is heading right now. A horde unit is given a way in first and the
+        /// base second, so it funnels through the gap instead of walking at the nearest
+        /// wall - which is the difference between a base being a shape and a health pool.
+        /// </summary>
         public Vector3 SiegeTarget { get; set; }
+
+        /// <summary>Where the lane leads. Taken up once the lane itself is reached.</summary>
+        public Vector3 SiegeCentre { get; set; }
+
+        /// <summary>Metres from a lane before it counts as reached.</summary>
+        const float LaneReached = 3f;
+
+        bool _throughLane;
 
         /// <summary>zombie, killer. The session awards XP and loot.</summary>
         public static event Action<Zombie, GameObject> Died;
@@ -157,6 +171,19 @@ namespace MadVoxel.AI
 
             if (HasSiegeTarget)
             {
+                // Through the gap, now for the base itself.
+                if (!_throughLane)
+                {
+                    Vector3 toLane = SiegeTarget - transform.position;
+                    toLane.y = 0f;
+
+                    if (toLane.sqrMagnitude <= LaneReached * LaneReached)
+                    {
+                        _throughLane = true;
+                        SiegeTarget = SiegeCentre;
+                    }
+                }
+
                 _mode = Mode.Siege;
                 return SiegeTarget;
             }
