@@ -18,7 +18,7 @@ without a Unity editor available. Everything was verified two ways instead:
 
 1. **Compile check** against real Unity reference assemblies (2021.3 — the newest on
    NuGet, while the project targets Unity 6, so API drift between them is a real gap).
-2. **1,161 headless checks** that run the *actual* gameplay sources against an executable
+2. **1,193 headless checks** that run the *actual* gameplay sources against an executable
    `UnityEngine` shim in `Tests/Headless/`.
 
 Those caught eight genuine bugs a compile could not see. They cannot tell you whether
@@ -34,7 +34,7 @@ the tests.** The tests are strong on logic and silent on everything else.
 Always, before saying anything is done:
 
 ```bash
-cd Tests/Headless && dotnet run      # 1161 checks, exit 0 when clean
+cd Tests/Headless && dotnet run      # 1193 checks, exit 0 when clean
 ```
 
 If .NET is missing, `dotnet` is a free install and worth it — this suite is the only
@@ -46,6 +46,10 @@ that already happened once:
 - **Obtainability** — every tool, placeable and ingredient must be reachable from a
   recipe, trader, quest, drop, crop or the starting kit. A bulk edit once silently
   deleted four recipes and every other check still passed.
+- **Save schema** — every save record is pinned against a written-down field list, and
+  checked for the things `JsonUtility` silently refuses to write (properties, readonly
+  fields, unserialisable types). Renaming a save field makes every existing world read
+  that value as a default; this makes that a decision, not an accident.
 - **Progression** — stronger than obtainability, and added after it missed something:
   it walks the recipe tree from what the *world* gives you with traders excluded. A
   trader should be a shortcut, never the gate. This caught the whole field-machine layer

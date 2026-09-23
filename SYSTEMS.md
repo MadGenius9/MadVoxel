@@ -514,7 +514,7 @@ satisfying version of finding that out at dawn.
 
 ## What the headless checks cover
 
-1161 checks, all passing. The new ones:
+1193 checks, all passing. The new ones:
 
 - **Biomes** — spawn is always farmland; no shelf near spawn but shelf at the edge; all
   five regions appear; the same seed repaints the same map; borders smear; the regions
@@ -537,6 +537,14 @@ satisfying version of finding that out at dawn.
 - **Heat** — the floor, that Quiet Claim shaves it but cannot silence a farm, that a
   blackout is felt within the hour, that it settles at the floor and caps at 100, that
   dawn pulls harder, that an idle trap is silent.
+- **The save schema**, pinned. Saves go through `JsonUtility`, which is quiet in a way
+  that matters: it writes public instance fields and silently ignores everything else.
+  Turn a save field into a property, mark it readonly, or rename it, and the data stops
+  being written — nothing throws, nothing logs, and the world comes back missing
+  something only on a reload. Every record is checked for serialisability and pinned
+  against a written-down field list, so changing the format is a decision rather than a
+  side-effect of a rename. The check was verified by renaming a field and watching it
+  fail from both sides.
 - **Mods reaching the new systems** — builds an implement, a machine and a crossbow from
   JSON and asserts they come out working. The promise mods make here is "a new crop grows
   because the game knows how to grow one", and that promise decays silently: every system

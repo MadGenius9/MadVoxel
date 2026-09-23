@@ -44,6 +44,7 @@
     <Compile Include="ProgressionTests.cs" />
     <Compile Include="BallisticsTests.cs" />
     <Compile Include="SiegeTests.cs" />
+    <Compile Include="SaveSchemaTests.cs" />
     <Compile Include="FluidTests.cs" />
   </ItemGroup>
 
