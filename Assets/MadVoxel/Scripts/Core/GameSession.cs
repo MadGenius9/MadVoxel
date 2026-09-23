@@ -38,6 +38,7 @@ namespace MadVoxel.Core
         BuildingWorld _buildings;
         FieldWorld _fields;
         Vehicles.VehicleWorld _vehicles;
+        FieldCoverView _cover;
         BlockDamageTracker _blockDamage;
         WorldClock _clock;
         SkyController _sky;
@@ -261,6 +262,10 @@ namespace MadVoxel.Core
 
             // Machines last of all: the yard needs the field grid to work and the HUD to
             // report into, and the HUD only exists once the gameplay UI is up.
+            // The standing crop. It needs the player to know what is near enough to draw.
+            _cover = _worldRoot.AddComponent<FieldCoverView>();
+            _cover.Init(_fields, _voxels, _clock, _player.transform);
+
             _vehicles = _worldRoot.AddComponent<VehicleWorld>();
             _vehicles.Init(_content, _structures, _voxels, _fields, _player, _ui.Hud);
             _player.Interaction.Vehicles = _vehicles;
@@ -573,6 +578,7 @@ namespace MadVoxel.Core
             _buildings = null;
             _fields = null;
             _vehicles = null;
+            _cover = null;
             _blockDamage = null;
             _clock = null;
             _sky = null;

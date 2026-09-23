@@ -37,6 +37,7 @@
     <Compile Include="WorldTests.cs" />
     <Compile Include="ColonyTests.cs" />
     <Compile Include="FieldMachineTests.cs" />
+    <Compile Include="FieldCoverTests.cs" />
     <Compile Include="FluidTests.cs" />
   </ItemGroup>
 
@@ -84,6 +85,7 @@
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Biomes/BiomeDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Fields/FieldCell.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Fields/FieldGrid.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Fields/FieldCoverMesh.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/AI/ZombieDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Horde/HordeSchedule.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Horde/BloodMoonClock.cs" />

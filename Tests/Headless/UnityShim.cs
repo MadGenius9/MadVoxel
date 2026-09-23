@@ -169,6 +169,14 @@ namespace UnityEngine
             return new Vector3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
         }
         public static float Distance(Vector3 a, Vector3 b) { return (a - b).magnitude; }
+
+        // Unity compares vectors approximately rather than bitwise, because float error
+        // makes exact equality useless for positions. Match that, or a shim-only test
+        // passes where the engine would not.
+        public static bool operator ==(Vector3 a, Vector3 b) { return (a - b).sqrMagnitude < 1e-10f; }
+        public static bool operator !=(Vector3 a, Vector3 b) { return !(a == b); }
+        public override bool Equals(object other) { return other is Vector3 && this == (Vector3)other; }
+        public override int GetHashCode() { return x.GetHashCode() ^ (y.GetHashCode() << 2) ^ (z.GetHashCode() >> 2); }
         public override string ToString() { return string.Format("({0},{1},{2})", x, y, z); }
     }
 

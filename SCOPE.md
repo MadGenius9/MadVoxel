@@ -107,7 +107,8 @@ resolver and nine call sites — and changes nothing about the Phase 0 loop.
 | **Traders** | 2 outposts standing in the world, with stock lists, price multipliers, reputation gates, restock interval and currency. | Trader NPC, shop UI, buy/sell, restock, reputation. |
 | **Quests** | 3 contracts (fetch 20 scrap, clear 12 shamblers, survive 2 nights) with XP, reputation and item rewards. | Accept/track/turn-in, the journal, and a mining contract. |
 | **Vehicles** | **Live.** A tractor you craft, set down and drive, on a character controller so a dug ramp behaves; fuel burn that Economiser actually changes; damage, wrecking and save/reload where it was parked. The Scrap Buggy shares the rig. | Seats for more than one, the on-board storage crate, and a machine that reacts to being rammed. |
-| **Field machines** | **Live.** Plough, cultivator, seed drill and harvester, hitched from the hand and raised or lowered on a key; a swept swath that cannot stripe a field; hopper accounting that refuses to sow what it cannot pay for; tipping litres into the grain bin; Agronomist's field yield. | A field irrigator, and crop cover you can see from the seat. |
+| **Field machines** | **Live.** Plough, cultivator, seed drill and harvester, hitched from the hand and raised or lowered on a key; a swept swath that cannot stripe a field; hopper accounting that refuses to sow what it cannot pay for; tipping litres into the grain bin; Agronomist's field yield. | A field irrigator. |
+| **Field cover** | **Live.** The standing crop, meshed per 16 m patch, growing in eight visible steps and going gold on the clock. Remeshed only when something changes. | Wind, and a second tilled-soil block so cultivated ground reads differently from plowed. |
 | **Electricity** | **Live.** Generator, battery and solar banks, relays, switches and splitters, lights, a fridge, a blade trap and a fence post, all on one graph with a wire tool, a predictable brown-out and a real fuel economy. | A dart trap, a turret, and the timer-relay puzzles this pass deliberately skipped. |
 | **Water** | **Live.** A dug well on a water-table block, electric pump, pipes, tanks, barrels, taps and plot sprinklers on one fluid graph, with breaks, freezes and drought. | A field irrigator on the FS-style cells, and surface ponds as a source. |
 | **Weather** | **Live.** Six states rolled per region, turning dials on the pump, the panels, the soil, barrels, morale and crops. | Seasons with their own economies. |
@@ -168,10 +169,9 @@ executed. Worlds record which mods built them and warn on load if one is missing
   undermined; overhanging *terrain* does not fall.
 - **POIs are block stamps**, not authored prefabs — no interiors, loot containers or
   trader NPCs yet.
-- **Field crops have no visuals.** Plowing shows as tilled soil, but a sown or growing
-  field cell looks the same as a plowed one. Rendering crop cover across thousands of
-  cells needs an instanced mesh pass. This is the biggest gap in the field layer now
-  that the machines work: you can sow an acre and have nothing to look at.
+- **Cultivated ground looks like plowed ground.** The crop cover shows everything from
+  sowing onwards, but the second tillage pass has no visual of its own — you have to
+  remember whether you cultivated a strip. The block would need a second tilled variant.
 - **No water or fertiliser gameplay.** The cell fields exist and fertility does fall
   with each crop, but nothing adds it back yet.
 - **Farm snap pieces are limited to the fence.** Barn, shed, pen and greenhouse frame
@@ -226,12 +226,10 @@ Every step has an implementation behind it. The test itself needs a Unity editor
 
 ## Next milestone
 
-1. **Field crop cover** — an instanced mesh pass so a sown acre looks sown. The field
-   machines now make acres, and an acre you cannot see is the weakest thing in the loop.
-2. **Trader runtime** — NPC in the strongroom, shop UI, restock, reputation. Selling
+1. **Trader runtime** — NPC in the strongroom, shop UI, restock, reputation. Selling
    what is in the grain bin is what makes the field layer pay.
-3. **Quest flow** — accept, track, turn in; add the mining contract.
-4. **Furnace** — a proper smelter, and the iron economy that feeds metal tier.
-5. **Script mods** — a sandboxed hook layer on top of the data loader.
-6. **Horde that reads the dig** — prefer an open ramp or an unfinished wall over chewing
+2. **Quest flow** — accept, track, turn in; add the mining contract.
+3. **Furnace** — a proper smelter, and the iron economy that feeds metal tier.
+4. **Script mods** — a sandboxed hook layer on top of the data loader.
+5. **Horde that reads the dig** — prefer an open ramp or an unfinished wall over chewing
    the strongest face.

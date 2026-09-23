@@ -34,6 +34,7 @@ namespace MadVoxel.Headless
             WorldTests.Run(db);
             ColonyTests.Run(db);
             FieldMachineTests.Run(ContentTests.Database);
+            FieldCoverTests.Run();
             PowerTests.Run();
             FluidTests.Run();
 

@@ -262,11 +262,39 @@ Saved state is the machine's position, fuel and health, plus the implement hitch
 and what is in its hopper. It comes back raised, deliberately — a machine that resumed
 mid-furrow would plough the line between where it was saved and wherever it settles.
 
+### Seeing it
+
+A worked field used to be invisible: plowing turned the block to tilled soil, but a sown
+cell, a growing cell and a ripe cell all looked identical. Once a tractor could sow an
+acre in a minute that was the weakest thing in the loop, so `FieldCoverView` draws the
+standing crop.
+
+It is meshed, not built from objects. A garden plot makes five boxes per plot and destroys
+them on every change; the same approach over ten thousand cells would be tens of thousands
+of transforms. Instead: one mesh per 16 m patch, one sub-mesh per crop-and-ripeness, two
+crossed quads per plant, and both faces of each quad drawn with an upward normal — URP's
+Lit shader is single-sided, and a plant lit from above reads far better than one whose
+back is black.
+
+Two decisions make it cheap enough to leave running:
+
+- **Bucketed height.** Growth is derived from the clock, so a plant's true height changes
+  every frame, and meshing that would rebuild every patch of every field forever. Height
+  is quantised into eight steps, so a patch settles until a plant crosses into the next
+  one — which is also the point at which the change is visible.
+- **Signatures, not timers.** A patch is remeshed only when a number derived from what is
+  in it moves. Sowing, ripening, harvesting and digging the ground out from under a crop
+  all move it; a frame passing does not.
+
+Ripeness is read from the hours since sowing rather than the stored cell state, because
+the state only advances when something touches the cell. A field therefore goes visibly
+gold on time whether or not anyone walked past it.
+
 ---
 
 ## What the headless checks cover
 
-794 checks, all passing. The new ones:
+841 checks, all passing. The new ones:
 
 - **Biomes** — spawn is always farmland; no shelf near spawn but shelf at the edge; all
   five regions appear; the same seed repaints the same map; borders smear; the regions
@@ -289,6 +317,14 @@ mid-furrow would plough the line between where it was saved and wherever it sett
 - **Heat** — the floor, that Quiet Claim shaves it but cannot silence a farm, that a
   blackout is felt within the hour, that it settles at the floor and caps at 100, that
   dawn pulls harder, that an idle trap is silent.
+- **Field cover** — that patches tile correctly through negative coordinates (naive
+  integer division puts the cell west of the origin in the origin patch and overlays two
+  fields on the same ground); that a newly sown cell still shows a shoot, so the drill
+  gives feedback; that bare ground emits nothing; that both faces of every quad are drawn;
+  that a plant stands on the surface rather than in it and its jitter keeps it in its own
+  cell; that the same cell always meshes identically after a reload; and the one that
+  matters — a crop growing across a bucket boundary remeshes once, not twenty times, and
+  exactly eight times over its whole life.
 - **Field machines** — that a stationary implement still covers its full width and hangs
   square across the heading; that a fast sweep works contiguous rows rather than a comb;
   that the 12 m cap trims the near end and not the far one; the whole four-pass cycle over
