@@ -485,6 +485,11 @@ namespace MadVoxel.Content
             Drop(blocks[BlockIds.PineLog], items[ItemIds.WoodLog], 1, 2);
             Drop(blocks[BlockIds.PineNeedles], items[ItemIds.PlantFibre], 0, 2);
             Drop(blocks[BlockIds.ScrapHeap], items[ItemIds.ScrapMetal], 2, 5);
+            // The only source of engines that is not a trader. Every vehicle in the game
+            // needs one, and leaving them behind a reputation tier put the whole field
+            // machine layer behind a shop you had to grind to reach. "Salvaged Engine"
+            // should come out of a scrap heap, and now it does - rarely.
+            SecondDrop(blocks[BlockIds.ScrapHeap], items[ItemIds.EngineBlock], 0.07f, 1, 1);
             Drop(blocks[BlockIds.Concrete], items[ItemIds.Stone], 2, 3);
 
             // Forage: fibre or produce in hand, and sometimes the seed that starts a garden.
@@ -679,6 +684,12 @@ namespace MadVoxel.Content
 
             list.Add(Recipe("madvoxel:smelt_glass", it[ItemIds.BlockGlass], 2, CraftStation.Campfire, 4f,
                 Ing(it[ItemIds.Sand], 3), Ing(it[ItemIds.Coal], 1)));
+
+            // A wheel is scrap and rag around a rim. Making it craftable rather than
+            // trader-only is what keeps a tractor a building project instead of a
+            // shopping trip.
+            list.Add(Recipe("madvoxel:craft_wheel", it[ItemIds.Wheel], 1, CraftStation.Workbench, 4f,
+                Ing(it[ItemIds.ScrapMetal], 12), Ing(it[ItemIds.Cloth], 4)));
 
             // The forge. Same ore for the same metal, but no coal per batch: the
             // furnace burns whatever is in it over time, so a single lump of coal
@@ -1078,7 +1089,7 @@ namespace MadVoxel.Content
             vance.stock.Add(Stock(it[ItemIds.IronIngot], 20, 1.6f, 1));
             vance.stock.Add(Stock(it[ItemIds.IronPickaxe], 1, 1.9f, 2));
             vance.stock.Add(Stock(it[ItemIds.Wheel], 4, 1.7f, 2));
-            vance.stock.Add(Stock(it[ItemIds.EngineBlock], 1, 2.2f, 3));
+            vance.stock.Add(Stock(it[ItemIds.EngineBlock], 1, 2.2f, 2));
             vance.stock.Add(Stock(it[ItemIds.GasCan], 10, 1.5f, 1));
             vance.stock.Add(Stock(it[ItemIds.SeedCorn], 24, 1.4f, 0));
             vance.stock.Add(Stock(it[ItemIds.SeedWheat], 24, 1.4f, 0));

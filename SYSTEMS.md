@@ -421,7 +421,7 @@ only be made in a furnace.
 
 ## What the headless checks cover
 
-1026 checks, all passing. The new ones:
+1042 checks, all passing. The new ones:
 
 - **Biomes** — spawn is always farmland; no shelf near spawn but shelf at the edge; all
   five regions appear; the same seed repaints the same map; borders smear; the regions
@@ -444,6 +444,14 @@ only be made in a furnace.
 - **Heat** — the floor, that Quiet Claim shaves it but cannot silence a farm, that a
   blackout is felt within the hour, that it settles at the floor and caps at 100, that
   dawn pulls harder, that an idle trap is silent.
+- **Progression** — the one that found a real wall. It walks the whole recipe tree from
+  what the world hands you (block drops, crops, forage, the starting kit) with traders
+  deliberately excluded, and asks what cannot be built. Every vehicle needs a salvaged
+  engine and the only source was one trader's shelf at the third reputation tier — nine
+  hundred reputation, at a shop you largely earn reputation from by selling what the
+  vehicle would let you farm. Scrap heaps drop engines now, and wheels are craftable. It
+  also checks that a locked recipe's stated rank is the rank its skill actually unlocks it
+  at, and that no skill promises an unlock at a rank it does not have.
 - **Furnace** — that hours and seconds convert back and forth exactly, so an often-opened
   furnace cannot drift; that fuel burns cheapest-first and leaves the coal alone while
   there is wood; that a short burn takes only what was there; that each of the four limits

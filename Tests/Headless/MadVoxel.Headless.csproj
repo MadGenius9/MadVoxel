@@ -41,6 +41,7 @@
     <Compile Include="TraderTests.cs" />
     <Compile Include="QuestTests.cs" />
     <Compile Include="FurnaceTests.cs" />
+    <Compile Include="ProgressionTests.cs" />
     <Compile Include="FluidTests.cs" />
   </ItemGroup>
 
