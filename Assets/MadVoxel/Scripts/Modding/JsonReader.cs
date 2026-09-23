@@ -136,6 +136,16 @@ namespace MadVoxel.Modding
             return true;
         }
 
+        public bool ReadVector3(string key, ref Vector3 field)
+        {
+            var value = Take(key);
+            if (value == null) return false;
+            if (value.Kind != JsonKind.Array || value.Count < 3) { Bad(value, key, "three numbers like [1.5, 0.7, 2.6]"); return false; }
+
+            field = new Vector3((float)value[0].Number, (float)value[1].Number, (float)value[2].Number);
+            return true;
+        }
+
         public bool ReadEnum<T>(string key, ref T field) where T : struct
         {
             var value = Take(key);

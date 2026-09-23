@@ -514,7 +514,7 @@ satisfying version of finding that out at dawn.
 
 ## What the headless checks cover
 
-1146 checks, all passing. The new ones:
+1161 checks, all passing. The new ones:
 
 - **Biomes** — spawn is always farmland; no shelf near spawn but shelf at the edge; all
   five regions appear; the same seed repaints the same map; borders smear; the regions
@@ -537,6 +537,11 @@ satisfying version of finding that out at dawn.
 - **Heat** — the floor, that Quiet Claim shaves it but cannot silence a farm, that a
   blackout is felt within the hour, that it settles at the floor and caps at 100, that
   dawn pulls harder, that an idle trap is silent.
+- **Mods reaching the new systems** — builds an implement, a machine and a crossbow from
+  JSON and asserts they come out working. The promise mods make here is "a new crop grows
+  because the game knows how to grow one", and that promise decays silently: every system
+  added afterwards has fields nothing maps until someone does. A whole field-machine layer
+  and a bow both shipped before the loader had heard of either.
 - **Siege approach** — that every lane lands on the ring and none share a spot; that a
   clear lane is worth several walled ones but a wall is not ignored; that no wall makes a
   lane impossible, so turtling cannot work; that a doorway draws most but not all of a

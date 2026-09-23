@@ -70,6 +70,40 @@ namespace MadVoxel.Modding
             return true;
         }
 
+        public bool Vehicle(JsonValue entry, string key, ref MadVoxel.Vehicles.VehicleDefinition field)
+        {
+            string id; JsonValue node;
+            if (!TryId(entry, key, out id, out node)) return false;
+            if (id.Length == 0) { field = null; return true; }
+
+            var found = Find(_db.vehicles, id, v => v.stringId);
+            if (found == null) { Missing(key, id, node, "vehicle"); return false; }
+            field = found;
+            return true;
+        }
+
+        public bool Implement(JsonValue entry, string key, ref MadVoxel.Vehicles.ImplementDefinition field)
+        {
+            string id; JsonValue node;
+            if (!TryId(entry, key, out id, out node)) return false;
+            if (id.Length == 0) { field = null; return true; }
+
+            var found = Find(_db.implements, id, i => i.stringId);
+            if (found == null) { Missing(key, id, node, "implement"); return false; }
+            field = found;
+            return true;
+        }
+
+        static T Find<T>(System.Collections.Generic.List<T> list, string id, System.Func<T, string> idOf)
+            where T : class
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i] != null && idOf(list[i]) == id) return list[i];
+            }
+            return null;
+        }
+
         public bool Block(JsonValue entry, string key, ref BlockDefinition field)
         {
             string id; JsonValue node;

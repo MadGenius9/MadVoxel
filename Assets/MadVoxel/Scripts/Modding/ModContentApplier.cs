@@ -175,7 +175,7 @@ namespace MadVoxel.Modding
         static readonly string[] KnownKinds =
         {
             "blocks", "items", "recipes", "structures", "buildPieces",
-            "crops", "zombies", "perks", "quests", "traders", "vehicles"
+            "crops", "zombies", "perks", "quests", "traders", "vehicles", "implements"
         };
 
         static bool IsKnownKind(string kind)
@@ -199,6 +199,7 @@ namespace MadVoxel.Modding
                 case "quests": return Find(db.quests, id, q => q.stringId);
                 case "traders": return Find(db.traders, id, t => t.stringId);
                 case "vehicles": return Find(db.vehicles, id, v => v.stringId);
+                case "implements": return Find(db.implements, id, i => i.stringId);
             }
             return null;
         }
@@ -239,6 +240,7 @@ namespace MadVoxel.Modding
                 case "quests": return Add(db, db.quests, ScriptableObject.CreateInstance<QuestDefinition>(), id, d => d.stringId = id);
                 case "traders": return Add(db, db.traders, ScriptableObject.CreateInstance<TraderDefinition>(), id, d => d.stringId = id);
                 case "vehicles": return Add(db, db.vehicles, ScriptableObject.CreateInstance<VehicleDefinition>(), id, d => d.stringId = id);
+                case "implements": return Add(db, db.implements, ScriptableObject.CreateInstance<MadVoxel.Vehicles.ImplementDefinition>(), id, d => d.stringId = id);
                 case "perks":
                 {
                     if (db.perkTree == null)
@@ -310,6 +312,7 @@ namespace MadVoxel.Modding
                 case "quests": ModDefinitions.ReadQuest((QuestDefinition)target, r); break;
                 case "traders": ModDefinitions.ReadTrader((TraderDefinition)target, r); break;
                 case "vehicles": ModDefinitions.ReadVehicle((VehicleDefinition)target, r); break;
+                case "implements": ModDefinitions.ReadImplement((MadVoxel.Vehicles.ImplementDefinition)target, r); break;
             }
         }
 
@@ -359,6 +362,7 @@ namespace MadVoxel.Modding
                     case "quests": ModDefinitions.LinkQuest((QuestDefinition)link.Target, link.Entry, links); break;
                     case "traders": ModDefinitions.LinkTrader((TraderDefinition)link.Target, link.Entry, links); break;
                     case "vehicles": ModDefinitions.LinkVehicle((VehicleDefinition)link.Target, link.Entry, links); break;
+                    case "implements": ModDefinitions.LinkImplement((MadVoxel.Vehicles.ImplementDefinition)link.Target, link.Entry, links); break;
                     case "hordeSchedule": ModDefinitions.LinkHorde((HordeSchedule)link.Target, link.Entry, links); break;
                     case "startingItems": ModDefinitions.LinkStartingItems(database, link.Entry, links); break;
                 }

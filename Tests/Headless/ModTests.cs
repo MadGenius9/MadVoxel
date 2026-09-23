@@ -19,7 +19,118 @@ namespace MadVoxel.Headless
             ManifestRules();
             LoadOrdering();
             Pipeline();
+            NewSystems();
             ShippedExample();
+        }
+
+        /// <summary>
+        /// Everything the last few passes added, from a mod.
+        ///
+        /// The promise this project makes about mods is that a mod can add a crop
+        /// because the game already knows how to grow one. That promise decays quietly:
+        /// every system added afterwards has its own fields, and none of them are
+        /// reachable until someone maps them. A whole field-machine layer and a bow
+        /// shipped before the loader had heard of either.
+        /// </summary>
+        static void NewSystems()
+        {
+            Harness.Section("mods: the systems added since the loader was written");
+
+            var originalPath = Application.persistentDataPath;
+            var root = MakeModsRoot("newsystems");
+
+            try
+            {
+                WriteMod(root, "farmmod",
+                    "{\"id\":\"farmmod\",\"name\":\"Farm Mod\"}",
+                    @"{
+                      ""items"": [
+                        { ""id"": ""farmmod:subsoiler_item"", ""displayName"": ""Subsoiler"", ""maxStack"": 1 },
+                        { ""id"": ""farmmod:bolt"", ""displayName"": ""Bolt"", ""category"": ""Ammo"",
+                          ""maxStack"": 64, ""rangedDamage"": 24 },
+                        { ""id"": ""farmmod:crossbow"", ""displayName"": ""Crossbow"", ""category"": ""Weapon"",
+                          ""maxStack"": 1, ""rangedDamage"": 30, ""drawSeconds"": 1.6,
+                          ""minLaunchSpeed"": 30, ""maxLaunchSpeed"": 60, ""drawStamina"": 9,
+                          ""ammoItem"": ""farmmod:bolt"" },
+                        { ""id"": ""farmmod:hauler_item"", ""displayName"": ""Hauler Kit"", ""maxStack"": 1,
+                          ""placeableVehicle"": ""farmmod:hauler"" }
+                      ],
+                      ""vehicles"": [
+                        { ""id"": ""farmmod:hauler"", ""displayName"": ""Hauler"", ""maxSpeed"": 11,
+                          ""storageSlots"": 30, ""chassisSize"": [1.8, 0.9, 3.2],
+                          ""fuelItem"": ""madvoxel:gas_can"" }
+                      ],
+                      ""implements"": [
+                        { ""id"": ""farmmod:subsoiler"", ""displayName"": ""Subsoiler"", ""kind"": ""Plow"",
+                          ""workingWidth"": 6, ""speedMultiplier"": 0.4, ""fuelLitresPerHour"": 5,
+                          ""item"": ""farmmod:subsoiler_item"" }
+                      ]
+                    }");
+
+                var db = ContentDatabase.LoadOrBuild();
+                db.Build();
+
+                var log = new ModLog();
+                ModLoader.LoadAll(db, log);
+
+                Harness.Check(log.ErrorCount == 0,
+                    "a mod can define an implement, a machine and a bow"
+                    + (log.ErrorCount > 0 ? ": " + First(log) : ""));
+
+                // The implement, which the loader had never heard of.
+                MadVoxel.Vehicles.ImplementDefinition subsoiler = null;
+                for (int i = 0; i < db.implements.Count; i++)
+                {
+                    if (db.implements[i].stringId == "farmmod:subsoiler") subsoiler = db.implements[i];
+                }
+
+                Harness.Check(subsoiler != null, "the implement was added");
+                if (subsoiler != null)
+                {
+                    Harness.Equal(subsoiler.workingWidth, 6f, "with the width it asked for");
+                    Harness.Check(subsoiler.kind == MadVoxel.Vehicles.ImplementKind.Plow, "and the right operation");
+                    Harness.Check(subsoiler.item != null, "and its carried item linked back");
+
+                    // The back-pointer the game builds by hand for its own implements
+                    // is a mod's job too, and it is what makes hitching work.
+                    Harness.Check(db.Item("farmmod:subsoiler_item") != null, "the item exists");
+                }
+
+                // The machine, including the chassis, which needed a Vector3 reader.
+                MadVoxel.Vehicles.VehicleDefinition hauler = null;
+                for (int i = 0; i < db.vehicles.Count; i++)
+                {
+                    if (db.vehicles[i].stringId == "farmmod:hauler") hauler = db.vehicles[i];
+                }
+
+                Harness.Check(hauler != null, "the machine was added");
+                if (hauler != null)
+                {
+                    Harness.Equal(hauler.storageSlots, 30, "with a bed of the size it asked for");
+                    Harness.Equal(hauler.chassisSize.z, 3.2f, "and a chassis, which needed three floats");
+                    Harness.Check(hauler.fuelItem != null, "and a fuel it linked to");
+
+                    var kit = db.Item("farmmod:hauler_item");
+                    Harness.Check(kit != null && kit.placeableVehicle == hauler,
+                        "and an item that deploys it");
+                }
+
+                // The bow, which is only a bow because of fields the loader could not set.
+                var crossbow = db.Item("farmmod:crossbow");
+                Harness.Check(crossbow != null, "the ranged weapon was added");
+                if (crossbow != null)
+                {
+                    Harness.Check(crossbow.IsRanged, "and counts as ranged, which needs both a rating and ammo");
+                    Harness.Equal(crossbow.maxLaunchSpeed, 60f, "with the speed it asked for");
+                    Harness.Check(crossbow.ammoItem != null && crossbow.ammoItem.stringId == "farmmod:bolt",
+                        "and its own ammunition");
+                }
+            }
+            finally
+            {
+                Application.persistentDataPath = originalPath;
+                TryDelete(root);
+            }
         }
 
         // ------------------------------------------------------------- the parser

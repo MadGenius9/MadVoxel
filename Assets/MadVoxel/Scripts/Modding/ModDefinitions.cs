@@ -81,7 +81,18 @@ namespace MadVoxel.Modding
             r.Read("staminaRestore", ref d.staminaRestore);
             r.Read("fuelSeconds", ref d.fuelSeconds);
             r.Read("tradeValue", ref d.tradeValue);
+            r.Read("spoilHours", ref d.spoilHours);
+
+            // Ranged. A mod can add a crossbow without touching the game's code,
+            // because drawing and loosing are already generic over these numbers.
+            r.Read("rangedDamage", ref d.rangedDamage);
+            r.Read("drawSeconds", ref d.drawSeconds);
+            r.Read("minLaunchSpeed", ref d.minLaunchSpeed);
+            r.Read("maxLaunchSpeed", ref d.maxLaunchSpeed);
+            r.Read("drawStamina", ref d.drawStamina);
+
             r.ReportUnknownKeys("placeableBlock", "placeableStructure", "placeableBuildPiece",
+                "placeableVehicle", "hitchImplement", "ammoItem", "spoiledInto",
                 ModContentApplier.IdKey, ModContentApplier.OpKey);
         }
 
@@ -90,6 +101,10 @@ namespace MadVoxel.Modding
             l.Block(e, "placeableBlock", ref d.placeableBlock);
             l.Structure(e, "placeableStructure", ref d.placeableStructure);
             l.BuildPiece(e, "placeableBuildPiece", ref d.placeableBuildPiece);
+            l.Vehicle(e, "placeableVehicle", ref d.placeableVehicle);
+            l.Implement(e, "hitchImplement", ref d.hitchImplement);
+            l.Item(e, "ammoItem", ref d.ammoItem);
+            l.Item(e, "spoiledInto", ref d.spoiledInto);
         }
 
         // ----------------------------------------------------------------- recipes
@@ -188,6 +203,7 @@ namespace MadVoxel.Modding
             r.Read("seedReturnMin", ref d.seedReturnMin);
             r.Read("seedReturnMax", ref d.seedReturnMax);
             r.Read("litresPerCell", ref d.litresPerCell);
+            r.Read("litresPerHarvestItem", ref d.litresPerHarvestItem);
             r.ReadColour("plantTint", ref d.plantTint);
             r.Read("matureHeight", ref d.matureHeight);
             r.Read("xpPerHarvest", ref d.xpPerHarvest);
@@ -324,12 +340,33 @@ namespace MadVoxel.Modding
             r.Read("storageSlots", ref d.storageSlots);
             r.Read("maxHealth", ref d.maxHealth);
             r.ReadColour("tint", ref d.tint);
+            r.ReadVector3("chassisSize", ref d.chassisSize);
             r.ReportUnknownKeys("fuelItem", ModContentApplier.IdKey, ModContentApplier.OpKey);
         }
 
         public static void LinkVehicle(VehicleDefinition d, JsonValue e, ModLinker l)
         {
             l.Item(e, "fuelItem", ref d.fuelItem);
+        }
+
+        // --------------------------------------------------------------- implements
+
+        public static void ReadImplement(MadVoxel.Vehicles.ImplementDefinition d, JsonReader r)
+        {
+            r.Read("displayName", ref d.displayName);
+            r.ReadEnum("kind", ref d.kind);
+            r.Read("workingWidth", ref d.workingWidth);
+            r.Read("speedMultiplier", ref d.speedMultiplier);
+            r.Read("fuelLitresPerHour", ref d.fuelLitresPerHour);
+            r.Read("hopperCapacityLitres", ref d.hopperCapacityLitres);
+            r.Read("seedLitresPerCell", ref d.seedLitresPerCell);
+            r.Read("litresPerSeedItem", ref d.litresPerSeedItem);
+            r.ReportUnknownKeys("item", ModContentApplier.IdKey, ModContentApplier.OpKey);
+        }
+
+        public static void LinkImplement(MadVoxel.Vehicles.ImplementDefinition d, JsonValue e, ModLinker l)
+        {
+            l.Item(e, "item", ref d.item);
         }
 
         // ------------------------------------------------------------------ tuning

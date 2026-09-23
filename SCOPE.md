@@ -209,9 +209,9 @@ executed. Worlds record which mods built them and warn on load if one is missing
   stops rather than mixing two. The grain bin is the thing that holds more than one.
 - **Implements have no collision of their own.** The one hanging off the drawbar is a
   visual and a swath; it will pass through a fence the tractor would hit.
-- **Mods are data only.** A mod can add a crop or a zombie because the game already
-  knows how to grow and fight; it cannot add new behaviour. Script mods are the next
-  layer and the loader is shaped for them.
+- **Mods are data only.** A mod can add a crop, a zombie, a plough, a machine or a bow
+  because the game already knows how to do those things; it cannot add new behaviour.
+  Script mods are the next layer and the loader is shaped for them.
 - **Mods cannot ship art.** Every material is procedural and tinted, so `tint` and
   `surfaceFamily` are the only visual controls a mod has.
 

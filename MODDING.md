@@ -77,7 +77,7 @@ Each file is a JSON object whose fields are content types:
 ```
 
 Types: `blocks`, `items`, `recipes`, `structures`, `buildPieces`, `crops`, `zombies`,
-`perks`, `quests`, `traders`, `vehicles`, plus the singletons `config`,
+`perks`, `quests`, `traders`, `vehicles`, `implements`, plus the singletons `config`,
 `hordeSchedule` and `startingItems`.
 
 **Comments and trailing commas are allowed.** Mod files are written by hand; the parser
@@ -144,7 +144,15 @@ Wood, Plank, Metal, Concrete, Cloth, Foliage, Ore, Flesh, Emissive)*, `tint`,
 `toolType` *(None, Pickaxe, Axe, Shovel, Wrench, Hammer, Melee)*, `toolTier`,
 `harvestSpeed`, `meleeDamage`, `attackCooldown`, `maxDurability`, `foodRestore`,
 `waterRestore`, `healthRestore`, `staminaRestore`, `fuelSeconds`, `tradeValue`,
-→ `placeableBlock`, `placeableStructure`, `placeableBuildPiece`
+`spoilHours`,
+`rangedDamage`, `drawSeconds`, `minLaunchSpeed`, `maxLaunchSpeed`, `drawStamina`
+→ `placeableBlock`, `placeableStructure`, `placeableBuildPiece`, `placeableVehicle`,
+`hitchImplement`, `ammoItem`, `spoiledInto`
+
+An item is a working bow once it has both a `rangedDamage` and an `ammoItem`; the draw,
+the arc and the recovery are already generic over those numbers. Anything with
+`category: "Ammo"` and a `rangedDamage` can be fired from any bow — the weapon picks the
+hardest-hitting arrow in the bag rather than only the one it names.
 
 ### blocks
 
@@ -230,7 +238,31 @@ category from JSON, because the screen builds its column from the enum.
 
 `displayName`, `maxSpeed`, `acceleration`, `turnRate`, `climbHeight`, `fuelCapacity`,
 `fuelPerSecond`, `fuelPerItem`, `seats`, `storageSlots`, `maxHealth`, `tint`,
+`chassisSize` (three numbers, like `[1.5, 0.7, 2.6]`)
 → `fuelItem`
+
+An item with `placeableVehicle` set to a machine's id becomes the kit that deploys it.
+
+### implements
+
+What hitches to the back of a machine and works the field grid.
+
+`displayName`, `kind` (`Plow`, `Cultivator`, `Seeder`, `Harvester`), `workingWidth`,
+`speedMultiplier`, `fuelLitresPerHour`, `hopperCapacityLitres`, `seedLitresPerCell`,
+`litresPerSeedItem`
+→ `item`
+
+`item` is what you carry it as, and that item needs `hitchImplement` pointing back at
+the implement — the pair is what lets you hitch it. A six-metre plough that halves your
+speed is nine lines of JSON:
+
+```json
+"implements": [
+  { "id": "mymod:subsoiler", "displayName": "Subsoiler", "kind": "Plow",
+    "workingWidth": 6, "speedMultiplier": 0.4, "fuelLitresPerHour": 5,
+    "item": "mymod:subsoiler_item" }
+]
+```
 
 ### config *(one object, not a list)*
 
@@ -287,9 +319,15 @@ naming what is missing, before you walk into the hole where it used to be.
 
 ## What mods cannot do yet
 
-This is a **data** mod system. It cannot add new behaviour — a new crop grows and a new
-zombie fights, because the game already knows how to do those things, but a crop that
-explodes would need code.
+This is a **data** mod system. It cannot add new behaviour — a new crop grows, a new
+zombie fights, a new bow shoots and a new plough ploughs, because the game already knows
+how to do those things, but a crop that explodes would need code.
+
+The reach of that promise is worth keeping an eye on. Every system added to the game has
+its own fields, and none of them are reachable from a mod until someone maps them — a
+whole field-machine layer and a bow both shipped before the loader had heard of either.
+There is a check that builds an implement, a machine and a crossbow from JSON and asserts
+they come out working, which is what stops that gap opening again quietly.
 
 Script mods are the obvious next layer, and the loader is shaped for it: `ModManifest`
 already carries load order and dependencies, and `ModContentApplier` is the only thing
