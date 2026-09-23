@@ -90,6 +90,9 @@ namespace MadVoxel.UI
 
         RectTransform _toastRoot;
         RectTransform _questRoot;
+        RectTransform _drawBarRoot;
+        Image _drawBarFill;
+        Text _drawLabel;
         ContentDatabase _content;
         readonly List<Text> _questLines = new List<Text>();
         float _sinceQuestTick;
@@ -133,6 +136,7 @@ namespace MadVoxel.UI
             BuildBuildPanel();
             BuildHordeLine();
             BuildQuestTracker();
+            BuildDrawBar();
             BuildToasts();
 
             _tractor = gameObject.AddComponent<TractorPanel>();
@@ -423,6 +427,61 @@ namespace MadVoxel.UI
             }
         }
 
+        /// <summary>
+        /// The bow's draw, under the crosshair. It is the only thing in the game where
+        /// a fraction of a second changes the outcome, so it gets a bar rather than a
+        /// word - and the bar goes sage at full draw, which is the moment to loose.
+        /// </summary>
+        void BuildDrawBar()
+        {
+            _drawBarRoot = ClaimSlate.Rect(_canvas.transform, "Draw");
+            ClaimSlate.Place(_drawBarRoot, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -46f), new Vector2(180f, 26f));
+
+            var back = ClaimSlate.Fill(_drawBarRoot, "Back", ClaimSlate.Fade(ClaimSlate.OilBlack, 0.7f));
+            ClaimSlate.Place(back.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                Vector2.zero, new Vector2(180f, 8f));
+            ClaimSlate.Frame(back.rectTransform, ClaimSlate.Dim(ClaimSlate.Bone, 0.25f), 1f);
+
+            _drawBarFill = ClaimSlate.Fill(back.transform, "Fill", ClaimSlate.SodiumGold);
+            var fill = _drawBarFill.rectTransform;
+            fill.anchorMin = new Vector2(0f, 0f);
+            fill.anchorMax = new Vector2(0f, 1f);
+            fill.pivot = new Vector2(0f, 0.5f);
+            fill.offsetMin = new Vector2(1f, 1f);
+            fill.offsetMax = new Vector2(1f, -1f);
+
+            _drawLabel = ClaimSlate.Stencil(_drawBarRoot, "DrawLabel", "", 15,
+                TextAnchor.UpperCenter, ClaimSlate.BoneDim, false);
+            ClaimSlate.Place(ClaimSlate.Holder(_drawLabel), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -12f), new Vector2(180f, 18f));
+
+            _drawBarRoot.gameObject.SetActive(false);
+        }
+
+        void UpdateDrawBar()
+        {
+            var interaction = _player.Interaction;
+            bool drawing = interaction != null && interaction.enabled && interaction.IsDrawing;
+
+            if (_drawBarRoot.gameObject.activeSelf != drawing) _drawBarRoot.gameObject.SetActive(drawing);
+            if (!drawing) return;
+
+            float draw = Mathf.Clamp01(interaction.Draw01);
+            bool full = draw >= 0.999f;
+
+            _drawBarFill.rectTransform.anchorMax = new Vector2(draw, 1f);
+
+            // Colour and word together, as everywhere else: rust while the shot is not
+            // worth the arrow, gold while it is building, sage at full.
+            _drawBarFill.color = full
+                ? ClaimSlate.CropSage
+                : (Combat.Ballistics.CanRelease(draw) ? ClaimSlate.SodiumGold : ClaimSlate.OxideRust);
+
+            _drawLabel.text = Combat.Ballistics.DrawLine(draw);
+            _drawLabel.color = full ? ClaimSlate.CropSage : ClaimSlate.BoneDim;
+        }
+
         void BuildToasts()
         {
             _toastRoot = ClaimSlate.Rect(_canvas.transform, "Toasts");
@@ -440,6 +499,7 @@ namespace MadVoxel.UI
             UpdateVitals();
             UpdateCompass();
             UpdateLookReadout();
+            UpdateDrawBar();
             UpdateBuildLayer();
             UpdateHordeLayer();
 

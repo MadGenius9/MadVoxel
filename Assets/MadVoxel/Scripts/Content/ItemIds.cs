@@ -75,6 +75,11 @@ namespace MadVoxel.Content
         public const string SnapFence = "madvoxel:snap_fence";
 
         // Phase 1 economy / vehicle content.
+        // Ranged. The bow carries the draw; the arrow carries the head.
+        public const string WoodBow = "madvoxel:wood_bow";
+        public const string ArrowStone = "madvoxel:arrow_stone";
+        public const string ArrowIron = "madvoxel:arrow_iron";
+
         public const string TradeToken = "madvoxel:trade_token";
         public const string EngineBlock = "madvoxel:engine_block";
         public const string Wheel = "madvoxel:wheel";

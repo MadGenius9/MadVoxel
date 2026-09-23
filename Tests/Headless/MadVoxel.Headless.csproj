@@ -42,6 +42,7 @@
     <Compile Include="QuestTests.cs" />
     <Compile Include="FurnaceTests.cs" />
     <Compile Include="ProgressionTests.cs" />
+    <Compile Include="BallisticsTests.cs" />
     <Compile Include="FluidTests.cs" />
   </ItemGroup>
 
@@ -70,6 +71,7 @@
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/IChunkStore.cs" />
 
     <Compile Include="../../Assets/MadVoxel/Scripts/Inventory/ItemDefinition.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Combat/Ballistics.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Inventory/ItemStack.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Inventory/Spoil/SpoilRules.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Inventory/Inventory.cs" />

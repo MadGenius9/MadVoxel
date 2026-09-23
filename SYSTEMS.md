@@ -422,9 +422,51 @@ only be made in a furnace.
 
 ---
 
+## Ranged combat
+
+A blood moon with nothing but a swing is a wall. The bow is the second verb, and it is
+craftable in the first hour from wood, stone and fibre — deliberately, because the night
+it is needed for arrives on day seven.
+
+**The whole design is in one decision: draw.** A snapped shot leaves slowly, drops hard
+and hits for a third of the bow's rating. A full draw flies flat and hurts. That is the
+trade a player makes with a zombie closing on them, and it is why a bow is not just a
+melee swing at range. Stamina scales with the draw too, so the panicked shot is cheap and
+the held aim is what tires you.
+
+There is deliberately **no damage falloff with distance** on top of that. Drop already
+limits range, and stacking a second penalty makes a bow feel like it is apologising for
+existing.
+
+The bow's rating and the arrow's head are **added together**, so an iron arrow is a real
+upgrade without needing a second bow. A full-draw stone arrow does 30 against a shambler's
+55: two arrows, never one.
+
+Two things in the flight are worth knowing:
+
+- **The integrator is the exact solution for constant acceleration, not Euler.** Stepping
+  velocity first and then position overshoots the drop by half a gravity-step per frame,
+  which means an arrow falls further at thirty frames a second than at a hundred and
+  twenty. A bow that shoots differently on a slower machine is not a bow anyone can learn.
+  It also makes the closed-form drop readout agree with the flight exactly, because they
+  are now the same equation.
+- **The arrow sweeps rather than teleports.** At forty metres a second a frame is most of
+  a metre, and a point test walks straight through a one-block wall the player dug.
+
+Arrows land and lie there for twenty seconds — a shot you missed has to be visible or
+aiming is un-learnable — and about half of them can be picked back up. Whether a given
+arrow survives is rolled once when it lands, not re-rolled while you stand near it;
+otherwise waiting beside a snapped arrow eventually produces a whole one.
+
+This lands the last inert perk. **Nothing in the tree is deferred any more**, and the
+check that tracked it now asserts the deferred list is empty rather than listing what is
+on it.
+
+---
+
 ## What the headless checks cover
 
-1044 checks, all passing. The new ones:
+1100 checks, all passing. The new ones:
 
 - **Biomes** — spawn is always farmland; no shelf near spawn but shelf at the edge; all
   five regions appear; the same seed repaints the same map; borders smear; the regions
@@ -447,6 +489,12 @@ only be made in a furnace.
 - **Heat** — the floor, that Quiet Claim shaves it but cannot silence a farm, that a
   blackout is felt within the hour, that it settles at the floor and caps at 100, that
   dawn pulls harder, that an idle trap is silent.
+- **Ballistics** — that a level shot never climbs; that drop is quadratic in distance;
+  that range *and* drop are identical at 30 fps and 120, which Euler integration would
+  not give; that the flown drop matches the drop the readout predicts, since they are the
+  same equation; that the aim dot lands within centimetres of a wall rather than a metre
+  short; that the dot and the arrow agree to the millimetre; and that a full-draw stone
+  arrow takes two hits to kill a shambler while snap shots are a poor way to fight.
 - **Progression** — the one that found a real wall. It walks the whole recipe tree from
   what the world hands you (block drops, crops, forage, the starting kit) with traders
   deliberately excluded, and asks what cannot be built. Every vehicle needs a salvaged

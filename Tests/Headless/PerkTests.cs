@@ -330,14 +330,15 @@ namespace MadVoxel.Headless
                 PerkEffectType.DroughtResistance,       // FarmPlotStructure.DryLoss
                 PerkEffectType.ClaimHeatReduction,      // ClaimHeatTracker.QuietFraction
                 PerkEffectType.FieldYieldMultiplier,    // ImplementController.Reap
-                PerkEffectType.VehicleFuelEfficiency    // VehicleRig.Drive
+                PerkEffectType.VehicleFuelEfficiency,   // VehicleRig.Drive
+                PerkEffectType.RangedDamageMultiplier   // PlayerInteraction.Loose
             };
 
-            // Declared in content, read by nothing until the Phase 1 system lands.
-            var deferred = new HashSet<PerkEffectType>
-            {
-                PerkEffectType.RangedDamageMultiplier   // no ranged weapons yet
-            };
+            // Declared in content, read by nothing yet. Empty, and meant to stay that
+            // way: an effect belongs here only while the system that reads it is being
+            // built, and the check below says so out loud rather than letting the list
+            // quietly grow back.
+            var deferred = new HashSet<PerkEffectType>();
 
             var used = new HashSet<PerkEffectType>();
             for (int i = 0; i < db.perkTree.perks.Count; i++)
@@ -361,6 +362,9 @@ namespace MadVoxel.Headless
                 if (wired.Contains(type)) stale.Add(type.ToString());
             }
             Harness.Check(stale.Count == 0, "no effect is listed as both wired and deferred");
+
+            Harness.Equal(deferred.Count, 0,
+                "every effect the tree grants is applied in play - nothing is deferred");
 
             Harness.Check(used.Count >= 8,
                 string.Format("the tree grants {0} distinct effect types", used.Count));

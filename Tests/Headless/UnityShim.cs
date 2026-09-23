@@ -141,6 +141,8 @@ namespace UnityEngine
         public static Vector3 zero { get { return new Vector3(0, 0, 0); } }
         public static Vector3 one { get { return new Vector3(1, 1, 1); } }
         public static Vector3 up { get { return new Vector3(0, 1, 0); } }
+        public static Vector3 forward { get { return new Vector3(0, 0, 1); } }
+        public static Vector3 right { get { return new Vector3(1, 0, 0); } }
         public float this[int i]
         {
             get { return i == 0 ? x : (i == 1 ? y : z); }

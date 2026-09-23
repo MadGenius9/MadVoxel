@@ -346,6 +346,29 @@ namespace MadVoxel.Content
             Add(Item(ItemIds.PieceSilo, "Grain Bin", ItemCategory.Structure, 2, SurfaceFamily.Metal, new Color(0.55f, 0.53f, 0.49f), 240));
             Add(Item(ItemIds.PieceFurnace, "Furnace", ItemCategory.Structure, 2, SurfaceFamily.Stone, new Color(0.38f, 0.36f, 0.34f), 90));
 
+            // Ranged. The bow's rating and the arrow's head are added together, so a
+            // better arrow is a real upgrade without needing a second bow.
+            var bow = Item(ItemIds.WoodBow, "Wooden Bow", ItemCategory.Weapon, 1, SurfaceFamily.Wood, ColWood, 60);
+            bow.rangedDamage = 22f;
+            bow.drawSeconds = 0.9f;
+            bow.minLaunchSpeed = 14f;
+            bow.maxLaunchSpeed = 42f;
+            bow.drawStamina = 6f;
+            bow.maxDurability = 180;
+            bow.toolTier = 1;
+            bow.meleeDamage = 3f;
+            Add(bow);
+
+            var stoneArrow = Item(ItemIds.ArrowStone, "Stone Arrow", ItemCategory.Ammo, 64, SurfaceFamily.Stone, ColStone, 2);
+            stoneArrow.rangedDamage = 8f;
+            Add(stoneArrow);
+
+            var ironArrow = Item(ItemIds.ArrowIron, "Iron Arrow", ItemCategory.Ammo, 64, SurfaceFamily.Metal, ColIronPlate, 5);
+            ironArrow.rangedDamage = 16f;
+            Add(ironArrow);
+
+            bow.ammoItem = stoneArrow;
+
             // Phase 1 economy and vehicle parts.
             Add(Item(ItemIds.TradeToken, "Trade Token", ItemCategory.Misc, 999, SurfaceFamily.Metal, new Color(0.72f, 0.62f, 0.30f), 1));
             Add(Item(ItemIds.EngineBlock, "Salvaged Engine", ItemCategory.Misc, 4, SurfaceFamily.Metal, ColIronPlate, 180));
@@ -685,6 +708,15 @@ namespace MadVoxel.Content
             list.Add(Recipe("madvoxel:smelt_glass", it[ItemIds.BlockGlass], 2, CraftStation.Campfire, 4f,
                 Ing(it[ItemIds.Sand], 3), Ing(it[ItemIds.Coal], 1)));
 
+            // The bow is early on purpose. A blood moon with nothing but a swing is a
+            // wall, and everything here is wood, stone and fibre.
+            list.Add(Recipe("madvoxel:craft_wood_bow", it[ItemIds.WoodBow], 1, CraftStation.Hand, 5f,
+                Ing(it[ItemIds.Plank], 8), Ing(it[ItemIds.PlantFibre], 12)));
+            list.Add(Recipe("madvoxel:craft_arrow_stone", it[ItemIds.ArrowStone], 4, CraftStation.Hand, 2f,
+                Ing(it[ItemIds.Plank], 2), Ing(it[ItemIds.Stone], 2), Ing(it[ItemIds.PlantFibre], 2)));
+            list.Add(Recipe("madvoxel:craft_arrow_iron", it[ItemIds.ArrowIron], 4, CraftStation.Workbench, 3f,
+                Ing(it[ItemIds.Plank], 2), Ing(it[ItemIds.IronIngot], 1), Ing(it[ItemIds.PlantFibre], 2)));
+
             // A wheel is scrap and rag around a rim. Making it craftable rather than
             // trader-only is what keeps a tractor a building project instead of a
             // shopping trip.
@@ -895,6 +927,10 @@ namespace MadVoxel.Content
             tree.perks.Add(Perk("madvoxel:perk_heavy_hitter", "Heavy Hitter", PerkCategory.Combat,
                 "More damage with clubs, axes and anything heavy.", 5, 1,
                 Effect(PerkEffectType.MeleeDamageMultiplier, 0.1f)));
+
+            tree.perks.Add(Perk("madvoxel:perk_marksman", "Marksman", PerkCategory.Combat,
+                "A steadier hand on the string. Arrows hit harder.", 4, 2,
+                Effect(PerkEffectType.RangedDamageMultiplier, 0.12f)));
 
             tree.perks.Add(Perk("madvoxel:perk_iron_lungs", "Iron Lungs", PerkCategory.Combat,
                 "Sprint and swing longer before your stamina gives out.", 4, 2,

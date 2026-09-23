@@ -156,6 +156,10 @@ namespace MadVoxel.Core.Player
 
             if (InputBridge.RotatePieceDown) _placeRotation = (_placeRotation + 1) % 4;
 
+            // A bow takes the primary button entirely: you draw on hold and loose on
+            // release, and there is no swing underneath it to fall through to.
+            if (HandleBow()) return;
+
             if (InputBridge.PrimaryHeld) HandlePrimary();
             else ResetMining();
 
@@ -403,6 +407,102 @@ namespace MadVoxel.Core.Player
             }
 
             return false;
+        }
+
+        // ------------------------------------------------------------------- ranged
+
+        /// <summary>How far through the draw, 0 to 1. The HUD reads this.</summary>
+        public float Draw01 { get; private set; }
+
+        /// <summary>True while a bow is actually drawn, so the HUD can show the arc.</summary>
+        public bool IsDrawing { get { return Draw01 > 0f; } }
+
+        float _drawHeld;
+
+        /// <summary>
+        /// Returns true when a bow consumed the input this frame, so nothing else acts
+        /// on it. Switching away mid-draw, running out of arrows or dying all let the
+        /// draw go without loosing - you keep the arrow.
+        /// </summary>
+        bool HandleBow()
+        {
+            var held = _inventory.SelectedItem;
+            bool isBow = held != null && held.IsRanged;
+
+            if (!isBow)
+            {
+                _drawHeld = 0f;
+                Draw01 = 0f;
+                return false;
+            }
+
+            if (_inventory.Bag.CountOf(held.ammoItem) <= 0)
+            {
+                if (InputBridge.PrimaryDown) Notifications.PostFormat("Out of {0}", held.ammoItem.displayName);
+
+                _drawHeld = 0f;
+                Draw01 = 0f;
+                return true;
+            }
+
+            if (InputBridge.PrimaryHeld)
+            {
+                _drawHeld += Time.deltaTime;
+                Draw01 = Combat.Ballistics.Draw01(_drawHeld, held.drawSeconds);
+                ResetMining();
+                return true;
+            }
+
+            // Let go.
+            if (Draw01 > 0f)
+            {
+                float draw = Draw01;
+                _drawHeld = 0f;
+                Draw01 = 0f;
+
+                Loose(held, draw);
+            }
+
+            return true;
+        }
+
+        void Loose(ItemDefinition bow, float draw01)
+        {
+            if (!Combat.Ballistics.CanRelease(draw01))
+            {
+                // Too little draw to be worth an arrow, so the arrow is kept.
+                Notifications.Post("Not drawn enough");
+                return;
+            }
+
+            // Stamina scales with the draw, so a panicked snap shot is cheap and a
+            // held aim is what tires you out.
+            if (!_stats.TrySpendStamina(bow.drawStamina * draw01))
+            {
+                Notifications.Post("Too tired to draw");
+                return;
+            }
+
+            _inventory.Bag.Remove(bow.ammoItem, 1);
+
+            float speed = Combat.Ballistics.LaunchSpeed(bow.minLaunchSpeed, bow.maxLaunchSpeed, draw01);
+            // Bow plus head: a better arrow is a real upgrade without needing a second
+            // bow, and the draw scales the whole thing rather than only half of it.
+            float rating = bow.rangedDamage + Mathf.Max(0f, bow.ammoItem.rangedDamage);
+            float damage = Combat.Ballistics.Damage(rating, draw01)
+                           * Perks.Multiplier(PerkEffectType.RangedDamageMultiplier);
+
+            // From the eye, along the crosshair: the arc starts where the player is
+            // looking, so what they aimed at is what the arrow was pointed at.
+            var origin = _camera.transform.position + _camera.transform.forward * 0.45f;
+
+            // Parented to whatever holds the player - the world root - so arrows in
+            // flight die with the world rather than hanging in an empty scene after a
+            // quit to menu.
+            Combat.Arrow.Fire(transform.parent, origin, _camera.transform.forward, speed, damage,
+                              bow.toolTier, bow.ammoItem, gameObject);
+
+            if (bow.HasDurability) _inventory.WearSelected(1);
         }
 
         void HandlePrimary()

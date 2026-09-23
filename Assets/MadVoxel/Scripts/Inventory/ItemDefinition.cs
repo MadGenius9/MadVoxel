@@ -53,6 +53,22 @@ namespace MadVoxel.Inventory
         public float harvestSpeed = 1f;
         public float meleeDamage = 5f;
         public float attackCooldown = 0.55f;
+
+        [Header("Ranged")]
+        [Tooltip("What one arrow does at full draw. Zero means this is not a ranged weapon.")]
+        public float rangedDamage;
+        [Tooltip("The ammunition it spends. A bow with no arrows is a stick.")]
+        public ItemDefinition ammoItem;
+        [Tooltip("Seconds to a full draw.")]
+        public float drawSeconds = 0.9f;
+        [Tooltip("Launch speed at the bottom and top of the draw, in metres per second.")]
+        public float minLaunchSpeed = 14f;
+        public float maxLaunchSpeed = 42f;
+        [Tooltip("Stamina a full draw costs. Snapped shots cost proportionally less.")]
+        public float drawStamina = 6f;
+
+        /// <summary>True for anything you loose rather than swing.</summary>
+        public bool IsRanged { get { return rangedDamage > 0f && ammoItem != null; } }
         [Tooltip("0 means the item never wears out.")]
         public int maxDurability;
 

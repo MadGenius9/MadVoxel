@@ -1,6 +1,6 @@
 # What to try first
 
-None of what follows has ever been rendered. It compiles, and 1,044 headless checks say
+None of what follows has ever been rendered. It compiles, and 1,100 headless checks say
 the logic is right, but the tests are silent on whether anything *looks* right, sits at a
 sensible height, or is reachable with the camera where it is. If something looks wrong,
 it probably is — believe your eyes over this file.
@@ -37,6 +37,25 @@ growing in eight visible steps and turning gold when ripe.
 - A frame-rate drop when a large field is on screen. Patches are 16 m and rebuild at most
   two per frame, but nobody has measured it.
 - Plants that never appear: the cover only draws within 96 m of you.
+
+---
+
+## 2b. The bow (5 minutes)
+
+Craftable by hand from the start: 8 plank + 12 fibre, then 4 stone arrows for 2 plank,
+2 stone, 2 fibre.
+
+1. Hold the primary button to draw — a bar fills under the crosshair.
+2. Release at full draw at something far away, then try a snapped shot.
+
+**Expected:** a full draw flies flat and takes two arrows to kill a shambler. A snap shot
+drops fast and hits for a third. Landed arrows stay about twenty seconds and roughly half
+can be walked over and picked up.
+
+**Watch for:**
+- Arrows passing through a wall you dug — the sweep is meant to stop that.
+- The arrow model's orientation in flight: it should nose over as it falls.
+- Whether the draw bar's `FULL DRAW` lines up with the shot actually feeling full.
 
 ---
 

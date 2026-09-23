@@ -103,7 +103,7 @@ resolver and nine call sites — and changes nothing about the Phase 0 loop.
 
 | Area | Shipped | Still to write |
 | --- | --- | --- |
-| **Perks** | 14 perks across Mining, Construction, Combat, Scavenging, Medicine, Vehicles and Farming. XP, levelling, point accrual, **the skills screen** (`P`) and the buy rules are live, and every effect type but one is applied in play: dig speed, block and crop yield, salvage, building tier, stamina pool and drain, melee damage, healing, repair, wire reach, pump rate, trap damage, storm and drought resistance, claim heat, field yield and fuel economy. Ranks and unlocked recipes save and reload. | Ranged damage — waiting on a ranged weapon. |
+| **Perks** | 15 perks across Mining, Construction, Combat, Scavenging, Medicine, Vehicles and Farming. XP, levelling, point accrual, **the skills screen** (`P`) and the buy rules are live, and every effect type but one is applied in play: dig speed, block and crop yield, salvage, building tier, stamina pool and drain, melee damage, healing, repair, wire reach, pump rate, trap damage, storm and drought resistance, claim heat, field yield and fuel economy. Ranks and unlocked recipes save and reload. | Nothing — every effect type the tree grants is now read in play. |
 | **Traders** | **Live.** A counter at each outpost, a Claim Slate price board, buy and sell from the bag, reputation tiers that unlock stock and improve rates, clock-derived restocking, and bulk produce sold by the litre straight out of a harvester. Saved per trader. | A trader NPC with a schedule, and the quest board. |
 | **Quests** | **Live.** Four contracts on the trader's board, taken and handed in at the counter, three at a time, tracked on the HUD. Kills and delivered litres tally; fetch and survive-nights progress is recomputed. Saved with the player. | A mining contract, and contracts that are generated rather than authored. |
 | **Vehicles** | **Live.** A tractor you craft, set down and drive, on a character controller so a dug ramp behaves; fuel burn that Economiser actually changes; damage, wrecking and save/reload where it was parked. The Scrap Buggy shares the rig. | Seats for more than one, the on-board storage crate, and a machine that reacts to being rammed. |
@@ -117,6 +117,7 @@ resolver and nine call sites — and changes nothing about the Phase 0 loop.
 | **Claim heat** | **Live.** One number fed by lights, the generator, population, acreage and traps, read by the wanderer cap and the horde budget. | — |
 | **Mad Colony** | **Live.** A charter on a board, up to three people with four jobs, needs, morale and a walk-out, fed and watered from the base you built. | The recruit event and trader quest that should bring the first person; pathfinding; The Marker. |
 | **Furnace** | **Live.** A deployable that smelts unattended on the world clock, one shared inventory for ore, fuel and output, burning cheapest fuel first. Catches up across a save. The campfire smelts stay as the way in. | Steel, and a bellows or a powered furnace that runs faster. |
+| **Ranged combat** | **Live.** A bow you draw and loose, craftable in the first hour. Draw decides speed and damage; arrows sweep rather than teleport, land, and are half recoverable. Stone and iron heads. | A crossbow, a gun tier, and headshots. |
 | **Horde** | Live, and already budgets on base footprint. | Waves that actively exploit an open dig rather than pathing at the cupboard. |
 
 ---
@@ -178,9 +179,8 @@ executed. Worlds record which mods built them and warn on load if one is missing
 - **Farm snap pieces are limited to the fence.** Barn, shed, pen and greenhouse frame
   are Phase 1; the grain bin ships as a deployable rather than a snap piece.
 - **The seed bag is just the seed stack.** No dedicated seeding container.
-- **One perk effect is inert.** Ranged damage is authored and shown on the skills screen
-  but nothing reads it: there is no ranged weapon. A headless test asserts exactly that
-  list, so a second cannot join it quietly.
+- **No perk effect is inert** any more. The check that tracked the gap now asserts the
+  deferred list is empty, so one cannot come back quietly.
 - **XP farming guard is session-only.** Blocks you placed are remembered in memory and
   pay no XP when re-mined, but the set is not saved. Crafted building blocks pay no
   harvest XP at all, which covers the common case.
