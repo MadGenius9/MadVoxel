@@ -136,7 +136,8 @@ If you add a system, add the check that would have caught you getting it wrong.
 
 ### Player keys worth knowing
 
-`E` interact / mount / dismount · `F` lower or raise the implement · `G` hitch or
+`E` interact / mount / dismount · `Tab` bag, or the machine's bed while driving ·
+`F` lower or raise the implement · `G` hitch or
 unhitch · `V` load the drill from your hand, or empty a harvester — into a trader's
 counter within 14 m, else a grain bin within 8 m · shift-click trades ten at a counter
 

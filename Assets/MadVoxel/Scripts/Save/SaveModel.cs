@@ -188,6 +188,8 @@ namespace MadVoxel.Save
         public float fuelLitres;
         public float health;
 
+        public List<ItemStackData> storage = new List<ItemStackData>();
+
         public string implementId = "";
         public string hopperCropId = "";
         public float hopperLitres;

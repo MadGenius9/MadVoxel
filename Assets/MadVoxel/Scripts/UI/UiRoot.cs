@@ -46,6 +46,9 @@ namespace MadVoxel.UI
         public ColonyBoardScreen Board { get; private set; }
         public TraderScreen Trader { get; private set; }
         public SiloScreen Silo { get; private set; }
+
+        /// <summary>The machine yard, so the bag key can open a bed. Set by the session.</summary>
+        public MadVoxel.Vehicles.VehicleWorld Vehicles { get; set; }
         public DebugOverlay Debug { get; private set; }
 
         public UiState State { get; private set; }
@@ -153,6 +156,7 @@ namespace MadVoxel.UI
             MadVoxel.Traders.TraderPost.OpenRequested += OnTraderOpen;
             SiloStructure.OpenRequested += OnSiloOpen;
             FurnaceStructure.OpenRequested += OnFurnaceOpen;
+            MadVoxel.Vehicles.VehicleRig.StorageRequested += OnVehicleStorage;
         }
 
         public void DestroyGameplayUi()
@@ -164,6 +168,7 @@ namespace MadVoxel.UI
             MadVoxel.Traders.TraderPost.OpenRequested -= OnTraderOpen;
             SiloStructure.OpenRequested -= OnSiloOpen;
             FurnaceStructure.OpenRequested -= OnFurnaceOpen;
+            MadVoxel.Vehicles.VehicleRig.StorageRequested -= OnVehicleStorage;
 
             if (_gameplayUi != null) Destroy(_gameplayUi);
             _gameplayUi = null;
@@ -173,6 +178,7 @@ namespace MadVoxel.UI
             Board = null;
             Trader = null;
             Silo = null;
+            Vehicles = null;
             Debug = null;
         }
 
@@ -193,6 +199,14 @@ namespace MadVoxel.UI
             if (Inventory == null || State == UiState.Dead) return;
 
             Inventory.OpenContainer(furnace.Contents, furnace.Structure.Definition.displayName, CraftStation.Forge);
+            SetState(UiState.Inventory);
+        }
+
+        void OnVehicleStorage(MadVoxel.Vehicles.VehicleRig rig)
+        {
+            if (Inventory == null || State == UiState.Dead || rig.Storage == null) return;
+
+            Inventory.OpenContainer(rig.Storage, rig.Definition.displayName + " BED", CraftStation.Hand);
             SetState(UiState.Inventory);
         }
 
@@ -254,12 +268,21 @@ namespace MadVoxel.UI
 
             if (InputBridge.InventoryDown)
             {
-                if (State == UiState.Inventory) SetState(UiState.Playing);
-                else if (State == UiState.Playing)
+                if (State == UiState.Inventory) { SetState(UiState.Playing); return; }
+                if (State != UiState.Playing) return;
+
+                // Sitting on a machine, the bag key opens the bed beside your own bag -
+                // you loaded it standing next to the thing and should not have to get
+                // off to reach it again.
+                var driving = Vehicles != null ? Vehicles.Driving : null;
+                if (driving != null && driving.Storage != null)
                 {
-                    Inventory.Open(CraftStation.Hand);
-                    SetState(UiState.Inventory);
+                    OnVehicleStorage(driving);
+                    return;
                 }
+
+                Inventory.Open(CraftStation.Hand);
+                SetState(UiState.Inventory);
             }
         }
 

@@ -646,6 +646,11 @@ namespace MadVoxel.Save
                     health = rig.Health
                 };
 
+                if (rig.Storage != null)
+                {
+                    for (int s = 0; s < rig.Storage.Size; s++) entry.storage.Add(ToData(rig.Storage[s]));
+                }
+
                 var implement = rig.Implement;
                 if (implement != null && implement.Definition != null)
                 {
@@ -676,6 +681,7 @@ namespace MadVoxel.Save
                 if (rig == null) continue;
 
                 rig.RestoreState(entry.fuelLitres, entry.health);
+                RestoreSlots(entry.storage, rig.Storage);
 
                 if (string.IsNullOrEmpty(entry.implementId)) continue;
 

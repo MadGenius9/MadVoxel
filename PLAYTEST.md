@@ -120,6 +120,9 @@ skip rows. **If you see stripes, that is a real bug and the tests were wrong.**
 2. `E` at the stall. Two tabs: **GOODS** and **CONTRACTS**.
 3. Sell something. Take a contract. Park a loaded harvester within 14 m and press `V`.
 
+While driving, `Tab` opens the machine's bed beside your bag — twelve slots on the
+tractor. Load it before you set off and you can sell a real trip's worth.
+
 **Expected:** the haul sells by the litre. A grain bin within 8 m takes it instead when
 there is no counter nearby.
 

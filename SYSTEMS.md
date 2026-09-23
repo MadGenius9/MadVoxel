@@ -258,8 +258,14 @@ Fuel is written per in-game hour on the implement and converted to a burn rate w
 clock's day length, because a day's work is the unit a farmer reasons in. `Economiser`
 divides that burn rather than multiplying it: better economy is less fuel.
 
-Saved state is the machine's position, fuel and health, plus the implement hitched to it
-and what is in its hopper. It comes back raised, deliberately — a machine that resumed
+Every machine carries a bed — twelve slots on the tractor, eighteen on the buggy. A
+machine you drive seven hundred metres to a trader is no use if you can only carry what is
+in your pockets, and the field layer's whole shape is "go there, come back". The bag key
+opens it from the seat, and a wrecked machine still opens: losing the vehicle should not
+also lose the load.
+
+Saved state is the machine's position, fuel and health, what is in its bed, plus the
+implement hitched to it and what is in its hopper. It comes back raised, deliberately — a machine that resumed
 mid-furrow would plough the line between where it was saved and wherever it settles.
 
 ### Seeing it

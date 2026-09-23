@@ -20,9 +20,29 @@ namespace MadVoxel.Vehicles
         public static event System.Action<VehicleRig> Mounted;
         public static event System.Action<VehicleRig> Dismounted;
 
+        /// <summary>
+        /// Raised when the bed should open. Fired from the interaction layer rather than
+        /// read here: the key that opens it is the same one that opens your bag, and two
+        /// Update methods both acting on it made the bed open and shut again depending
+        /// on which ran first.
+        /// </summary>
+        public static event System.Action<VehicleRig> StorageRequested;
+
+        public static void RequestStorage(VehicleRig rig)
+        {
+            if (rig != null && rig.Storage != null && StorageRequested != null) StorageRequested(rig);
+        }
+
         public VehicleDefinition Definition { get; private set; }
         public float FuelLitres { get; set; }
         public float Health { get; private set; }
+
+        /// <summary>
+        /// The bed. A machine you drive seven hundred metres to a trader is no use if
+        /// you can only carry what is in your pockets, and the field layer's whole
+        /// shape is "go there, come back" - so the haul rides with you.
+        /// </summary>
+        public MadVoxel.Inventory.Inventory Storage { get; private set; }
 
         public bool IsAlive { get { return Health > 0f; } }
         public bool HasDriver { get { return _driver != null; } }
@@ -50,6 +70,7 @@ namespace MadVoxel.Vehicles
             Definition = definition;
             Health = definition.maxHealth;
             FuelLitres = 0f;
+            Storage = new MadVoxel.Inventory.Inventory(Mathf.Max(1, definition.storageSlots));
 
             _controller = gameObject.AddComponent<CharacterController>();
             _controller.height = Mathf.Max(1f, definition.chassisSize.y * 2f);
@@ -250,7 +271,7 @@ namespace MadVoxel.Vehicles
         {
             get
             {
-                if (!IsAlive) return Definition.displayName + " - wrecked";
+                if (!IsAlive) return Definition.displayName + " - wrecked, but the bed still opens";
                 if (_driver != null) return "";
                 return string.Format("{0} - {1:0} L fuel", Definition.displayName, FuelLitres);
             }
@@ -268,7 +289,9 @@ namespace MadVoxel.Vehicles
 
             if (!IsAlive)
             {
-                Notifications.PostFormat("{0} is wrecked", Definition.displayName);
+                // A wreck is still a container. Losing a machine should not also lose
+                // whatever was in the bed.
+                RequestStorage(this);
                 return;
             }
 

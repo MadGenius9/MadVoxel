@@ -278,6 +278,7 @@ namespace MadVoxel.Core
             _vehicles.Init(_content, _structures, _voxels, _fields, _player, _ui.Hud);
             _player.Interaction.Vehicles = _vehicles;
             _vehicles.Traders = _traders;
+            _ui.Vehicles = _vehicles;
             _save.Vehicles = _vehicles;
 
             // The claim ring lives in the world, not on the visor, so it hangs off the
