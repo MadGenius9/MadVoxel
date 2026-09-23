@@ -78,7 +78,10 @@ dimmer colour. The board's founding checklist uses `[X]` and `[ ]`, not green an
 | **Horde** | Blood moon active | Four oxidised edges (never a full-screen wash), blood threat ticks on the compass, and **one line**: `BLOOD MOON  00:18`. No title card, no skull. |
 | **Utilities look-at** | Crosshair on a device or fitting | The device answers for itself: `GEN BANK  31/100 W  FUEL 7L`, `RELAY  30M`, `PUMP  NEEDS 18 W`, `TANK  412 / 800 L`, `TAP  FROZEN`. Rust when it is broken, frozen or unpowered. |
 | **Wiring** | Wire tool in hand with a line started | `RUNNING A LINE   REACH 30M   RMB TO DROP`, which takes the look-at line because it is the only thing you are thinking about. |
-| **Trader counter** | `E` at a stall | A ticket saying who you are to them (`TRADER VANCE`, `REGULAR`, `140 REP TO NEXT`), your tokens as one big number, their board on the left and what they will take off you on the right. Every line is a name, a count and a price — no grid of pictures. A locked line keeps its place with `TRUSTED` where the price would be; an unaffordable one reads `SHORT` in rust, so the word carries the signal and the colour only confirms it. |
+| **Trader counter** | `E` at a stall | Two tabs, GOODS and CONTRACTS, sharing the same two columns. |
+| **Trader — goods** | The GOODS tab | A ticket saying who you are to them (`TRADER VANCE`, `REGULAR`, `140 REP TO NEXT`), your tokens as one big number, their board on the left and what they will take off you on the right. Every line is a name, a count and a price — no grid of pictures. A locked line keeps its place with `TRUSTED` where the price would be; an unaffordable one reads `SHORT` in rust, so the word carries the signal and the colour only confirms it. |
+| **Trader — contracts** | The CONTRACTS tab | Their board on the left, what you are carrying on the right, `2 / 3` in the heading. A contract you cannot take keeps its place with the reason in place of the button — `LVL 6`, `TRUSTED`, `FULL` — for the same reason locked stock does. One issued by the other trader reads `ELSEWHERE` rather than hiding, so you know where to walk. |
+| **Contracts** | Carrying any | Up to three lines under the horde line: `FIRST HARVEST   7 / 12 POTATO`. A finished one reads `READY TO HAND IN` in sage — the only cue that it is worth the walk back. |
 | **Colonist look-at** | Crosshair on a person | `JULES  FARM  HUNGRY`, and `NO BED ASSIGNED` under it when that is why. |
 | **Tractor** | Sitting on a machine | Speed as one big number, fuel in litres, hopper in litres, and an implement lamp with a word beside it: `SEED DRILL  WORKING`, `HARVESTER  HOPPER FULL`, `DISC PLOW  RAISED`. Colour and shape together, as everywhere else. The on-foot crosshair and look-at readout go away entirely — the player's own interaction is switched off while their hands are on the wheel, so leaving either up would show a frozen target over the gauges. |
 
@@ -109,8 +112,9 @@ harvester tips into it — so its contents are read out one line at a time throu
 notifications rather than on a plate. It is the next screen worth building, and the
 trader board is the layout to copy.
 
-**The quest board** has no screen. The contracts and the trader who would hand them out
-both exist; accepting and tracking one does not.
+**There is no quest journal**, deliberately. Three contracts fit on three lines under the
+horde line, and the board itself is a tab on the trader screen. A filing cabinet for a
+postcard.
 
 The tractor cluster was built ahead of its system, and only because it was asked for
 explicitly. It paid off: when the machines landed it needed no HUD surgery and no second

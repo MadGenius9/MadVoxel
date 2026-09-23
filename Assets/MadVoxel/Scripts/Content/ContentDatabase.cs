@@ -121,6 +121,16 @@ namespace MadVoxel.Content
             return _piecesById.TryGetValue(stringId, out def) ? def : null;
         }
 
+        public Quests.QuestDefinition Quest(string stringId)
+        {
+            EnsureBuilt();
+            for (int i = 0; i < quests.Count; i++)
+            {
+                if (quests[i] != null && quests[i].stringId == stringId) return quests[i];
+            }
+            return null;
+        }
+
         public CropDefinition Crop(string stringId)
         {
             EnsureBuilt();

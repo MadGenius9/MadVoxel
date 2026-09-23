@@ -335,9 +335,45 @@ harvester's load. Without that, buying seed and tipping it straight back is a la
 
 ---
 
+## Contracts
+
+Four contracts have been written since Phase 0 and there was no way to take one. The
+trader counter is where they live now: a second tab on the same screen, because a counter
+is one conversation with two halves rather than two screens.
+
+**Progress splits two ways, and which side a contract falls on is the only real decision
+in the system.**
+
+- **Derived.** A fetch contract's progress is however many of the item are in your bag
+  right now. A survive-nights contract's is how many day boundaries have passed since you
+  took it. Neither is stored, so neither can drift, be double-counted, or come back wrong
+  from a save — and spending the goods takes the progress back with them, where a stored
+  counter would have said "done" over an empty bag.
+- **Counted.** Kills and litres delivered leave no standing record to read, so they are
+  tallied on the entry as they happen, capped at what the contract asked for.
+
+Everything that *can* be derived is, for the same reason crop growth is: a number the game
+recomputes cannot disagree with the world, and a number it accumulates eventually will.
+
+Handing one in is the same shape as a trade: work the whole thing out, refuse outright if
+any part fails, then move everything. Whether the rewards fit is answered by playing the
+hand-in out on a copy of your bag rather than by counting slots — the arithmetic version
+was wrong in both directions, and a contract that takes twenty potatoes and pays in tokens
+has to count the space those potatoes free. A full bag refuses the hand-in and leaves the
+contract live so you can come back.
+
+A contract is handed in to the trader who issued it. The other outpost lists it as
+`ELSEWHERE` rather than hiding it, so you know where to walk.
+
+Three at a time, tracked as three short lines under the horde line. A contract you cannot
+see is one you forget you took, and a journal screen for three jobs would be a filing
+cabinet for a postcard.
+
+---
+
 ## What the headless checks cover
 
-913 checks, all passing. The new ones:
+972 checks, all passing. The new ones:
 
 - **Biomes** — spawn is always farmland; no shelf near spawn but shelf at the edge; all
   five regions appear; the same seed repaints the same map; borders smear; the regions
@@ -360,6 +396,13 @@ harvester's load. Without that, buying seed and tipping it straight back is a la
 - **Heat** — the floor, that Quiet Claim shaves it but cannot silence a farm, that a
   blackout is felt within the hour, that it settles at the floor and caps at 100, that
   dawn pulls harder, that an idle trap is silent.
+- **Contracts** — that a fetch contract's progress follows the bag both ways; that a
+  contract taken at dusk credits a night by morning but one taken at dawn does not credit
+  one by dusk; that a tally caps at the objective and is dropped with the contract rather
+  than banked; that a contract naming a zombie ignores the others; that a full bag refuses
+  a hand-in instead of dropping the reward, leaving the contract live; that the goods you
+  hand over make room for what you are paid; and that every shipped contract is on some
+  trader's board and asks for a crop you can actually sow.
 - **Traders** — that the spread never closes across all 95 line-and-tier combinations and
   that a buy-and-sell-back round trip always leaves you poorer; that a refused trade moves
   nothing at all, in either direction; that a trader will not buy their own tokens; that

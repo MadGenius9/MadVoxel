@@ -45,9 +45,25 @@ namespace MadVoxel.Save
         public int rank;
     }
 
+    /// <summary>
+    /// One contract in progress. The counter is only meaningful for the kinds that
+    /// tally; the rest recompute their progress, so there is nothing to store.
+    /// </summary>
+    [Serializable]
+    public class QuestSaveData
+    {
+        public string questId = "";
+        public string traderId = "";
+        public double acceptedAtHours;
+        public int counter;
+    }
+
     [Serializable]
     public class PlayerSaveData
     {
+        public List<QuestSaveData> activeQuests = new List<QuestSaveData>();
+        public List<string> completedQuests = new List<string>();
+
         public float posX, posY, posZ;
         public float yaw, pitch;
         public float health, stamina, food, water;

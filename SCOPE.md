@@ -105,7 +105,7 @@ resolver and nine call sites — and changes nothing about the Phase 0 loop.
 | --- | --- | --- |
 | **Perks** | 14 perks across Mining, Construction, Combat, Scavenging, Medicine, Vehicles and Farming. XP, levelling, point accrual, **the skills screen** (`P`) and the buy rules are live, and every effect type but one is applied in play: dig speed, block and crop yield, salvage, building tier, stamina pool and drain, melee damage, healing, repair, wire reach, pump rate, trap damage, storm and drought resistance, claim heat, field yield and fuel economy. Ranks and unlocked recipes save and reload. | Ranged damage — waiting on a ranged weapon. |
 | **Traders** | **Live.** A counter at each outpost, a Claim Slate price board, buy and sell from the bag, reputation tiers that unlock stock and improve rates, clock-derived restocking, and bulk produce sold by the litre straight out of a harvester. Saved per trader. | A trader NPC with a schedule, and the quest board. |
-| **Quests** | 4 contracts with XP, reputation and item rewards, and a trader to hand them out. | Accept/track/turn-in, the journal, and a mining contract. |
+| **Quests** | **Live.** Four contracts on the trader's board, taken and handed in at the counter, three at a time, tracked on the HUD. Kills and delivered litres tally; fetch and survive-nights progress is recomputed. Saved with the player. | A mining contract, and contracts that are generated rather than authored. |
 | **Vehicles** | **Live.** A tractor you craft, set down and drive, on a character controller so a dug ramp behaves; fuel burn that Economiser actually changes; damage, wrecking and save/reload where it was parked. The Scrap Buggy shares the rig. | Seats for more than one, the on-board storage crate, and a machine that reacts to being rammed. |
 | **Field machines** | **Live.** Plough, cultivator, seed drill and harvester, hitched from the hand and raised or lowered on a key; a swept swath that cannot stripe a field; hopper accounting that refuses to sow what it cannot pay for; tipping litres into the grain bin; Agronomist's field yield. | A field irrigator. |
 | **Field cover** | **Live.** The standing crop, meshed per 16 m patch, growing in eight visible steps and going gold on the clock. Remeshed only when something changes. | Wind, and a second tilled-soil block so cultivated ground reads differently from plowed. |
@@ -226,9 +226,8 @@ Every step has an implementation behind it. The test itself needs a Unity editor
 
 ## Next milestone
 
-1. **Quest flow** — accept, track, turn in; add the mining contract. The trader counter
-   is the obvious place for the board, and the three contracts are already written.
-2. **Furnace** — a proper smelter, and the iron economy that feeds metal tier.
-3. **Script mods** — a sandboxed hook layer on top of the data loader.
-4. **Horde that reads the dig** — prefer an open ramp or an unfinished wall over chewing
+1. **Furnace** — a proper smelter, and the iron economy that feeds metal tier. It is the
+   last Phase 1 station with no runtime behind it.
+2. **Script mods** — a sandboxed hook layer on top of the data loader.
+3. **Horde that reads the dig** — prefer an open ramp or an unfinished wall over chewing
    the strongest face.

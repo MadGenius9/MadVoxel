@@ -354,6 +354,13 @@ namespace MadVoxel.Vehicles
                                              implement.Definition.FillsHopper, out paid);
             if (sold <= 0f) return true;
 
+            // Only a sale over a counter counts toward a delivery contract. Tipping
+            // into your own bin is storage, not delivery.
+            if (_content != null && cargo != null)
+            {
+                player.Quests.ReportLitres(_content.Quest, cargo.stringId, Mathf.RoundToInt(sold));
+            }
+
             implement.Empty();
             return true;
         }

@@ -18,6 +18,12 @@ namespace MadVoxel.Core.Player
         public PlayerInventory Inventory;
         public PlayerInteraction Interaction;
         public PlayerProgression Progression;
+
+        /// <summary>
+        /// Contracts taken and finished. Plain state on the rig rather than a component,
+        /// because every rule in it is engine-free and worth testing that way.
+        /// </summary>
+        public readonly Quests.QuestLog Quests = new Quests.QuestLog();
         public Camera Camera;
         public Transform CameraPivot;
 

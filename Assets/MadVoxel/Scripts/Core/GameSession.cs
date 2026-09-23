@@ -467,6 +467,7 @@ namespace MadVoxel.Core
             if (killer == null || _player == null || killer != _player.gameObject) return;
 
             _player.Progression.AddXp(zombie.Definition.xpReward, Perks.XpSource.Kill);
+            _player.Quests.ReportKill(_content.Quest, zombie.Definition.stringId);
 
             var def = zombie.Definition;
             if (def.dropItem != null && def.dropMax > 0)

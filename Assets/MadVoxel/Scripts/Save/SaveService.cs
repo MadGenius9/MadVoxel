@@ -151,6 +151,20 @@ namespace MadVoxel.Save
                 data.perkRanks.Add(new PerkRankData { perkId = kv.Key, rank = kv.Value });
             }
 
+            var quests = _player.Quests;
+            for (int i = 0; i < quests.Active.Count; i++)
+            {
+                var entry = quests.Active[i];
+                data.activeQuests.Add(new QuestSaveData
+                {
+                    questId = entry.QuestId,
+                    traderId = quests.IssuerOf(entry.QuestId),
+                    acceptedAtHours = entry.AcceptedAtHours,
+                    counter = entry.Counter
+                });
+            }
+            foreach (var id in quests.Completed) data.completedQuests.Add(id);
+
             data.hasRespawn = _player.HasRespawnPoint;
             data.respawnX = _player.RespawnPoint.x;
             data.respawnY = _player.RespawnPoint.y;
@@ -439,6 +453,8 @@ namespace MadVoxel.Save
             }
             _player.Inventory.Select(Mathf.Clamp(data.selectedHotbar, 0, PlayerInventory.HotbarSize - 1));
 
+            RestoreQuests(data);
+
             _player.HasRespawnPoint = data.hasRespawn;
             _player.RespawnPoint = new Vector3(data.respawnX, data.respawnY, data.respawnZ);
         }
@@ -511,6 +527,41 @@ namespace MadVoxel.Save
             RestoreColony(data);
             RestoreVehicles(data);
             RestoreTraders(data);
+        }
+
+        /// <summary>
+        /// Contracts come back with the hour they were taken and whatever was tallied.
+        /// A contract whose definition is gone - a mod removed, content renamed - is
+        /// dropped with a warning rather than restored as an entry pointing at nothing.
+        /// </summary>
+        void RestoreQuests(PlayerSaveData data)
+        {
+            if (data.activeQuests == null) return;
+
+            var entries = new List<MadVoxel.Quests.QuestEntry>();
+            var issuers = new List<KeyValuePair<string, string>>();
+
+            for (int i = 0; i < data.activeQuests.Count; i++)
+            {
+                var saved = data.activeQuests[i];
+                if (saved == null || string.IsNullOrEmpty(saved.questId)) continue;
+
+                if (_content.Quest(saved.questId) == null)
+                {
+                    Debug.LogWarningFormat("Save references unknown contract '{0}'; dropped.", saved.questId);
+                    continue;
+                }
+
+                entries.Add(new MadVoxel.Quests.QuestEntry
+                {
+                    QuestId = saved.questId,
+                    AcceptedAtHours = saved.acceptedAtHours,
+                    Counter = saved.counter
+                });
+                issuers.Add(new KeyValuePair<string, string>(saved.questId, saved.traderId));
+            }
+
+            _player.Quests.LoadState(entries, data.completedQuests, issuers);
         }
 
         void CaptureTraders(StructuresSaveData data)

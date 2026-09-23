@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using MadVoxel.AI;
+using MadVoxel.Content;
 using MadVoxel.Building;
 using MadVoxel.Core;
 using MadVoxel.Core.Player;
@@ -88,6 +89,10 @@ namespace MadVoxel.UI
         TractorPanel _tractor;
 
         RectTransform _toastRoot;
+        RectTransform _questRoot;
+        ContentDatabase _content;
+        readonly List<Text> _questLines = new List<Text>();
+        float _sinceQuestTick;
         Text _heldLabel;
 
         readonly List<SlotView> _belt = new List<SlotView>();
@@ -102,10 +107,11 @@ namespace MadVoxel.UI
 
         public void Init(PlayerRig player, WorldClock clock, HordeDirector horde,
                          StructureWorld structures, SpawnDirector spawner, TerrainWorld voxels,
-                         WeatherDirector weather)
+                         WeatherDirector weather, ContentDatabase content)
         {
             _player = player;
             _clock = clock;
+            _content = content;
             _horde = horde;
             _structures = structures;
             _spawner = spawner;
@@ -126,6 +132,7 @@ namespace MadVoxel.UI
             BuildToolbelt();
             BuildBuildPanel();
             BuildHordeLine();
+            BuildQuestTracker();
             BuildToasts();
 
             _tractor = gameObject.AddComponent<TractorPanel>();
@@ -362,6 +369,60 @@ namespace MadVoxel.UI
                 new Vector2(-30f, -26f), new Vector2(420f, 26f));
         }
 
+        /// <summary>
+        /// The contracts you are carrying, under the horde line. Three short lines at
+        /// most - a contract you cannot see is one you forget you took, and a journal
+        /// screen for three jobs would be a filing cabinet for a postcard.
+        /// </summary>
+        void BuildQuestTracker()
+        {
+            _questRoot = ClaimSlate.Rect(_canvas.transform, "Contracts");
+            ClaimSlate.Place(_questRoot, new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-30f, -62f), new Vector2(420f, 96f));
+
+            for (int i = 0; i < Quests.QuestService.MaxActive; i++)
+            {
+                var line = ClaimSlate.Stencil(_questRoot, "Contract" + i, "", 16,
+                    TextAnchor.UpperRight, ClaimSlate.BoneDim, false);
+                ClaimSlate.Place(ClaimSlate.Holder(line), new Vector2(1f, 1f), new Vector2(1f, 1f),
+                    new Vector2(0f, -i * 22f), new Vector2(420f, 20f));
+                _questLines.Add(line);
+            }
+        }
+
+        /// <summary>
+        /// One line each: what it is and how far along. A finished contract goes sage,
+        /// which is the only cue that it is worth walking back to the outpost.
+        /// </summary>
+        void UpdateQuestTracker()
+        {
+            if (_content == null || _player == null) return;
+
+            var log = _player.Quests;
+            var bag = _player.Inventory.Bag;
+            double now = _clock != null ? _clock.TotalHours : 0.0;
+
+            for (int i = 0; i < _questLines.Count; i++)
+            {
+                if (i >= log.Active.Count)
+                {
+                    if (_questLines[i].text.Length > 0) _questLines[i].text = "";
+                    continue;
+                }
+
+                var entry = log.Active[i];
+                var quest = _content.Quest(entry.QuestId);
+                if (quest == null) { _questLines[i].text = ""; continue; }
+
+                bool done = Quests.QuestService.IsComplete(quest, entry, bag, now);
+
+                _questLines[i].text = string.Format("{0}   {1}",
+                    quest.title.ToUpperInvariant(),
+                    done ? "READY TO HAND IN" : Quests.QuestService.ProgressLine(quest, entry, bag, now));
+                _questLines[i].color = done ? ClaimSlate.CropSage : ClaimSlate.BoneDim;
+            }
+        }
+
         void BuildToasts()
         {
             _toastRoot = ClaimSlate.Rect(_canvas.transform, "Toasts");
@@ -381,6 +442,15 @@ namespace MadVoxel.UI
             UpdateLookReadout();
             UpdateBuildLayer();
             UpdateHordeLayer();
+
+            // Four times a second. A contract's progress is a bag count or a clock
+            // difference, and neither changes in a way you could see at sixty hertz.
+            _sinceQuestTick += Time.deltaTime;
+            if (_sinceQuestTick >= 0.25f)
+            {
+                _sinceQuestTick = 0f;
+                UpdateQuestTracker();
+            }
             UpdateBiomeCrossing();
             UpdateToasts();
 

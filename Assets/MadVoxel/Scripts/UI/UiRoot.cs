@@ -121,7 +121,7 @@ namespace MadVoxel.UI
             _gameplayUi.transform.SetParent(transform, false);
 
             Hud = _gameplayUi.AddComponent<HudView>();
-            Hud.Init(player, clock, horde, structures, spawner, voxels, weather);
+            Hud.Init(player, clock, horde, structures, spawner, voxels, weather, content);
 
             Inventory = _gameplayUi.AddComponent<InventoryScreen>();
             Inventory.Init(player, content);
@@ -134,7 +134,7 @@ namespace MadVoxel.UI
             Board.Heat = heat;
 
             Trader = _gameplayUi.AddComponent<TraderScreen>();
-            Trader.Init(player);
+            Trader.Init(player, content, clock);
 
             Debug = _gameplayUi.AddComponent<DebugOverlay>();
             Debug.Init(player, voxels, streamer, seed, developerTools);
