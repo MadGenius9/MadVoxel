@@ -150,6 +150,12 @@ counter within 14 m, else a grain bin within 8 m · shift-click trades ten at a 
   build needs URP Lit/Unlit in *Always Included Shaders* or everything goes magenta.
   `Configure Project` handles it; verify if a build looks wrong.
 - **Every UI number is a guess** at a 1920×1080 canvas. Nobody has seen it lay out.
+- **The interaction probe finds things by what they have, not what they are.**
+  `PlayerInteraction.Probe` walks a fixed order — build piece, structure, chunk,
+  damageable, interactable — and a new object that matches none of the early branches is
+  simply invisible to the crosshair. The trader counter shipped unreachable for exactly
+  this reason: it has no health, so every branch above it walked past. If you add
+  something the player should be able to use, check it has a branch.
 - **Colonists do not pathfind.** They walk at a target and let the character controller
   handle terrain. Fine on dug ground and ramps; they will wedge on a wall corner.
 - **No machine has ever been driven.** The swath, the hopper and the tillage cycle are

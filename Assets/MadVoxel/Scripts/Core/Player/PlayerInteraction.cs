@@ -17,7 +17,13 @@ namespace MadVoxel.Core.Player
         Block,
         Structure,
         BuildPiece,
-        Entity
+        Entity,
+        /// <summary>
+        /// Something you use but cannot fight: a trader's counter. Without this a
+        /// fixture that is not <see cref="IDamageable"/> is invisible to the probe,
+        /// because every earlier branch is looking for something with health.
+        /// </summary>
+        Fixture
     }
 
     public struct InteractionTarget
@@ -209,6 +215,16 @@ namespace MadVoxel.Core.Player
                 result.Kind = TargetKind.Entity;
                 result.Damageable = damageable;
                 result.Interactable = hit.collider.GetComponentInParent<IInteractable>();
+                return result;
+            }
+
+            // Last: something you can use but not fight. A trader's counter has no
+            // health, so every branch above walks past it.
+            var fixture = hit.collider.GetComponentInParent<IInteractable>();
+            if (fixture != null)
+            {
+                result.Kind = TargetKind.Fixture;
+                result.Interactable = fixture;
             }
 
             return result;
@@ -275,7 +291,8 @@ namespace MadVoxel.Core.Player
 
                 Build = readout;
             }
-            else if (held != null && held.IsPlaceable && Target.Kind != TargetKind.None && Target.Kind != TargetKind.Entity)
+            else if (held != null && held.IsPlaceable && Target.Kind != TargetKind.None
+                     && Target.Kind != TargetKind.Entity && Target.Kind != TargetKind.Fixture)
             {
                 Vector3Int cell = Target.PlaceCell;
                 bool valid;
