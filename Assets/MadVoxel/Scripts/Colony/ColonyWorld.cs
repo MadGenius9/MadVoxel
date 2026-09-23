@@ -217,7 +217,12 @@ namespace MadVoxel.Colony
                 // left waiting for ever blocks the daily check and quietly ends every
                 // future arrival.
                 Notifications.PostFormat("{0} cannot stay after all", WandererName);
-                TurnAwayWanderer();
+
+                // Cleared without the refusal's cooldown. The colony turned them away,
+                // not the player, and charging three days for that is charging for
+                // someone else's decision.
+                WandererWaiting = false;
+                WandererName = "";
                 return null;
             }
 
@@ -242,8 +247,15 @@ namespace MadVoxel.Colony
         {
             WandererWaiting = waiting;
             WandererName = name ?? "";
-            _lastArrivalDay = lastArrivalDay;
-            _lastCheckedDay = _clock != null ? _clock.Day : -1;
+
+            int today = _clock != null ? _clock.Day : 0;
+
+            // A save from before this was recorded has no arrival day, and treating
+            // that as day zero hands back a cooldown that has already run out - the
+            // reload re-roll, again, through the back door. An unset day means "as
+            // though someone arrived today".
+            _lastArrivalDay = lastArrivalDay > 0 ? lastArrivalDay : today;
+            _lastCheckedDay = _clock != null ? today : -1;
         }
 
         /// <summary>
@@ -292,7 +304,10 @@ namespace MadVoxel.Colony
             ColonistVisuals.Build(go.transform);
 
             var colonist = go.AddComponent<Colonist>();
-            colonist.Init(this, Rules.colonist, string.IsNullOrEmpty(name) ? NextName() : name);
+            if (string.IsNullOrEmpty(name)) name = NextName();
+            else ClaimName(name);
+
+            colonist.Init(this, Rules.colonist, name);
             _colonists.Add(colonist);
 
             AssignBed(colonist);
@@ -311,6 +326,18 @@ namespace MadVoxel.Colony
                 if (!_usedNames.Contains(pool[i])) return pool[i];
             }
             return "Survivor " + (_colonists.Count + 1);
+        }
+
+        /// <summary>
+        /// Takes a borrowed name for good, when its owner walks through the gate.
+        ///
+        /// Borrowing without ever claiming was worse than claiming too early: the used
+        /// set stayed empty, so every wanderer was offered the same first name and two
+        /// of them could move in together under it.
+        /// </summary>
+        void ClaimName(string name)
+        {
+            if (!string.IsNullOrEmpty(name)) _usedNames.Add(name);
         }
 
         string NextName()

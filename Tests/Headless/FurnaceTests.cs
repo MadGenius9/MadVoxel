@@ -288,6 +288,24 @@ namespace MadVoxel.Headless
             Harness.Equal(FurnaceRules.Describe(work, fuelled, room), "SMELTING",
                 "and then it really is smelting");
 
+            // With one job fuelled-but-boxed-in and another roomy-but-cold, the answer
+            // must not depend on which the content happened to list first. Same state,
+            // both orders, same word.
+            var crossedA = new List<RecipeDefinition> { cheap, dear };
+            var crossedB = new List<RecipeDefinition> { dear, cheap };
+
+            bool fuelA, roomA, fuelB, roomB, workA, workB;
+            float burn = FurnaceRules.SecondsPerBatch(cheap);
+
+            FurnaceRules.Survey(crossedA, burn, r => true, r => r == dear, out workA, out fuelA, out roomA);
+            FurnaceRules.Survey(crossedB, burn, r => true, r => r == dear, out workB, out fuelB, out roomB);
+
+            Harness.Equal(FurnaceRules.Describe(workA, fuelA, roomA),
+                          FurnaceRules.Describe(workB, fuelB, roomB),
+                "the same furnace reads the same whichever order its recipes are listed in");
+            Harness.Equal(FurnaceRules.Describe(workA, fuelA, roomA), "FULL  -  NOWHERE TO PUT IT",
+                "and it names the fuelled job's problem - out of fuel while the coal is lit is a lie");
+
             // A furnace that stopped for want of ore must not bank the hours it spent
             // cold. The structure decides this by asking whether it could still be
             // working, so that question has to answer honestly for an empty furnace.

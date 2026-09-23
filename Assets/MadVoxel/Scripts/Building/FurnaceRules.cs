@@ -240,14 +240,20 @@ namespace MadVoxel.Building
                 bool thisFuel = HasBurnFor(fuelSeconds, recipe);
                 bool thisRoom = hasRoom == null || hasRoom(recipe);
 
-                int score = (thisFuel ? 1 : 0) + (thisRoom ? 1 : 0);
+                // Fuel counts double, which is only a tie-break: with one recipe fuelled
+                // but boxed in and another with room but nothing to burn, the furnace
+                // must not report whichever the content happened to list first. It
+                // reports the fuelled one, because "out of fuel" while the coal is
+                // alight reads as a lie, and clearing space is something you can do
+                // standing at the furnace you are already standing at.
+                int score = (thisFuel ? 2 : 0) + (thisRoom ? 1 : 0);
                 if (score <= best) continue;
 
                 best = score;
                 fuel = thisFuel;
                 room = thisRoom;
 
-                if (score == 2) return;
+                if (thisFuel && thisRoom) return;
             }
         }
 
