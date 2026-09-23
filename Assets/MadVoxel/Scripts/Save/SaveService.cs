@@ -215,6 +215,7 @@ namespace MadVoxel.Save
                 {
                     furnace.Catch();
                     entry.furnaceWorkedToHours = furnace.WorkedToHours;
+                    entry.furnaceBankedFuel = furnace.BankedFuelSeconds;
                     for (int s = 0; s < furnace.Contents.Size; s++)
                     {
                         entry.contents.Add(ToData(furnace.Contents[s]));
@@ -515,7 +516,7 @@ namespace MadVoxel.Save
                 if (furnace != null)
                 {
                     furnace.Content = _content;
-                    furnace.RestoreState(entry.furnaceWorkedToHours);
+                    furnace.RestoreState(entry.furnaceWorkedToHours, entry.furnaceBankedFuel);
                     RestoreSlots(entry.contents, furnace.Contents);
 
                     // Catch it up now: a furnace loaded and left through a save should

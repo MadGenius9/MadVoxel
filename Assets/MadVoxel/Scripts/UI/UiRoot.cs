@@ -190,15 +190,19 @@ namespace MadVoxel.UI
         }
 
         /// <summary>
-        /// A furnace is a container that also works, so it opens the container screen
-        /// with the forge's orders beside it - you can smelt a batch by hand while it
-        /// works through the rest on its own.
+        /// A furnace opens as a container and nothing else.
+        ///
+        /// It offered the forge's own recipes as hand work orders at first, which was
+        /// free metal: those recipes charge no coal precisely because the furnace pays
+        /// in burn time instead, so crafting them by hand skipped the fuel, the wait and
+        /// the station. The furnace's job is to work while you are not there, and the
+        /// only way to ask it to is to put ore in it.
         /// </summary>
         void OnFurnaceOpen(FurnaceStructure furnace)
         {
             if (Inventory == null || State == UiState.Dead) return;
 
-            Inventory.OpenContainer(furnace.Contents, furnace.Structure.Definition.displayName, CraftStation.Forge);
+            Inventory.OpenContainer(furnace.Contents, furnace.Structure.Definition.displayName, CraftStation.Hand);
             SetState(UiState.Inventory);
         }
 

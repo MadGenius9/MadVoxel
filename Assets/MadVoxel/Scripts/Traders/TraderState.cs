@@ -131,9 +131,33 @@ namespace MadVoxel.Traders
         }
 
         /// <summary>Buys, or changes nothing at all. Reputation only moves on a real sale.</summary>
-        public TradeResult Buy(MadVoxel.Inventory.Inventory bag, int index, int count, out int spent)
+        /// <summary>
+        /// Buys up to <paramref name="count"/>, or changes nothing at all. Both the
+        /// shelf and the purse clamp the count rather than refusing it, so
+        /// <paramref name="bought"/> is what actually changed hands.
+        /// </summary>
+        public TradeResult Buy(MadVoxel.Inventory.Inventory bag, int index, int count, out int spent, out int bought)
         {
             spent = 0;
+            bought = 0;
+
+            // A bad line or a request for nothing is the caller's mistake, not a small
+            // shelf, and both have to be told apart from it before anything is clamped.
+            if (index < 0 || index >= LineCount || Line(index).item == null) return TradeResult.NoSuchLine;
+            if (count <= 0) return TradeResult.NoSuchLine;
+
+            // Otherwise take what they have rather than refusing. Shift-buying ten off
+            // a shelf of five used to fail outright while the board still read "5 LEFT"
+            // with the button lit, which reads as a broken shop rather than a small one.
+            count = Mathf.Min(count, StockOf(index));
+            if (count <= 0) return TradeResult.OutOfStock;
+
+            // And by what is in the purse, for the same reason. A shift-click with
+            // three tokens' worth buys three, rather than refusing and leaving the
+            // player to work out how many they could have had.
+            int each = PriceOf(index);
+            if (each > 0) count = Mathf.Min(count, Tokens(bag) / each);
+            if (count <= 0) return TradeResult.CannotAfford;
 
             int cost;
             var check = CanBuy(bag, index, count, out cost);
@@ -153,8 +177,16 @@ namespace MadVoxel.Traders
 
             _stock[index] -= count;
             spent = cost;
+            bought = count;
             Reputation += TraderPricing.ReputationForSpend(cost);
             return TradeResult.Ok;
+        }
+
+        /// <summary>The common case, where the caller does not care how many it got.</summary>
+        public TradeResult Buy(MadVoxel.Inventory.Inventory bag, int index, int count, out int spent)
+        {
+            int bought;
+            return Buy(bag, index, count, out spent, out bought);
         }
 
         // ------------------------------------------------------------------ selling

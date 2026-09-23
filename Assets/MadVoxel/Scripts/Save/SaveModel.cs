@@ -99,6 +99,8 @@ namespace MadVoxel.Save
         // Furnace: the hour its work is accounted up to. Everything after it is owed,
         // so a furnace loaded and left through a save comes back with the metal made.
         public double furnaceWorkedToHours;
+        /// <summary>Burn already lit and unspent, so a save does not pocket half a lump of coal.</summary>
+        public float furnaceBankedFuel;
 
         // Grain bin contents, in litres.
         public List<SiloEntryData> silo = new List<SiloEntryData>();

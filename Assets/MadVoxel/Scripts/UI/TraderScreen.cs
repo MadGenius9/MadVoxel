@@ -319,13 +319,15 @@ namespace MadVoxel.UI
         {
             if (_post == null || _player == null) return;
 
-            int spent;
-            var result = _post.State.Buy(_player.Inventory.Bag, index, Count(), out spent);
+            int spent, bought;
+            var result = _post.State.Buy(_player.Inventory.Bag, index, Count(), out spent, out bought);
 
             if (result == TradeResult.Ok)
             {
-                Core.Notifications.PostFormat("Bought {0} for {1} tokens",
-                    _post.State.Line(index).item.displayName, spent);
+                // The count, because a shift-click can be clamped by the shelf or the
+                // purse and the player deserves to know which they got.
+                Core.Notifications.PostFormat("Bought {0} {1} for {2} tokens",
+                    bought, _post.State.Line(index).item.displayName, spent);
             }
             else
             {

@@ -281,11 +281,12 @@ namespace MadVoxel.Vehicles
             float perItem = Mathf.Max(0.1f, implement.Definition.litresPerSeedItem);
             int loaded = 0;
 
-            // One item at a time so a part-full hopper takes exactly what fits and the
-            // rest stays in the bag as seed rather than evaporating.
+            // One item at a time, and only counted as spent when the whole item fits.
+            // A hopper with two litres of room used to swallow a whole eight-litre seed
+            // for the two - the comment said otherwise, the arithmetic did not.
             for (int i = 0; i < held.Count; i++)
             {
-                if (implement.LoadSeed(crop, perItem) <= 0f) break;
+                if (implement.LoadSeed(crop, perItem) < perItem - 0.001f) break;
                 loaded++;
             }
 

@@ -97,7 +97,8 @@ namespace MadVoxel.Headless
             mixed.Add(coal, 1);
             mixed.Add(wood, 4);
 
-            float got = FurnaceRules.BurnFuel(mixed, wood.fuelSeconds);
+            float bank = 0f;
+            float got = FurnaceRules.BurnFuel(mixed, wood.fuelSeconds, ref bank);
             Harness.Check(got >= wood.fuelSeconds - 0.01f, "the burn gets what it asked for");
             Harness.Equal(mixed.CountOf(coal), 1, "and the coal is untouched while there is wood");
             Harness.Equal(mixed.CountOf(wood), 3, "one log gone");
@@ -106,13 +107,42 @@ namespace MadVoxel.Headless
             var thin = new Inv(12);
             thin.Add(wood, 1);
 
-            float partial = FurnaceRules.BurnFuel(thin, wood.fuelSeconds * 10f);
+            float thinBank = 0f;
+            float partial = FurnaceRules.BurnFuel(thin, wood.fuelSeconds * 10f, ref thinBank);
             Harness.Equal(partial, wood.fuelSeconds, "a short furnace burns only what it had");
             Harness.Equal(thin.CountOf(wood), 0, "and empties");
-            Harness.Equal(FurnaceRules.BurnFuel(thin, 50f), 0f, "an empty one burns nothing");
+            Harness.Equal(FurnaceRules.BurnFuel(thin, 50f, ref thinBank), 0f, "an empty one burns nothing");
 
-            Harness.Equal(FurnaceRules.BurnFuel(null, 10f), 0f, "and nothing burns nothing");
-            Harness.Equal(FurnaceRules.BurnFuel(mixed, 0f), 0f, "asking for no burn takes no fuel");
+            float nullBank = 0f;
+            Harness.Equal(FurnaceRules.BurnFuel(null, 10f, ref nullBank), 0f, "and nothing burns nothing");
+            Harness.Equal(FurnaceRules.BurnFuel(mixed, 0f, ref bank), 0f, "asking for no burn takes no fuel");
+
+            // THE one that decides whether a furnace is worth building. A lump of coal
+            // outlasts a batch several times over; lighting a fresh one per batch made
+            // it cost more fuel per ingot than the campfire it replaces.
+            var lump = new Inv(12);
+            lump.Add(coal, 1);
+
+            float carried = 0f;
+            int batchesFromOne = 0;
+
+            for (int i = 0; i < 20; i++)
+            {
+                if (FurnaceRules.BurnFuel(lump, 12f, ref carried) < 11.9f) break;
+                batchesFromOne++;
+            }
+
+            Harness.Check(batchesFromOne >= 6,
+                string.Format("one lump of coal carries {0} twelve-second batches, not one", batchesFromOne));
+            Harness.Equal(lump.CountOf(coal), 0, "and it is spent when it runs out");
+            Harness.Check(carried < 12f, "with less than a batch of burn left over");
+
+            // The remainder must not be conjured out of nothing either.
+            var empty = new Inv(12);
+            float ghost = 5f;
+            Harness.Equal(FurnaceRules.BurnFuel(empty, 5f, ref ghost), 5f, "banked burn is spendable");
+            Harness.Equal(ghost, 0f, "and is gone once spent");
+            Harness.Equal(FurnaceRules.BurnFuel(empty, 1f, ref ghost), 0f, "with nothing behind it");
         }
 
         // ----------------------------------------------------------------- batches

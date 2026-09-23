@@ -40,6 +40,13 @@ namespace MadVoxel.Building
         /// <summary>The hour its work is accounted up to. Everything after this is owed.</summary>
         public double WorkedToHours { get; private set; }
 
+        /// <summary>
+        /// Burn that is lit and not yet spent. A lump of coal outlasts a batch several
+        /// times over, and throwing the remainder away each time made the furnace cost
+        /// more fuel per ingot than a campfire.
+        /// </summary>
+        public float BankedFuelSeconds { get; private set; }
+
         /// <summary>Set by the session: the furnace needs to know what a forge can make.</summary>
         public ContentDatabase Content { get; set; }
 
@@ -171,12 +178,16 @@ namespace MadVoxel.Building
             int byRoom = Contents.CanFit(recipe.output, recipe.outputCount) ? 1 : 0;
             if (byRoom <= 0) return 0;
 
-            float fuel = FurnaceRules.FuelSecondsIn(Contents);
+            float fuel = FurnaceRules.FuelSecondsIn(Contents) + BankedFuelSeconds;
             if (FurnaceRules.BatchesAffordable(secondsLeft, fuel, perBatch, byIngredients, byRoom) <= 0) return 0;
 
             // Fuel first: if the burn comes up short the batch does not happen, and no
             // ore has been touched.
-            if (FurnaceRules.BurnFuel(Contents, perBatch) < perBatch - 0.001f) return 0;
+            float banked = BankedFuelSeconds;
+            float got = FurnaceRules.BurnFuel(Contents, perBatch, ref banked);
+            BankedFuelSeconds = banked;
+
+            if (got < perBatch - 0.001f) return 0;
 
             for (int i = 0; i < recipe.ingredients.Count; i++)
             {
@@ -196,7 +207,7 @@ namespace MadVoxel.Building
             if (Contents == null || Content == null) return false;
 
             FurnaceRules.CollectRecipes(Content.recipes, _recipes);
-            if (FurnaceRules.FuelSecondsIn(Contents) <= 0f) return false;
+            if (FurnaceRules.FuelSecondsIn(Contents) + BankedFuelSeconds <= 0f) return false;
 
             for (int i = 0; i < _recipes.Count; i++)
             {
@@ -225,7 +236,7 @@ namespace MadVoxel.Building
                 if (Contents.CanFit(_recipes[i].output, _recipes[i].outputCount)) hasRoom = true;
             }
 
-            bool hasFuel = FurnaceRules.FuelSecondsIn(Contents) > 0f;
+            bool hasFuel = FurnaceRules.FuelSecondsIn(Contents) + BankedFuelSeconds > 0f;
             return "FURNACE  " + FurnaceRules.Describe(hasWork, hasFuel, hasRoom);
         }
 
@@ -239,9 +250,10 @@ namespace MadVoxel.Building
 
         // ------------------------------------------------------------------- saving
 
-        public void RestoreState(double workedToHours)
+        public void RestoreState(double workedToHours, float bankedFuelSeconds)
         {
             WorkedToHours = workedToHours;
+            BankedFuelSeconds = Mathf.Max(0f, bankedFuelSeconds);
         }
 
         public string InteractPrompt { get { return Readout(); } }

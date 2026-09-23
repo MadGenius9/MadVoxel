@@ -18,7 +18,7 @@ without a Unity editor available. Everything was verified two ways instead:
 
 1. **Compile check** against real Unity reference assemblies (2021.3 — the newest on
    NuGet, while the project targets Unity 6, so API drift between them is a real gap).
-2. **1,128 headless checks** that run the *actual* gameplay sources against an executable
+2. **1,146 headless checks** that run the *actual* gameplay sources against an executable
    `UnityEngine` shim in `Tests/Headless/`.
 
 Those caught eight genuine bugs a compile could not see. They cannot tell you whether
@@ -34,7 +34,7 @@ the tests.** The tests are strong on logic and silent on everything else.
 Always, before saying anything is done:
 
 ```bash
-cd Tests/Headless && dotnet run      # 1128 checks, exit 0 when clean
+cd Tests/Headless && dotnet run      # 1146 checks, exit 0 when clean
 ```
 
 If .NET is missing, `dotnet` is a free install and worth it — this suite is the only
@@ -156,6 +156,10 @@ counter within 14 m, else a grain bin within 8 m · shift-click trades ten at a 
   build needs URP Lit/Unlit in *Always Included Shaders* or everything goes magenta.
   `Configure Project` handles it; verify if a build looks wrong.
 - **Every UI number is a guess** at a 1920×1080 canvas. Nobody has seen it lay out.
+- **A held item must not swallow input it does not own.** The bow consumed the whole
+  input update rather than the primary button, which left `E` and right-click dead on
+  every trader, furnace, crate, door and vehicle while it was in hand. Anything that
+  takes a button takes *that* button.
 - **The interaction probe finds things by what they have, not what they are.**
   `PlayerInteraction.Probe` walks a fixed order — build piece, structure, chunk,
   damageable, interactable — and a new object that matches none of the early branches is

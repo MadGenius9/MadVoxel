@@ -57,7 +57,7 @@ namespace MadVoxel.Inventory
         [Header("Ranged")]
         [Tooltip("What one arrow does at full draw. Zero means this is not a ranged weapon.")]
         public float rangedDamage;
-        [Tooltip("The ammunition it spends. A bow with no arrows is a stick.")]
+        [Tooltip("The ammunition it falls back to. Better arrows in the bag are used first.")]
         public ItemDefinition ammoItem;
         [Tooltip("Seconds to a full draw.")]
         public float drawSeconds = 0.9f;

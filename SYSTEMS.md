@@ -416,6 +416,11 @@ furnace, dropping in a stack and watching a week of stored time turn it into met
 once. The seconds-to-hours conversion is checked to be an
 exact inverse: a furnace opened every minute must neither lose time nor invent it.
 
+A lump of coal outlasts a batch several times over, so unspent burn is **banked on the
+furnace** rather than thrown away. Lighting a fresh lump per batch made it cost more fuel
+per ingot than the campfire it replaces, while the batch arithmetic went on promising
+otherwise.
+
 Fuel burns cheapest-first, so a furnace does not spend your coal while there is wood in it.
 Fuel is taken before ore, so a batch that runs out of burn mid-way has not already consumed
 an ore it cannot finish. And no forge recipe may list a fuel as an ingredient — the
@@ -445,7 +450,9 @@ limits range, and stacking a second penalty makes a bow feel like it is apologis
 existing.
 
 The bow's rating and the arrow's head are **added together**, so an iron arrow is a real
-upgrade without needing a second bow. A full-draw stone arrow does 30 against a shambler's
+upgrade without needing a second bow. Which arrow is chosen at the string, not declared on
+the weapon: a bow that can only ever fire the arrow its definition names makes every
+better arrow uncraftable in practice. A full-draw stone arrow does 30 against a shambler's
 55: two arrows, never one.
 
 Two things in the flight are worth knowing:
@@ -507,7 +514,7 @@ satisfying version of finding that out at dawn.
 
 ## What the headless checks cover
 
-1128 checks, all passing. The new ones:
+1146 checks, all passing. The new ones:
 
 - **Biomes** — spawn is always farmland; no shelf near spawn but shelf at the edge; all
   five regions appear; the same seed repaints the same map; borders smear; the regions

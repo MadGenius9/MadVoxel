@@ -185,10 +185,36 @@ namespace MadVoxel.Headless
             Harness.Equal(state.StockOf(line), stockBefore - 2, "the shelf is two lighter");
             Harness.Check(state.Reputation > 0, "and the trader thinks a little better of you");
 
-            // More than they have.
-            Harness.Equal((int)state.Buy(bag, line, 9999, out spent), (int)TradeResult.OutOfStock,
-                "you cannot buy more than they have");
+            // More than they have: take the shelf rather than refusing it. Refusing
+            // outright reads as a broken shop while the board still shows stock.
+            int onShelf = state.StockOf(line);
+            Harness.Equal((int)state.Buy(bag, line, 9999, out spent), (int)TradeResult.Ok,
+                "asking for more than they have buys what they have");
+            Harness.Equal(state.StockOf(line), 0, "which clears the shelf");
+            Harness.Equal(spent, price * onShelf, "and costs exactly what was taken");
+
+            Harness.Equal((int)state.Buy(bag, line, 1, out spent), (int)TradeResult.OutOfStock,
+                "an empty shelf then refuses");
             Harness.Equal(spent, 0, "and a refused trade spends nothing");
+
+            // The purse clamps the same way the shelf does.
+            var thin = new TraderState();
+            thin.Init(vance, 0.0);
+
+            int thinLine = OpenLine(thin);
+            int unit = thin.PriceOf(thinLine);
+
+            var pocket = Bag(db, unit * 3);
+            int bought;
+            Harness.Equal((int)thin.Buy(pocket, thinLine, 10, out spent, out bought), (int)TradeResult.Ok,
+                "asking for ten with three tokens' worth buys what you can afford");
+            Harness.Equal(bought, 3, "which is three");
+            Harness.Equal(spent, unit * 3, "for exactly three tokens' worth");
+            Harness.Equal(pocket.CountOf(token), 0, "leaving the purse empty");
+
+            Harness.Equal((int)thin.Buy(pocket, thinLine, 1, out spent, out bought), (int)TradeResult.CannotAfford,
+                "and an empty purse then refuses");
+            Harness.Equal(bought, 0, "having bought nothing");
 
             // A line above your station.
             int gated = -1;

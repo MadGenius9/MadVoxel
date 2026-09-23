@@ -193,6 +193,15 @@ namespace MadVoxel.Headless
             if (stone == null || iron == null) return;
 
             Harness.Check(iron.rangedDamage > stone.rangedDamage, "iron hits harder than stone");
+
+            // The bow picks the best arrow in the bag at the string rather than firing
+            // whatever its definition names. Both heads must therefore be findable the
+            // same way, or the better one is craftable and unfireable - which is what
+            // the iron arrow was.
+            Harness.Equal((int)stone.category, (int)ItemCategory.Ammo, "stone arrows read as ammunition");
+            Harness.Equal((int)iron.category, (int)ItemCategory.Ammo, "and so do iron ones");
+            Harness.Check(bow.ammoItem.category == ItemCategory.Ammo,
+                "and the bow's fallback is ammunition too");
             Harness.Check(!stone.IsRanged && !iron.IsRanged,
                 "and an arrow is not itself a bow, whatever damage it carries");
 

@@ -148,6 +148,12 @@ namespace MadVoxel.Core.Player
             {
                 _ghost.Hide();
                 ResetMining();
+
+                // Let the string down rather than holding it. Opening the inventory
+                // mid-draw and closing it again used to loose an arrow the player never
+                // released, and the draw bar stayed lit over the menu.
+                _drawHeld = 0f;
+                Draw01 = 0f;
                 return;
             }
 
@@ -156,12 +162,16 @@ namespace MadVoxel.Core.Player
 
             if (InputBridge.RotatePieceDown) _placeRotation = (_placeRotation + 1) % 4;
 
-            // A bow takes the primary button entirely: you draw on hold and loose on
-            // release, and there is no swing underneath it to fall through to.
-            if (HandleBow()) return;
+            // A bow takes the primary button - you draw on hold and loose on release,
+            // with no swing underneath to fall through to. It takes only that button,
+            // though: a bow in your hand must not stop you opening a door.
+            bool drawing = HandleBow();
 
-            if (InputBridge.PrimaryHeld) HandlePrimary();
-            else ResetMining();
+            if (!drawing)
+            {
+                if (InputBridge.PrimaryHeld) HandlePrimary();
+                else ResetMining();
+            }
 
             if (InputBridge.SecondaryDown) HandleSecondary();
             if (InputBridge.InteractDown) HandleInteract();
@@ -436,7 +446,7 @@ namespace MadVoxel.Core.Player
                 return false;
             }
 
-            if (_inventory.Bag.CountOf(held.ammoItem) <= 0)
+            if (BestArrow(held) == null)
             {
                 if (InputBridge.PrimaryDown) Notifications.PostFormat("Out of {0}", held.ammoItem.displayName);
 
@@ -466,6 +476,34 @@ namespace MadVoxel.Core.Player
             return true;
         }
 
+        /// <summary>
+        /// The best arrow in the bag, or null when there is none.
+        ///
+        /// Chosen at the string rather than declared on the bow, because a bow that can
+        /// only ever fire the arrow its definition names makes every better arrow in
+        /// the game uncraftable in practice - which is exactly what the iron arrow was.
+        /// Best means hardest-hitting: if you are carrying them, you meant to use them.
+        /// </summary>
+        ItemDefinition BestArrow(ItemDefinition bow)
+        {
+            if (bow == null || bow.ammoItem == null) return null;
+
+            ItemDefinition best = null;
+            var bag = _inventory.Bag;
+
+            for (int i = 0; i < bag.Size; i++)
+            {
+                var stack = bag[i];
+                if (stack.IsEmpty || stack.Item == null) continue;
+
+                // Ammunition is anything that carries a head and is not itself a bow.
+                if (stack.Item.IsRanged || stack.Item.category != ItemCategory.Ammo) continue;
+                if (best == null || stack.Item.rangedDamage > best.rangedDamage) best = stack.Item;
+            }
+
+            return best;
+        }
+
         void Loose(ItemDefinition bow, float draw01)
         {
             if (!Combat.Ballistics.CanRelease(draw01))
@@ -483,12 +521,15 @@ namespace MadVoxel.Core.Player
                 return;
             }
 
-            _inventory.Bag.Remove(bow.ammoItem, 1);
+            var arrow = BestArrow(bow);
+            if (arrow == null) return;
+
+            _inventory.Bag.Remove(arrow, 1);
 
             float speed = Combat.Ballistics.LaunchSpeed(bow.minLaunchSpeed, bow.maxLaunchSpeed, draw01);
             // Bow plus head: a better arrow is a real upgrade without needing a second
             // bow, and the draw scales the whole thing rather than only half of it.
-            float rating = bow.rangedDamage + Mathf.Max(0f, bow.ammoItem.rangedDamage);
+            float rating = bow.rangedDamage + Mathf.Max(0f, arrow.rangedDamage);
             float damage = Combat.Ballistics.Damage(rating, draw01)
                            * Perks.Multiplier(PerkEffectType.RangedDamageMultiplier);
 
@@ -500,7 +541,7 @@ namespace MadVoxel.Core.Player
             // flight die with the world rather than hanging in an empty scene after a
             // quit to menu.
             Combat.Arrow.Fire(transform.parent, origin, _camera.transform.forward, speed, damage,
-                              bow.toolTier, bow.ammoItem, gameObject);
+                              bow.toolTier, arrow, gameObject);
 
             if (bow.HasDurability) _inventory.WearSelected(1);
         }

@@ -71,6 +71,10 @@ namespace MadVoxel.Building
         /// out of fuel, out of ore, or no room for what comes out. Taking the smallest
         /// is what stops a furnace consuming an input it cannot finish.
         /// </summary>
+        /// <param name="fuelSeconds">
+        /// Burn available, which is what is in the inventory plus anything already lit
+        /// and unspent - the caller must include the bank or this over-promises.
+        /// </param>
         public static int BatchesAffordable(float workingSeconds, float fuelSeconds, float secondsPerBatch,
                                             int byIngredients, int byRoom)
         {
@@ -107,14 +111,25 @@ namespace MadVoxel.Building
         /// Burns fuel out of an inventory, cheapest first, and returns the seconds it
         /// actually got. Burning the coal before the wood would make a furnace eat a
         /// player's best fuel on their worst job.
+        ///
+        /// <paramref name="banked"/> is burn already lit and not yet used. A lump of
+        /// coal is eighty seconds and a batch is twelve, and without carrying the
+        /// remainder each batch lit a fresh lump - which made the furnace cost more
+        /// fuel per ingot than the campfire it was meant to replace, while the batch
+        /// arithmetic went on promising otherwise.
         /// </summary>
-        public static float BurnFuel(Inventory.Inventory inventory, float wantedSeconds)
+        public static float BurnFuel(Inventory.Inventory inventory, float wantedSeconds, ref float banked)
         {
-            if (inventory == null || wantedSeconds <= 0f) return 0f;
+            if (wantedSeconds <= 0f) return 0f;
 
             float remaining = wantedSeconds;
 
-            while (remaining > 0.001f)
+            // Whatever is already alight goes first.
+            float fromBank = Mathf.Min(banked, remaining);
+            banked -= fromBank;
+            remaining -= fromBank;
+
+            while (remaining > 0.001f && inventory != null)
             {
                 int slot = CheapestFuelSlot(inventory);
                 if (slot < 0) break;
@@ -127,7 +142,12 @@ namespace MadVoxel.Building
                 if (burn <= 0) break;
 
                 inventory.ConsumeFromSlot(slot, burn);
-                remaining -= burn * each;
+
+                float lit = burn * each;
+                float used = Mathf.Min(lit, remaining);
+
+                remaining -= used;
+                banked += lit - used;
             }
 
             return wantedSeconds - Mathf.Max(0f, remaining);
