@@ -325,7 +325,24 @@ namespace MadVoxel.Colony
             {
                 if (!_usedNames.Contains(pool[i])) return pool[i];
             }
-            return "Survivor " + (_colonists.Count + 1);
+            return FreeFallbackName();
+        }
+
+        /// <summary>
+        /// A numbered name nobody is wearing, once the written pool is spent.
+        ///
+        /// Numbering off the living count was wrong in the one case it mattered: a
+        /// death drops the count, and the next arrival is handed a name someone in the
+        /// room already answers to. It counts past what is taken instead.
+        /// </summary>
+        string FreeFallbackName()
+        {
+            for (int n = _colonists.Count + 1; n < _colonists.Count + 64; n++)
+            {
+                string candidate = "Survivor " + n;
+                if (!_usedNames.Contains(candidate)) return candidate;
+            }
+            return "Survivor";
         }
 
         /// <summary>
@@ -342,15 +359,9 @@ namespace MadVoxel.Colony
 
         string NextName()
         {
-            var pool = Rules.colonist.names;
-            for (int i = 0; i < pool.Count; i++)
-            {
-                if (_usedNames.Contains(pool[i])) continue;
-
-                _usedNames.Add(pool[i]);
-                return pool[i];
-            }
-            return "Survivor " + (_colonists.Count + 1);
+            string name = PeekName();
+            ClaimName(name);
+            return name;
         }
 
         void OnColonistDied(Colonist colonist)
@@ -860,7 +871,11 @@ namespace MadVoxel.Colony
 
         Colonist TryRecruitForLoad(ColonistState state)
         {
-            var colonist = TryRecruit();
+            // With the name, not without it. Recruiting anonymously claimed a pool name
+            // that was immediately overwritten by the saved one, so every reload burned
+            // an entry for nobody and eventually pushed living colonists onto fallback
+            // names.
+            var colonist = TryRecruit(state.Name);
             if (colonist == null) return null;
 
             colonist.Name = state.Name;
