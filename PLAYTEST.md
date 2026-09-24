@@ -190,6 +190,10 @@ Fertility used to fall forever with no way back. It should now be a loop.
 1. Let some food spoil into **rot** (or `F12`-ripen and just leave produce in the bag).
 2. Craft **compost** — rot + fibre, or fibre + dirt if you have eaten everything.
 3. Right-click a *plowed* field cell with compost in hand.
+4. Then craft a **muck spreader** (workbench, no perk needed), hitch it, load it with
+   compost on `V`, and drive a pass. One compost covers six cells by machine against one
+   by hand.
+5. Unhitch it while still loaded — the muck should come back out as whole compost.
 
 While you are in the field: **plowed and cultivated ground should now look different.**
 Cultivated is the lighter, drier one. Do a strip of each side by side — if you cannot
@@ -199,7 +203,8 @@ tell them apart at ten metres the tints need widening.
 it first; on ground that is already rich, that it will not take any more.
 
 **Watch for:** harvesting the same strip four or five times and seeing the litres fall,
-then recovering after muck. The numbers say one dose a crop holds a field indefinitely;
+then recovering after muck. A strip left in stubble for a fortnight and then plowed
+should also come back better than one turned straight round. The numbers say one dose a crop holds a field indefinitely;
 nobody has farmed it.
 
 ---

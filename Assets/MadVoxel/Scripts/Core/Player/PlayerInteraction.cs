@@ -1063,14 +1063,16 @@ namespace MadVoxel.Core.Player
         {
             if (_fields == null) return;
 
-            if (!_fields.TryFertilise(Target.BlockCell))
+            // Asked before anything is spread, not after. Three refusals, because they
+            // need three different answers - and note that "tillable" covers ground
+            // both before and after the plow, so it cannot tell worked soil from scrub
+            // on its own.
+            var cell = Target.BlockCell;
+            if (!_fields.IsTillable(cell) || !_fields.IsWorked(cell) || !_fields.TryFertilise(cell))
             {
-                // Three refusals, because they need three different answers. Note that
-                // "tillable" covers ground both before and after the plow, so it
-                // cannot tell worked soil from scrub on its own.
                 string why;
-                if (!_fields.IsTillable(Target.BlockCell)) why = "Nothing here to feed";
-                else if (!_fields.IsWorked(Target.BlockCell)) why = "Break the ground before feeding it";
+                if (!_fields.IsTillable(cell)) why = "Nothing here to feed";
+                else if (!_fields.IsWorked(cell)) why = "Break the ground before feeding it";
                 else why = "This ground has all the muck it can take";
 
                 Notifications.Post(why);

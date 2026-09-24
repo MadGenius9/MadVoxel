@@ -97,14 +97,22 @@ namespace MadVoxel.World.Fields
 
         public bool TryCultivate(Vector3Int cell)
         {
+            // Checked before anything moves, and for the same reason TryPlow checks.
+            // The field grid is two-dimensional: a cell broken months ago and since
+            // paved over is still "cultivatable" as far as the grid knows, and writing
+            // the block without asking would replace the player's cobblestone with
+            // soil - no drop, no message, no way to tell what happened.
+            if (!IsTillable(cell)) return false;
+
+            var soil = _terrain.Registry.ByStringId(BlockIds.CultivatedSoil);
+            if (soil == null) return false;
+
             if (!Grid.Cultivate(cell.x, cell.z, NowHours)) return false;
 
             // The visible half, same as plowing. A cultivated strip that looked exactly
             // like a plowed one meant the only record of the second pass was the
             // player's memory of having made it.
-            var soil = _terrain.Registry.ByStringId(BlockIds.CultivatedSoil);
-            if (soil != null) _terrain.SetBlock(cell.x, cell.y, cell.z, soil.RuntimeId);
-
+            _terrain.SetBlock(cell.x, cell.y, cell.z, soil.RuntimeId);
             return true;
         }
 
@@ -114,9 +122,17 @@ namespace MadVoxel.World.Fields
             return Grid.Get(cell.x, cell.z).IsWorkable;
         }
 
-        /// <summary>Spreads compost. False when the ground is wild or already rich.</summary>
+        /// <summary>
+        /// Spreads compost. False when the ground is wild, already rich, or not the
+        /// surface of a field at all.
+        ///
+        /// The column check is not decoration. The grid is keyed on x and z only, so
+        /// without it a player standing in a cellar could aim at the stone ceiling and
+        /// feed the acre overhead.
+        /// </summary>
         public bool TryFertilise(Vector3Int cell)
         {
+            if (!IsTillable(cell)) return false;
             return Grid.Fertilise(cell.x, cell.z);
         }
 

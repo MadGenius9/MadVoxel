@@ -1298,8 +1298,14 @@ namespace MadVoxel.Content
             var spreader = Implement("madvoxel:implement_spreader", "Muck Spreader", ImplementKind.Spreader,
                 it[ItemIds.ImplementSpreader], 5f, 0.8f, 1.8f);
             spreader.hopperCapacityLitres = 400f;
-            spreader.seedLitresPerCell = 0.4f;
-            spreader.litresPerSeedItem = 12f;
+
+            // Six cells to a compost, against one by hand. The machine has to be worth
+            // building, but the first numbers here made it thirty times cheaper in
+            // materials as well as faster - at which point hand-spreading is not slow,
+            // it is a trap. Six is a tractor's worth of advantage; the fuel pays for
+            // the rest of it.
+            spreader.seedLitresPerCell = 1f;
+            spreader.litresPerSeedItem = 6f;
 
             return new List<ImplementDefinition> { plow, cultivator, seeder, harvester, spreader };
         }

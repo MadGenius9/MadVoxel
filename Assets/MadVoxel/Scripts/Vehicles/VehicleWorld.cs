@@ -222,10 +222,19 @@ namespace MadVoxel.Vehicles
             if (implement == null) return;
 
             // Unhitching a loaded hopper would throw the load away without saying so.
+            // A spreader is the exception: there is nowhere to tip muck, and its only
+            // other drain refuses ground that is already rich - so once the field
+            // around you is fed, a loaded spreader could never be unhitched at all and
+            // the hint pointed at the key that loads more of it.
             if (implement.HopperLitres >= 1f)
             {
-                Notifications.PostFormat("{0} is loaded - empty it first (V)", implement.Definition.displayName);
-                return;
+                if (!implement.Definition.CarriesMuck)
+                {
+                    Notifications.PostFormat("{0} is loaded - empty it first (V)", implement.Definition.displayName);
+                    return;
+                }
+
+                if (!ReturnMuck(rig, implement)) return;
             }
 
             var item = implement.Definition.item;
@@ -243,6 +252,37 @@ namespace MadVoxel.Vehicles
             implement.Unhitch(out cargo);
 
             Notifications.PostFormat("{0} unhitched", name);
+        }
+
+        /// <summary>
+        /// Shovels a spreader's load back into the bag as whole compost, and refuses
+        /// if it will not fit. Part-litres round off in the player's favour rather
+        /// than blocking an unhitch over a splash nobody can see.
+        /// </summary>
+        bool ReturnMuck(VehicleRig rig, ImplementController implement)
+        {
+            var player = rig.Driver;
+            if (player == null) return false;
+
+            var compost = _content != null ? _content.Item(MadVoxel.Content.ItemIds.Compost) : null;
+            if (compost == null) return false;
+
+            float perItem = Mathf.Max(0.1f, implement.Definition.litresPerSeedItem);
+            int whole = Mathf.FloorToInt(implement.HopperLitres / perItem);
+
+            if (whole > 0)
+            {
+                if (!player.Inventory.Bag.CanFit(compost, whole))
+                {
+                    Notifications.PostFormat("No room for {0} compost - free some slots first", whole);
+                    return false;
+                }
+                player.Inventory.Collect(compost, whole);
+                Notifications.PostFormat("Shovelled {0} compost back out", whole);
+            }
+
+            implement.Empty();
+            return true;
         }
 
         // -------------------------------------------------------------------- hopper

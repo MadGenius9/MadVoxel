@@ -174,10 +174,10 @@ executed. Worlds record which mods built them and warn on load if one is missing
   trader NPCs yet.
 - **Cultivated ground now reads differently from plowed** — a second, lighter tilled
   block, appended to the block order so older saves still decode.
-- **Fertiliser is in; irrigation is not.** Compost is made from spoiled food and fibre
-  and spread by hand, one cell at a time, and the economics are pinned by tests. There
-  is still no implement that spreads an acre, and the moisture field is written by
-  sprinklers but nothing else feeds it.
+- **Fertiliser is in; irrigation is not.** Compost is made from spoiled food and fibre,
+  spread by hand or by a muck spreader, and ground left fallow recovers on the clock.
+  The economics are pinned by tests. Moisture is still written by sprinklers and
+  nothing else, and no implement waters an acre.
 - **Farm snap pieces are limited to the fence.** Barn, shed, pen and greenhouse frame
   are Phase 1; the grain bin ships as a deployable rather than a snap piece.
 - **The seed bag is just the seed stack.** No dedicated seeding container.

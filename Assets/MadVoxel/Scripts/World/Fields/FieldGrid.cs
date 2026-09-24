@@ -62,6 +62,12 @@ namespace MadVoxel.World.Fields
                 return false;
             if (cell.State == FieldCellState.Plowed) return false;
 
+            // Credited before the state changes, because ChangedAtHours is about to be
+            // overwritten and it is the only record of how long this cell has sat.
+            // Derived from the clock rather than ticked, so ground left alone over a
+            // save and a reload comes back having actually rested.
+            cell.Fertiliser = SoilRules.AfterFallow(cell.Fertiliser, nowHours - cell.ChangedAtHours);
+
             cell.State = FieldCellState.Plowed;
             cell.CropIndex = 0;
             cell.ChangedAtHours = nowHours;

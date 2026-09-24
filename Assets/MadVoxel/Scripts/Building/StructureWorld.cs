@@ -202,6 +202,18 @@ namespace MadVoxel.Building
             var contents = ContentsOf(structure);
             if (contents == null || contents.IsEmpty) return;
 
+            // A sack does not spill into another sack. Without this a zombie chewing
+            // the sack spawns an identical one in the same cell with the same things
+            // in it, forever - an indestructible pile that keeps announcing itself and
+            // keeps counting towards the horde's view of how big your base is.
+            var existing = structure.GetComponent<StorageStructure>();
+            if (existing != null && existing.IsDeathBackpack)
+            {
+                Notifications.PostFormat("The {0} was destroyed and its contents scattered",
+                    structure.Definition.displayName);
+                return;
+            }
+
             var sack = PlaceSackNear(structure.Cell);
             if (sack != null)
             {
@@ -258,8 +270,8 @@ namespace MadVoxel.Building
                 var sack = placed.GetComponent<StorageStructure>();
                 if (sack == null) continue;
 
-                // Flagged like a death backpack so the save layer prunes an empty one
-                // instead of leaving sacks scattered across the map forever.
+                // Flagged like a death backpack, which is what stops empty ones
+                // accumulating: the save layer drops any that are flagged and empty.
                 sack.IsDeathBackpack = true;
                 return sack;
             }

@@ -20,6 +20,7 @@ namespace MadVoxel.Headless
             GardenGrowth(db);
             FieldStateMachine(db);
             TillageBlocks(db);
+            SoilThroughTheGrid();
             FieldYield(db);
             BulkDrawing(db);
         }
@@ -283,6 +284,70 @@ namespace MadVoxel.Headless
             // before this block existed comes back as the wrong terrain entirely.
             Harness.Check(cultivated.RuntimeId > tilled.RuntimeId,
                 "cultivated soil was appended rather than slotted in, so older saves still decode");
+        }
+
+        /// <summary>
+        /// Fertility as the grid actually applies it, not as SoilRules computes it.
+        ///
+        /// The rules had a fallow recovery with tests that passed and no caller, so
+        /// resting a field did nothing in play while the docs said otherwise. A pure
+        /// function nobody calls is the easiest kind of dead code to believe in, so
+        /// this exercises the grid.
+        /// </summary>
+        static void SoilThroughTheGrid()
+        {
+            Harness.Section("farming: fertility as the grid applies it");
+
+            var grid = new FieldGrid();
+            const int x = 400, z = 400;
+
+            grid.Plow(x, z, 0.0);
+            grid.Cultivate(x, z, 1.0);
+            grid.Sow(x, z, 1, 2.0);
+
+            // Spreading muck.
+            float before = grid.Get(x, z).Fertiliser;
+            Harness.Check(grid.Fertilise(x, z), "worked ground takes muck");
+            Harness.Check(grid.Get(x, z).Fertiliser > before, "and is better for it");
+
+            // Wild ground refuses it - the muck would be turned straight back under.
+            Harness.Check(!grid.Fertilise(x + 50, z + 50), "wild ground does not");
+
+            // And rich ground refuses it, which is what stops a spreader emptying its
+            // hopper into a field that did not need the pass.
+            for (int i = 0; i < 8; i++) grid.Fertilise(x, z);
+            Harness.Check(!grid.Fertilise(x, z), "nor does ground that is already full");
+
+            // Resting. A cell left in stubble recovers when it is next broken, and the
+            // credit comes off the clock rather than off a tick.
+            var rested = new FieldGrid();
+            const int rx = 900, rz = 900;
+
+            rested.Plow(rx, rz, 0.0);
+            rested.Cultivate(rx, rz, 1.0);
+            rested.Sow(rx, rz, 1, 2.0);
+            rested.Refresh(rx, rz, 2.0 + 48.0, 48f);
+
+            byte crop;
+            rested.Harvest(rx, rz, 10f, 51.0, out crop);
+            float exhausted = rested.Get(rx, rz).Fertiliser;
+
+            // Break it again the next hour: almost no rest, almost no credit.
+            var quick = new FieldGrid();
+            quick.Plow(rx, rz, 0.0);
+            quick.Cultivate(rx, rz, 1.0);
+            quick.Sow(rx, rz, 1, 2.0);
+            quick.Refresh(rx, rz, 2.0 + 48.0, 48f);
+            quick.Harvest(rx, rz, 10f, 51.0, out crop);
+            quick.Plow(rx, rz, 52.0);
+
+            // Against the same field left alone for a fortnight.
+            rested.Plow(rx, rz, 51.0 + 24.0 * 14.0);
+
+            Harness.Check(rested.Get(rx, rz).Fertiliser > quick.Get(rx, rz).Fertiliser,
+                "ground left fallow comes back better than ground turned straight round");
+            Harness.Check(rested.Get(rx, rz).Fertiliser > exhausted,
+                "and better than it was left");
         }
 
         static void FieldYield(ContentDatabase db)

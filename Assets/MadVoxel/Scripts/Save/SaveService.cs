@@ -183,6 +183,14 @@ namespace MadVoxel.Save
                 var structure = all[i];
                 if (structure == null) continue;
 
+                // An emptied sack is litter. Death backpacks and the sacks a destroyed
+                // container spills into are both flagged, and once looted they are an
+                // object nobody will ever open again - one that still occupies a cell
+                // against placement and still counts towards the horde's idea of how
+                // big your base is. They are dropped on save rather than persisted.
+                var sack = structure.GetComponent<StorageStructure>();
+                if (sack != null && sack.IsDeathBackpack && sack.Contents.IsEmpty) continue;
+
                 var entry = new StructureSaveData
                 {
                     definitionId = structure.Definition.stringId,
