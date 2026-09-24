@@ -119,7 +119,7 @@ namespace MadVoxel.Headless
                 "activeQuests", "completedQuests", "posX", "posY", "posZ", "yaw", "pitch",
                 "health", "stamina", "food", "water", "selectedHotbar", "slots",
                 "level", "xp", "perkPoints", "unlockedRecipes", "perkRanks",
-                "hasRespawn", "respawnX", "respawnY", "respawnZ" } },
+                "hasRespawn", "respawnX", "respawnY", "respawnZ", "playerPlaced" } },
 
             { "StructureSaveData", new[] {
                 "definitionId", "cellX", "cellY", "cellZ", "rotation", "health", "doorOpen",

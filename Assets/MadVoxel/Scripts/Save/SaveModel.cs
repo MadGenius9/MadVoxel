@@ -78,6 +78,16 @@ namespace MadVoxel.Save
 
         public bool hasRespawn;
         public float respawnX, respawnY, respawnZ;
+
+        /// <summary>
+        /// Cells the player put down themselves, flattened x,y,z, so re-mining them
+        /// still pays no harvest XP after a reload.
+        ///
+        /// Flattened rather than a list of objects because a base is thousands of
+        /// blocks and three ints each is a tenth of the JSON. It is bounded by what is
+        /// currently standing: breaking a block drops its entry.
+        /// </summary>
+        public List<int> playerPlaced = new List<int>();
     }
 
     [Serializable]

@@ -170,6 +170,16 @@ namespace MadVoxel.Save
             data.respawnY = _player.RespawnPoint.y;
             data.respawnZ = _player.RespawnPoint.z;
 
+            if (_player.Interaction != null)
+            {
+                foreach (var cell in _player.Interaction.PlayerPlacedCells)
+                {
+                    data.playerPlaced.Add(cell.x);
+                    data.playerPlaced.Add(cell.y);
+                    data.playerPlaced.Add(cell.z);
+                }
+            }
+
             return data;
         }
 
@@ -481,6 +491,26 @@ namespace MadVoxel.Save
 
             _player.HasRespawnPoint = data.hasRespawn;
             _player.RespawnPoint = new Vector3(data.respawnX, data.respawnY, data.respawnZ);
+
+            RestorePlayerPlaced(data);
+        }
+
+        /// <summary>
+        /// Rebuilds the "I put this here" set. A trailing partial triple is dropped
+        /// rather than read past the end - a truncated save should cost the guard on
+        /// one block, not throw on load.
+        /// </summary>
+        void RestorePlayerPlaced(PlayerSaveData data)
+        {
+            if (_player.Interaction == null || data.playerPlaced == null) return;
+
+            var cells = new List<Vector3Int>(data.playerPlaced.Count / 3);
+            for (int i = 0; i + 2 < data.playerPlaced.Count; i += 3)
+            {
+                cells.Add(new Vector3Int(data.playerPlaced[i], data.playerPlaced[i + 1], data.playerPlaced[i + 2]));
+            }
+
+            _player.Interaction.RestorePlayerPlaced(cells);
         }
 
         public void RestoreStructures(StructuresSaveData data)

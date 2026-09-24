@@ -183,9 +183,9 @@ executed. Worlds record which mods built them and warn on load if one is missing
 - **The seed bag is just the seed stack.** No dedicated seeding container.
 - **No perk effect is inert** any more. The check that tracked the gap now asserts the
   deferred list is empty, so one cannot come back quietly.
-- **XP farming guard is session-only.** Blocks you placed are remembered in memory and
-  pay no XP when re-mined, but the set is not saved. Crafted building blocks pay no
-  harvest XP at all, which covers the common case.
+- **XP farming guard survives a reload.** Blocks you placed pay no harvest XP when
+  re-mined, and the set is saved, so quitting no longer launders them. Crafted building
+  blocks pay no harvest XP at all either.
 - **A destroyed container now spills** into the same sack death drops, crates and
   furnaces alike. Where no sack will fit, the loss is reported rather than silent.
 - **Developer hotkeys ship enabled.** Untick *Developer Tools* on the `MadVoxel` object

@@ -89,8 +89,21 @@ namespace MadVoxel.Core.Player
         PowerWorld _power;
         FluidWorld _fluid;
 
-        // Blocks the player put down this session earn no harvest XP when mined again.
+        // Blocks the player put down earn no harvest XP when mined again. Saved, so
+        // the guard survives a reload - it used to be session-only, which made
+        // "place a block, quit, reload, mine it" a working XP mill.
         readonly HashSet<Vector3Int> _playerPlaced = new HashSet<Vector3Int>();
+
+        /// <summary>The cells the player laid, for the save layer.</summary>
+        public IEnumerable<Vector3Int> PlayerPlacedCells { get { return _playerPlaced; } }
+
+        /// <summary>Replaces the remembered cells on load.</summary>
+        public void RestorePlayerPlaced(IEnumerable<Vector3Int> cells)
+        {
+            _playerPlaced.Clear();
+            if (cells == null) return;
+            foreach (var cell in cells) _playerPlaced.Add(cell);
+        }
 
         readonly RaycastHit[] _hitBuffer = new RaycastHit[8];
 
