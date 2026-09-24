@@ -55,13 +55,35 @@ namespace MadVoxel.Core.Player
         }
 
         /// <summary>Adds to the bag and tells the player what they picked up.</summary>
+        /// <summary>Keeps a multi-stack harvest from firing the pickup sound repeatedly.</summary>
+        float _nextPickupSound;
+
         public int Collect(ItemDefinition item, int count, bool announce = true)
         {
             if (item == null || count <= 0) return 0;
             int leftover = Bag.Add(item, count);
             int taken = count - leftover;
-            if (announce && taken > 0) Notifications.PostFormat("+{0} {1}", taken, item.displayName);
-            if (leftover > 0) Notifications.Post("Inventory full");
+
+            if (taken > 0)
+            {
+                // The one place everything the player picks up passes through, so the
+                // sound only has to be wired here. Rate limited: a harvest that yields
+                // three stacks at once is one pickup to the ear.
+                if (Time.time >= _nextPickupSound)
+                {
+                    _nextPickupSound = Time.time + 0.08f;
+                    MadVoxel.Audio.GameAudio.Play(MadVoxel.Audio.Sound.Pickup, 0.1f, 0.55f);
+                }
+
+                if (announce) Notifications.PostFormat("+{0} {1}", taken, item.displayName);
+            }
+
+            if (leftover > 0)
+            {
+                Notifications.Post("Inventory full");
+                MadVoxel.Audio.GameAudio.Play(MadVoxel.Audio.Sound.Denied);
+            }
+
             return leftover;
         }
 

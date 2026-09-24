@@ -79,7 +79,11 @@ namespace MadVoxel.Combat
             public bool Hit;
             public int Id;
 
-            /// <summary>0 to 1, higher is better. Only meaningful when <see cref="Hit"/>.</summary>
+            /// <summary>
+            /// Higher is better. Up to 1 for a body in front of you, and above 1 for
+            /// one that has closed far enough to overlap the eye, so a target in your
+            /// face always outranks one at arm's length however well aimed.
+            /// </summary>
             public float Score;
 
             /// <summary>Metres from the eye to the candidate's surface.</summary>
@@ -123,11 +127,25 @@ namespace MadVoxel.Combat
                 float surfaceDistance = Mathf.Max(0f, centreDistance - radius);
                 if (surfaceDistance > reach) continue;
 
-                // Overlapping the eye. There is no meaningful direction to it and the
-                // player unquestionably means to hit it, so it wins outright.
+                // Overlapping the eye. The player unquestionably means to hit it, so it
+                // outranks anything merely in front of them - but it does not end the
+                // scan. Two bodies can be inside you at once during a siege, and
+                // returning the first one found hands the swing to whichever spawned
+                // earlier no matter which way the player is facing.
                 if (centreDistance <= radius || centreDistance < 1e-4f)
                 {
-                    return new Result { Hit = true, Id = candidate.Id, Score = 1f, Distance = 0f };
+                    // Still scored by facing, so the tie between two of them is broken
+                    // by the thing the player is actually looking at.
+                    float facing = centreDistance < 1e-4f
+                        ? 0.5f
+                        : Mathf.Clamp01(Vector3.Dot(aim, toTarget / centreDistance) * 0.5f + 0.5f);
+
+                    float overlapScore = 1f + facing;
+                    if (best.Hit && overlapScore <= bestScore) continue;
+
+                    bestScore = overlapScore;
+                    best = new Result { Hit = true, Id = candidate.Id, Score = overlapScore, Distance = 0f };
+                    continue;
                 }
 
                 Vector3 direction = toTarget / centreDistance;

@@ -20,6 +20,12 @@ namespace MadVoxel.Audio
         const int VoiceCount = 12;
 
         /// <summary>
+        /// Enough that a swing, a hit and a pickup can overlap without stealing each
+        /// other's pitch, and few enough that nothing is stacking up unheard.
+        /// </summary>
+        const int FlatVoiceCount = 4;
+
+        /// <summary>
         /// Metres. Past this a sound is inaudible, which keeps a distant horde from
         /// drowning out the one that is actually in the room.
         /// </summary>
@@ -29,16 +35,28 @@ namespace MadVoxel.Audio
 
         readonly Dictionary<Sound, AudioClip> _clips = new Dictionary<Sound, AudioClip>();
         AudioSource[] _voices;
-        AudioSource _flat;
+        AudioSource[] _flat;
         int _next;
+        int _nextFlat;
 
         /// <summary>
-        /// Builds the bank and takes over as the game's audio. Safe to call again on a
-        /// world reload - the previous one is dropped rather than doubled.
+        /// Builds the bank and takes over as the game's audio.
+        ///
+        /// An existing instance is torn down rather than reused. Reusing it looks
+        /// safe and is not: <see cref="Object.Destroy"/> is deferred to the end of the
+        /// frame, so a world restarted in place hands back an instance that is already
+        /// doomed, and the game plays no sound at all for the rest of the process
+        /// because nothing calls this again. Rebuilding costs well under a second of
+        /// 22kHz mono and happens during a load.
         /// </summary>
         public static GameAudio Install(Transform parent)
         {
-            if (_instance != null) return _instance;
+            if (_instance != null)
+            {
+                var stale = _instance;
+                _instance = null;
+                Destroy(stale.gameObject);
+            }
 
             var go = new GameObject("GameAudio");
             if (parent != null) go.transform.SetParent(parent, false);
@@ -76,14 +94,27 @@ namespace MadVoxel.Audio
                 source.rolloffMode = AudioRolloffMode.Linear;
                 source.minDistance = 2.5f;
                 source.maxDistance = MaxDistance;
+
+                // Doppler off. These voices teleport across the map between one-shots,
+                // and Unity reads that jump as velocity - which detunes an impact into
+                // something that sounds like a completely different, wronger sound.
+                source.dopplerLevel = 0f;
+
                 _voices[i] = source;
             }
 
             // Separate, because anything the player does themselves has no position -
-            // it happens at their hands, and panning it would be wrong.
-            _flat = gameObject.AddComponent<AudioSource>();
-            _flat.playOnAwake = false;
-            _flat.spatialBlend = 0f;
+            // it happens at their hands, and panning it would be wrong. Pooled for the
+            // same reason as the rest: pitch belongs to the source, not to the clip,
+            // so retuning one for a new swing would retune the last one still ringing.
+            _flat = new AudioSource[FlatVoiceCount];
+            for (int i = 0; i < FlatVoiceCount; i++)
+            {
+                var source = gameObject.AddComponent<AudioSource>();
+                source.playOnAwake = false;
+                source.spatialBlend = 0f;
+                _flat[i] = source;
+            }
         }
 
         static AudioClip Render(Sound sound)
@@ -126,8 +157,11 @@ namespace MadVoxel.Audio
             AudioClip clip;
             if (_flat == null || !_clips.TryGetValue(sound, out clip)) return;
 
-            _flat.pitch = Pitch(pitchSpread);
-            _flat.PlayOneShot(clip, Mathf.Clamp01(volume));
+            var source = _flat[_nextFlat];
+            _nextFlat = (_nextFlat + 1) % _flat.Length;
+
+            source.pitch = Pitch(pitchSpread);
+            source.PlayOneShot(clip, Mathf.Clamp01(volume));
         }
 
         void PlayPositional(Sound sound, Vector3 position, float pitchSpread, float volume)

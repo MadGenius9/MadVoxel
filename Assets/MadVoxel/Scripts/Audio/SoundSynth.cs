@@ -183,9 +183,15 @@ namespace MadVoxel.Audio
         {
             t = Mathf.Clamp01(t);
 
+            // There is always a tail, however the voice was described. An envelope
+            // that is all attack ends at full level, and a one-shot that stops on a
+            // loud sample clicks - which is the exact artefact the shape exists to
+            // avoid, and the one a caller is least likely to have meant.
+            attack = Mathf.Clamp(attack, 0f, 0.95f);
+
             if (attack > 0f && t < attack) return t / attack;
 
-            float remaining = attack >= 1f ? 0f : (t - attack) / (1f - attack);
+            float remaining = (t - attack) / (1f - attack);
             return Mathf.Pow(Mathf.Clamp01(1f - remaining), decay);
         }
 

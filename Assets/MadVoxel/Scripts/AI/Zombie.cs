@@ -55,6 +55,7 @@ namespace MadVoxel.AI
         float _verticalVelocity;
         float _staggerUntil;
         float _nextGroanTime;
+        bool _groaning;
         Vector3 _knockback;
         Combat.HitFlash _flash;
         float _nextAttackTime;
@@ -257,15 +258,27 @@ namespace MadVoxel.AI
         /// </summary>
         void Groan(float dt)
         {
-            if (_mode == Mode.Wander) return;
+            if (_mode == Mode.Wander)
+            {
+                _groaning = false;
+                return;
+            }
+
+            // Arm on the transition into a chase rather than on the first call ever.
+            // Keying off the timer instead only silences the very first acquisition:
+            // every later one finds a stale time already in the past and groans on the
+            // frame it starts, which puts a whole re-acquiring wave back in unison.
+            if (!_groaning)
+            {
+                _groaning = true;
+                _nextGroanTime = Time.time + UnityEngine.Random.Range(0.6f, 4f);
+                return;
+            }
+
             if (Time.time < _nextGroanTime) return;
 
-            // First call only arms the timer - otherwise every zombie in a wave groans
-            // on the frame it starts chasing.
-            bool armed = _nextGroanTime > 0f;
             _nextGroanTime = Time.time + UnityEngine.Random.Range(3.5f, 7.5f);
-
-            if (armed) Audio.GameAudio.PlayAt(Audio.Sound.ZombieGroan, CentreOfMass, 0.18f, 0.8f);
+            Audio.GameAudio.PlayAt(Audio.Sound.ZombieGroan, CentreOfMass, 0.18f, 0.8f);
         }
 
         bool TryAttackPlayer()

@@ -47,9 +47,14 @@ namespace MadVoxel.Headless
             Harness.Equal(SoundSynth.Envelope(0f, 0f, 1f), 1f, "a sound with no attack is loud immediately");
             Harness.Equal(SoundSynth.Envelope(1f, 0f, 1f), 0f, "and still lands on silence");
 
-            // An envelope that is all attack has no tail, but must stay in range.
+            // An envelope that is all attack still has to come back down. A caller
+            // who asks for one has not asked for a click at the end of their sound.
             Harness.Check(SoundSynth.Envelope(0.5f, 1f, 1f) >= 0f && SoundSynth.Envelope(0.5f, 1f, 1f) <= 1f,
                 "an all-attack envelope stays in range");
+            Harness.Equal(SoundSynth.Envelope(1f, 1f, 1f), 0f,
+                "and still lands on silence rather than stopping at full level");
+            Harness.Equal(SoundSynth.Envelope(1f, 4f, 1f), 0f,
+                "as does a nonsensical attack beyond the whole length");
         }
 
         // -------------------------------------------------------------- rendering
@@ -122,8 +127,13 @@ namespace MadVoxel.Headless
                 // Silent is the failure that looks exactly like an unwired event.
                 Harness.Check(peak > 0.02f, sound + " is actually audible");
 
-                // And clipped is the failure that sounds like a different, worse sound.
-                Harness.Check(peak <= 1f, sound + " does not clip");
+                // Clipping is the failure that sounds like a different, worse sound.
+                // Checking the peak would be vacuous - Render clamps every sample on
+                // the way out - so what is checked is whether it had to: a voice that
+                // relies on the clamp is one whose gain is wrong.
+                int clamped = 0;
+                for (int i = 0; i < count; i++) if (Mathf.Abs(buffer[i]) >= 0.999f) clamped++;
+                Harness.Check(clamped == 0, sound + " never reaches the clamp");
 
                 // Both ends at rest. A one-shot that stops on a non-zero sample clicks
                 // every single time it plays.

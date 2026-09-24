@@ -17,6 +17,7 @@ namespace MadVoxel.Headless
         public static void Run()
         {
             Shape();
+            PileUp();
             Choice();
             Degenerate();
         }
@@ -61,6 +62,34 @@ namespace MadVoxel.Headless
             // A shoulder off to the side. The old pinpoint ray's exact failure.
             Harness.Check(Swing(new[] { At(1, 0.45f, 0f, 1.2f, 0.35f) }).Hit,
                 "a body off to one side but plainly in front is hit");
+        }
+
+        // ---------------------------------------------------------------- pile-up
+
+        static void PileUp()
+        {
+            Harness.Section("melee: two of them inside you at once");
+
+            // A siege puts more than one body against the player. Whichever one they
+            // are facing takes the swing - taking the first one found would hand it to
+            // whichever spawned earlier, regardless of where the player is looking.
+            var infront = At(1, 0f, 0f, 0.25f, 0.5f);
+            var behind = At(2, 0f, 0f, -0.25f, 0.5f);
+
+            Harness.Equal(MeleeArc.Resolve(Vector3.zero, Vector3.forward, new[] { behind, infront }, 2).Id, 1,
+                "the one you are facing takes it, not the one that was found first");
+            Harness.Equal(MeleeArc.Resolve(Vector3.zero, Vector3.forward, new[] { infront, behind }, 2).Id, 1,
+                "and the answer still does not depend on the order");
+
+            // Turning around changes the answer, which is the whole point.
+            Harness.Equal(MeleeArc.Resolve(Vector3.zero, Vector3.forward * -1f, new[] { infront, behind }, 2).Id, 2,
+                "turning round hands the swing to the other one");
+
+            // And a body pressed against you still outranks a better-aimed one at reach.
+            var pressed = At(1, 0.3f, 0f, 0.1f, 0.5f);
+            var aimed = At(2, 0f, 0f, 2.5f, 0.4f);
+            Harness.Equal(MeleeArc.Resolve(Vector3.zero, Vector3.forward, new[] { aimed, pressed }, 2).Id, 1,
+                "the one in your face beats the one you are aiming at");
         }
 
         // ----------------------------------------------------------------- choice

@@ -179,11 +179,23 @@ namespace MadVoxel.UI
             _hitMarkerWasKill = killed;
             _hitMarker.gameObject.SetActive(true);
 
-            ShowDamage(Mathf.Max(1, Mathf.RoundToInt(damage)), killed);
+            // A number only where it is the truth. Bodies take the damage they are
+            // dealt, but a build piece divides by its own resistance before applying
+            // it, so a figure floating over a wall would overstate the blow by the
+            // whole resistance factor. The marker and the impact still land; only the
+            // number, which would be a lie, is withheld.
+            if (victim is IMeleeTarget) ShowDamage(Mathf.Max(1, Mathf.RoundToInt(damage)), killed);
         }
 
         void OnPlayerDamaged(DamageInfo info)
         {
+            // Only things that hit you. Starvation and thirst tick once a second, so
+            // treating them as blows means a grunt every second and a vignette that
+            // never clears - at which point the flash stops meaning "something is
+            // attacking me", which is the only thing it is for. Going hungry already
+            // shows up through the low-health pulse below, as health actually falls.
+            if (!IsAttack(info.Kind)) return;
+
             _flashUntil = Time.time + PlayerFlashSeconds;
 
             // Scaled by the bite, so a shambler's swipe and a brute's do not read the
@@ -192,6 +204,14 @@ namespace MadVoxel.UI
             _flashStrength = Mathf.Clamp(share * 3.2f, 0.35f, 1f);
 
             Audio.GameAudio.Play(Audio.Sound.PlayerHurt, 0.1f, _flashStrength);
+        }
+
+        static bool IsAttack(DamageKind kind)
+        {
+            return kind == DamageKind.Zombie
+                || kind == DamageKind.Melee
+                || kind == DamageKind.Explosion
+                || kind == DamageKind.Fall;
         }
 
         void ShowDamage(int amount, bool killed)

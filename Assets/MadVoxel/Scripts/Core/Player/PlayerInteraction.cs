@@ -466,7 +466,11 @@ namespace MadVoxel.Core.Player
 
             if (BestArrow(held) == null)
             {
-                if (InputBridge.PrimaryDown) Notifications.PostFormat("Out of {0}", held.ammoItem.displayName);
+                if (InputBridge.PrimaryDown)
+                {
+                    Notifications.PostFormat("Out of {0}", held.ammoItem.displayName);
+                    Audio.GameAudio.Play(Audio.Sound.Denied);
+                }
 
                 _drawHeld = 0f;
                 Draw01 = 0f;
@@ -475,6 +479,9 @@ namespace MadVoxel.Core.Player
 
             if (InputBridge.PrimaryHeld)
             {
+                // The creak, once, as the string goes back - not every frame it is held.
+                if (_drawHeld <= 0f) Audio.GameAudio.Play(Audio.Sound.BowDraw, 0.06f);
+
                 _drawHeld += Time.deltaTime;
                 Draw01 = Combat.Ballistics.Draw01(_drawHeld, held.drawSeconds);
                 ResetMining();
