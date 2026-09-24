@@ -18,7 +18,9 @@ namespace MadVoxel.Vehicles
         /// <summary>Sows a cultivated cell. Draws from the hopper.</summary>
         Seeder,
         /// <summary>Lifts a ready cell into the hopper, in litres.</summary>
-        Harvester
+        Harvester,
+        /// <summary>Puts fertility back into worked ground. Draws from the hopper.</summary>
+        Spreader
     }
 
     [CreateAssetMenu(menuName = "MadVoxel/Implement", fileName = "Implement")]
@@ -38,11 +40,11 @@ namespace MadVoxel.Vehicles
         public float fuelLitresPerHour = 2.5f;
 
         [Header("Hopper")]
-        [Tooltip("Seeders draw from it, harvesters fill it. Zero means it has none.")]
+        [Tooltip("Seeders and spreaders draw from it, harvesters fill it. Zero means it has none.")]
         public float hopperCapacityLitres;
-        [Tooltip("Seeders: litres of seed one cell costs.")]
+        [Tooltip("Seeders: litres of seed one cell costs. Spreaders: litres of muck.")]
         public float seedLitresPerCell = 0.05f;
-        [Tooltip("Seeders: litres one seed item fills the hopper with.")]
+        [Tooltip("Seeders: litres one seed item fills the hopper with. Spreaders: one compost.")]
         public float litresPerSeedItem = 8f;
 
         [Header("Carrying")]
@@ -51,8 +53,14 @@ namespace MadVoxel.Vehicles
 
         public bool UsesHopper { get { return hopperCapacityLitres > 0f; } }
 
-        /// <summary>Seeders empty their hopper; harvesters fill it.</summary>
+        /// <summary>Seeders and spreaders empty their hopper; harvesters fill it.</summary>
         public bool FillsHopper { get { return kind == ImplementKind.Harvester; } }
+
+        /// <summary>
+        /// Carries one thing and needs no cargo identity for it. A seeder has to
+        /// remember which crop is in the box; a spreader only ever holds muck.
+        /// </summary>
+        public bool CarriesMuck { get { return kind == ImplementKind.Spreader; } }
 
         public string VerbFor(CropDefinition crop)
         {
@@ -61,6 +69,7 @@ namespace MadVoxel.Vehicles
                 case ImplementKind.Plow: return "PLOWING";
                 case ImplementKind.Cultivator: return "CULTIVATING";
                 case ImplementKind.Seeder: return crop != null ? "SOWING " + crop.displayName.ToUpperInvariant() : "SOWING";
+                case ImplementKind.Spreader: return "SPREADING";
                 default: return "HARVESTING";
             }
         }

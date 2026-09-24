@@ -92,6 +92,7 @@ namespace MadVoxel.Vehicles
                 case ImplementKind.Plow: BuildDiscs(root, width, steel); break;
                 case ImplementKind.Cultivator: BuildTines(root, width, steel); break;
                 case ImplementKind.Seeder: BuildTank(root, width, def, frame, steel); break;
+                case ImplementKind.Spreader: BuildSpreader(root, width, frame, steel); break;
                 default: BuildHeader(root, width, def, frame, steel); break;
             }
         }
@@ -134,6 +135,33 @@ namespace MadVoxel.Vehicles
                 float x = Mathf.Lerp(-width * 0.45f, width * 0.45f, spouts == 1 ? 0.5f : i / (float)(spouts - 1));
                 PrimitiveBuilder.Cylinder(root, new Vector3(x, 0.3f, 0f),
                     new Vector3(0.08f, 0.5f, 0.08f), steel, "Spout" + i);
+            }
+        }
+
+        /// <summary>
+        /// An open box on the back with two spinners under it. Readable at distance as
+        /// "the wide one that throws muck" rather than as a drill, which matters when
+        /// four implements are parked in a row and they all have to be told apart at a
+        /// glance.
+        /// </summary>
+        static void BuildSpreader(Transform root, float width, Material frame, Material steel)
+        {
+            // Wider and shallower than the drill's hopper - it is a box, not a tank.
+            PrimitiveBuilder.Box(root, new Vector3(0f, 0.85f, 0.2f),
+                new Vector3(width * 0.72f, 0.5f, 0.75f), frame, "MuckBox");
+
+            // Flared sides, so it does not read as a plain crate.
+            PrimitiveBuilder.Box(root, new Vector3(-width * 0.37f, 1.05f, 0.2f),
+                new Vector3(0.06f, 0.3f, 0.75f), steel, "SideL");
+            PrimitiveBuilder.Box(root, new Vector3(width * 0.37f, 1.05f, 0.2f),
+                new Vector3(0.06f, 0.3f, 0.75f), steel, "SideR");
+
+            // The two spinning discs that do the throwing, low and behind.
+            for (int i = 0; i < 2; i++)
+            {
+                float x = (i == 0 ? -1f : 1f) * width * 0.18f;
+                PrimitiveBuilder.Cylinder(root, new Vector3(x, 0.3f, -0.3f),
+                    new Vector3(0.62f, 0.05f, 0.62f), steel, "Spinner" + i);
             }
         }
 

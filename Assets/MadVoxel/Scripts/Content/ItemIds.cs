@@ -95,6 +95,7 @@ namespace MadVoxel.Content
         public const string ImplementCultivator = "madvoxel:implement_cultivator";
         public const string ImplementSeeder = "madvoxel:implement_seeder";
         public const string ImplementHarvester = "madvoxel:implement_harvester";
+        public const string ImplementSpreader = "madvoxel:implement_spreader";
 
         // Electricity. The wire tool is how every connection gets made.
         public const string WireTool = "madvoxel:wire_tool";

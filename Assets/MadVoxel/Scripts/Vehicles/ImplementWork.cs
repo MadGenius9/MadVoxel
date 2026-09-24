@@ -117,7 +117,8 @@ namespace MadVoxel.Vehicles
 
             if (IsBlocked(implement, hopperLitres))
             {
-                return name + (implement.FillsHopper ? "  HOPPER FULL" : "  OUT OF SEED");
+                if (implement.FillsHopper) return name + "  HOPPER FULL";
+                return name + (implement.CarriesMuck ? "  EMPTY" : "  OUT OF SEED");
             }
 
             return name + "  WORKING";

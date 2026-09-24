@@ -390,7 +390,7 @@ namespace MadVoxel.Headless
             Harness.Check(tractor.maxSpeed < 12f, "which is slower than the buggy, as a tractor should be");
             Harness.Check(tractor.fuelItem != null, "and takes fuel");
 
-            Harness.Equal(db.implements.Count, 4, "four implements ship: plough, cultivator, drill, harvester");
+            Harness.Equal(db.implements.Count, 5, "five implements ship: plough, cultivator, drill, harvester, spreader");
 
             var kinds = new HashSet<ImplementKind>();
             var problems = new List<string>();
@@ -413,7 +413,26 @@ namespace MadVoxel.Headless
             Harness.Check(problems.Count == 0,
                 "every implement is carried, hitched and sized sanely"
                 + (problems.Count > 0 ? ": " + string.Join(", ", problems) : ""));
-            Harness.Equal(kinds.Count, 4, "and all four operations are covered");
+            Harness.Equal(kinds.Count, 5, "and all five operations are covered");
+
+            // A spreader is the drill's mirror: it spends from a hopper too, but it
+            // carries one thing and so needs no cargo. What it must not be is free.
+            for (int i = 0; i < db.implements.Count; i++)
+            {
+                var def = db.implements[i];
+                if (def.kind != ImplementKind.Spreader) continue;
+
+                Harness.Check(def.CarriesMuck, "the spreader carries muck rather than a crop");
+                Harness.Check(!def.FillsHopper, "and spends its hopper rather than filling it");
+                Harness.Check(def.seedLitresPerCell > 0f, "and muck costs something per cell");
+                Harness.Check(def.litresPerSeedItem > def.seedLitresPerCell,
+                    "and one compost is worth more than one cell");
+                Harness.Check(def.hopperCapacityLitres > 0f, "and it has a hopper to spend from");
+
+                // Spreading is scattering, not cutting. If it were as slow as the
+                // plough nobody would ever make the pass.
+                Harness.Check(def.speedMultiplier > 0.6f, "and it barely slows the tractor");
+            }
 
             // A seeder with no seed per cell would sow a field for nothing.
             for (int i = 0; i < db.implements.Count; i++)

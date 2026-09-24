@@ -387,6 +387,7 @@ namespace MadVoxel.Content
             Add(Item(ItemIds.ImplementCultivator, "Cultivator", ItemCategory.Misc, 1, SurfaceFamily.Metal, ColRust, 260));
             Add(Item(ItemIds.ImplementSeeder, "Seed Drill", ItemCategory.Misc, 1, SurfaceFamily.Metal, ColRust, 380));
             Add(Item(ItemIds.ImplementHarvester, "Harvester", ItemCategory.Misc, 1, SurfaceFamily.Metal, ColRust, 720));
+            Add(Item(ItemIds.ImplementSpreader, "Muck Spreader", ItemCategory.Misc, 1, SurfaceFamily.Metal, ColRust, 260));
 
             return map;
         }
@@ -846,6 +847,21 @@ namespace MadVoxel.Content
             harvester.requiredPerkId = PerkIds.Agronomist;
             harvester.requiredPerkRank = 5;
             list.Add(harvester);
+
+            // The one implement that is not perk-gated, and deliberately.
+            //
+            // Agronomist's five ranks are the tillage cycle - plough, cultivator,
+            // drill, harvester - and each rank hands over the next pass. The spreader
+            // is not a pass; it is upkeep. Muck is the only answer to an acre whose
+            // yield is falling, so putting it behind a rank means watching the problem
+            // get worse with no way to act on it, and putting it at the end of the
+            // chain means getting the answer long after the question.
+            //
+            // A workbench and ten ingots is gate enough for something you cannot use
+            // without a tractor anyway.
+            list.Add(Recipe("madvoxel:craft_implement_spreader", it[ItemIds.ImplementSpreader], 1,
+                CraftStation.Workbench, 10f,
+                Ing(it[ItemIds.IronIngot], 10), Ing(it[ItemIds.ScrapMetal], 18), Ing(it[ItemIds.Plank], 12)));
         }
 
         // ----------------------------------------------------------------- zombies
@@ -1238,9 +1254,11 @@ namespace MadVoxel.Content
         }
 
         /// <summary>
-        /// The four passes, in the order a field wants them. Width and speed are the
-        /// only knobs that matter: a wide slow plough and a narrow fast drill cover the
-        /// same ground in the same time, and which one you want depends on the field.
+        /// The passes a field wants, roughly in the order it wants them. Width and speed
+        /// are the only knobs that matter: a wide slow plough and a narrow fast drill
+        /// cover the same ground in the same time, and which one you want depends on
+        /// the field. The spreader sits outside the cycle - it goes on whenever the
+        /// ground has been worked and is hungry.
         /// </summary>
         static List<ImplementDefinition> BuildImplements(Dictionary<string, ItemDefinition> it)
         {
@@ -1263,7 +1281,16 @@ namespace MadVoxel.Content
                 it[ItemIds.ImplementHarvester], 3f, 0.45f, 5.5f);
             harvester.hopperCapacityLitres = 6000f;
 
-            return new List<ImplementDefinition> { plow, cultivator, seeder, harvester };
+            // Wide, light and quick - it is scattering muck, not cutting soil. A pass
+            // that refuses ground which is already rich costs nothing, so the sensible
+            // way to use it is to cross the whole field and let it pick its cells.
+            var spreader = Implement("madvoxel:implement_spreader", "Muck Spreader", ImplementKind.Spreader,
+                it[ItemIds.ImplementSpreader], 5f, 0.8f, 1.8f);
+            spreader.hopperCapacityLitres = 400f;
+            spreader.seedLitresPerCell = 0.4f;
+            spreader.litresPerSeedItem = 12f;
+
+            return new List<ImplementDefinition> { plow, cultivator, seeder, harvester, spreader };
         }
 
 

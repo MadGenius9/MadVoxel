@@ -247,6 +247,14 @@ namespace MadVoxel.Vehicles
                     result.LitresMoved += Definition.seedLitresPerCell;
                     return true;
 
+                case ImplementKind.Spreader:
+                    // Refuses ground that is already rich, so a pass across a fed field
+                    // costs nothing rather than quietly emptying the hopper into it.
+                    if (!_fields.TryFertilise(block)) return false;
+                    result.CellsWorked++;
+                    result.LitresMoved += Definition.seedLitresPerCell;
+                    return true;
+
                 default:
                     return Reap(block, ref result);
             }
@@ -304,6 +312,10 @@ namespace MadVoxel.Vehicles
             {
                 Notifications.PostFormat("{0} is full - tip it into a grain bin (V)", Definition.displayName);
             }
+            else if (Definition.CarriesMuck)
+            {
+                Notifications.PostFormat("{0} is empty - load it with compost in hand (V)", Definition.displayName);
+            }
             else if (Cargo == null)
             {
                 Notifications.PostFormat("{0} has no seed - load it with a seed in hand (V)", Definition.displayName);
@@ -343,6 +355,24 @@ namespace MadVoxel.Vehicles
             float taken = _hopperLitres - before;
             if (taken > 0f) Cargo = crop;
             return taken;
+        }
+
+        /// <summary>
+        /// Loads one compost's worth of muck, or nothing. Returns the litres taken.
+        ///
+        /// Separate from <see cref="LoadSeed"/> because a spreader has no cargo to
+        /// remember - it carries exactly one thing - and threading compost through a
+        /// <see cref="CropDefinition"/> would mean inventing a crop that is not one.
+        /// All-or-nothing for the same reason as seed.
+        /// </summary>
+        public float LoadMuck(float litres)
+        {
+            if (Definition == null || !Definition.CarriesMuck || litres <= 0f) return 0f;
+            if (!ImplementWork.Accepts(Definition, HopperLitres, litres)) return 0f;
+
+            float before = _hopperLitres;
+            ImplementWork.AddToHopper(Definition, ref _hopperLitres, litres);
+            return _hopperLitres - before;
         }
 
         /// <summary>Empties the hopper into a store. Returns what it handed over.</summary>

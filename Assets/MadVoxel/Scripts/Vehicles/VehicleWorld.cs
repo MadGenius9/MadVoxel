@@ -262,7 +262,41 @@ namespace MadVoxel.Vehicles
             }
 
             if (implement.Definition.FillsHopper) TipIntoBin(rig, implement);
+            else if (implement.Definition.CarriesMuck) LoadMuck(rig, implement);
             else LoadSeed(rig, implement);
+        }
+
+        void LoadMuck(VehicleRig rig, ImplementController implement)
+        {
+            var player = rig.Driver;
+            if (player == null) return;
+
+            var held = player.Inventory.SelectedStack;
+            if (held.Item == null || held.Item.stringId != MadVoxel.Content.ItemIds.Compost)
+            {
+                Notifications.Post("Hold compost to load the spreader");
+                return;
+            }
+
+            float perItem = Mathf.Max(0.1f, implement.Definition.litresPerSeedItem);
+            int loaded = 0;
+
+            // One at a time, same rule as seed: a sack is either in the hopper or still
+            // in the bag, never half of each.
+            for (int i = 0; i < held.Count; i++)
+            {
+                if (implement.LoadMuck(perItem) <= 0f) break;
+                loaded++;
+            }
+
+            if (loaded <= 0)
+            {
+                Notifications.Post("The hopper is as full as it will go");
+                return;
+            }
+
+            player.Inventory.ConsumeSelected(loaded);
+            Notifications.PostFormat("Loaded compost - {0:0} L", implement.HopperLitres);
         }
 
         void LoadSeed(VehicleRig rig, ImplementController implement)
