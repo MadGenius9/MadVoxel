@@ -176,6 +176,10 @@ executed. Worlds record which mods built them and warn on load if one is missing
   cleanup.
 - **Roofs are flat.** No pitched or conical roof pieces.
 - **Stairs use stepped box colliders**, not a smooth ramp.
+- **Lighting has a post stack now** — ACES tonemapping, grading, bloom, vignette —
+  installed through reflection so the codebase keeps compiling against plain Unity,
+  and skipped silently if the volume framework is not reachable. The values are
+  guesses; nobody has seen them.
 - **The look is the furthest thing from its target.** The brief is *Rust building and
   look, 7 Days to Die terrain* — and the build currently reads closer to Minecraft than
   to either, for two separate reasons that need two separate fixes:

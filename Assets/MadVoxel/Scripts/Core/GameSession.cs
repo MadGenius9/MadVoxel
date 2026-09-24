@@ -229,6 +229,15 @@ namespace MadVoxel.Core
             // handed over before the player can swing at anything.
             _player.Interaction.Spawns = _spawner;
 
+            // The post stack. Installed once the camera exists, and entirely optional:
+            // if the volume framework is not reachable the game renders exactly as it
+            // did before and says why in the console.
+            PostProcessing.Install(_worldRoot.transform, _player.Camera);
+            if (!PostProcessing.Installed && !string.IsNullOrEmpty(PostProcessing.Reason))
+            {
+                Debug.LogWarningFormat("MadVoxel: post-processing not installed ({0}).", PostProcessing.Reason);
+            }
+
             // Deployables that scale with a perk, or need to find something to bite,
             // read both off the world that owns them.
             _structures.Progression = _player.Progression;

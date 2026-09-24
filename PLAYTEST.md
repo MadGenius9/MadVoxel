@@ -109,6 +109,27 @@ without redoing any of this.
 
 ---
 
+## 0c. Does it look photographed or rendered? (1 minute)
+
+A post stack is installed at startup: ACES tonemapping, a little contrast and warmth,
+restrained bloom, a vignette you should not consciously notice. Untonemapped output
+clips every bright thing to flat white and leaves shadows muddy, which is most of why
+default engine output reads as "a game".
+
+1. Look at the sky near the sun, and then into shadow under a tree.
+
+**Expected:** bright sky that rolls off rather than clipping to a white hole, and
+shadows with something still visible in them.
+
+**If nothing changed**, check the console — it says so and why. It is installed through
+reflection so the codebase keeps compiling against plain Unity, and the failure case is
+the picture you had before, not a broken one.
+
+**The grading is a guess.** Nobody has looked at it. If it is too contrasty, too warm or
+too dim, those are four numbers in `PostProcessing.cs` and I will happily dial them.
+
+---
+
 ## 0b. Does the world have corners? (1 minute)
 
 Terrain meshes now carry baked ambient occlusion, and a hand-written shader
