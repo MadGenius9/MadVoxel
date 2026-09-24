@@ -313,6 +313,29 @@ namespace MadVoxel.Headless
             }
             Harness.Check(handRecipes.Count > 0, string.Format("{0} recipes craftable by hand from the start", handRecipes.Count));
 
+            // Same for blocks, and this one matters more. A block built into the map
+            // but left out of the registry's order array is never registered, so
+            // IdOf returns 0 - which is air. Nothing throws. The generator simply
+            // writes air wherever it meant to write that block, and the world grows a
+            // hole shaped like whatever was forgotten.
+            var strandedBlocks = new List<string>();
+            var blockFields = typeof(BlockIds).GetFields(
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+
+            for (int i = 0; i < blockFields.Length; i++)
+            {
+                if (blockFields[i].FieldType != typeof(string)) continue;
+
+                var id = (string)blockFields[i].GetValue(null);
+                if (string.IsNullOrEmpty(id) || id == BlockIds.Air) continue;
+
+                if (Database.blocks.IdOf(id) == 0) strandedBlocks.Add(blockFields[i].Name + " (" + id + ")");
+            }
+
+            Harness.Check(strandedBlocks.Count == 0,
+                "every id in BlockIds is registered, not silently air"
+                + (strandedBlocks.Count > 0 ? ": " + string.Join(", ", strandedBlocks) : ""));
+
             // Every id in ItemIds has to resolve. They are string constants, so a
             // renamed item leaves the constant compiling and pointing at nothing -
             // and the only symptom is a developer kit that silently hands over

@@ -33,10 +33,9 @@ namespace MadVoxel.World.Terrain
         ///
         /// Fbm3D does not fill 0..1 evenly, so a cut is not a percentage and cannot be
         /// reasoned about by eye: at 0.876 this produced 0.027% of the band and a
-        /// player could dig out a level and find nothing. 0.845 gives about 0.2%,
-        /// which is roughly two fifths of iron's rate in a band less than half as
-        /// tall - rare enough that a seam is worth walking back up for, common enough
-        /// that looking for it works.
+        /// player could dig out a level and find nothing. 0.845 gives about 0.2%
+        /// against iron's 0.55%, in a band less than half as tall - rare enough that a
+        /// seam is worth walking back up for, common enough that looking for it works.
         /// </summary>
         const float TungstenCut = 0.845f;
 

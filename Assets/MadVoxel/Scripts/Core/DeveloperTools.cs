@@ -266,6 +266,11 @@ namespace MadVoxel.Core
         /// </summary>
         void GiveTestKit()
         {
+            // Both tiers. The iron pair stays so the tier-3 gate can actually be seen
+            // failing - "this needs a better tool" is only convincing if you are
+            // holding the tool it refuses.
+            Give(ItemIds.IronPickaxe, 1);
+            Give(ItemIds.IronAxe, 1);
             Give(ItemIds.SteelPickaxe, 1);
             Give(ItemIds.SteelAxe, 1);
             Give(ItemIds.SteelShovel, 1);

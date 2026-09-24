@@ -14,6 +14,21 @@ play is a thing that never gets tested.
 
 ---
 
+## 0a. The water table, before anything else (2 minutes)
+
+A block was built into the content database and never registered, so `IdOf` returned
+0 — air — and the generator wrote **air** everywhere it meant to write saturated ground.
+
+1. Dig straight down from anywhere to around **y=40**.
+
+**Expected:** a damp blue-grey band of Water Table around y=40–44, sitting in the stone.
+
+**If you find a world-wide five-block cavern instead**, the fix did not take. That band
+is also the only thing a well can be dug to, so nothing in the water layer — pump, pipes,
+tanks, taps, sprinklers — could ever have worked before this.
+
+---
+
 ## 0. Combat, first (5 minutes)
 
 **Start here.** A previous playtest could not hit zombies at all, and everything below
@@ -235,7 +250,7 @@ nobody has farmed it.
    anywhere else — not a campfire, not a workbench.
 2. Craft a **steel pickaxe** at a workbench.
 3. Dig below **y=22** and look for **tungsten ore** — a dark blue-grey seam. Try it with
-   an iron pickaxe first: it should refuse, naming the tier.
+   an iron pickaxe first (the test kit carries both): it should refuse, naming the tier.
 4. Smelt the ore, then hammer a wall from Metal to **Armoured**.
 
 **Expected:** armoured costs steel plus one tungsten plate per piece, whatever the piece.

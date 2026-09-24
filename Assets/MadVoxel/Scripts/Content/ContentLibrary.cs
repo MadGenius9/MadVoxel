@@ -259,7 +259,13 @@ namespace MadVoxel.Content
                 // Appended rather than slotted next to tilled soil: runtime ids come
                 // from this order, and inserting one would renumber every block after
                 // it in a save written before this line existed.
-                BlockIds.CultivatedSoil, BlockIds.TungstenOre
+                BlockIds.CultivatedSoil, BlockIds.TungstenOre,
+
+                // The water table was built and never registered, so IdOf handed back
+                // 0 - air - and the generator carved a world-wide five-block cavern
+                // wherever it meant to lay saturated ground. Wells could never find
+                // water either, because the block a pump looks for did not exist.
+                BlockIds.WaterTable
             };
 
             for (int i = 0; i < order.Length; i++) registry.blocks.Add(map[order[i]]);
@@ -541,6 +547,10 @@ namespace MadVoxel.Content
             Drop(blocks[BlockIds.CoalOre], items[ItemIds.Coal], 1, 3);
             Drop(blocks[BlockIds.IronOre], items[ItemIds.IronOre], 1, 3);
             Drop(blocks[BlockIds.TungstenOre], items[ItemIds.TungstenOre], 1, 3);
+
+            // Wet dirt is still dirt. It had no drop at all, which nothing noticed
+            // because the block was never registered and so never mined.
+            Drop(blocks[BlockIds.WaterTable], items[ItemIds.Dirt], 1, 1);
             Drop(blocks[BlockIds.PineLog], items[ItemIds.WoodLog], 1, 2);
             Drop(blocks[BlockIds.PineNeedles], items[ItemIds.PlantFibre], 0, 2);
             Drop(blocks[BlockIds.ScrapHeap], items[ItemIds.ScrapMetal], 2, 5);
@@ -788,8 +798,16 @@ namespace MadVoxel.Content
             // the gate on tier three. Slow per batch on purpose: the furnace runs
             // unattended on the world clock, so the cost of steel is a night rather
             // than a wait at a screen.
+            //
+            // From ore rather than from ingots, which matters more than it looks. A
+            // furnace has one shared inventory and runs every forge recipe it can,
+            // round-robin, with nothing to select between them - so a recipe that eats
+            // another recipe's output eats it the instant it appears. Steel made from
+            // ingots would mean a furnace could never hand you an iron ingot again,
+            // and would quietly consume any you stored in it. Four ore is the same two
+            // ingots' worth; it just never exists as an ingot on the way.
             list.Add(Recipe("madvoxel:forge_steel", it[ItemIds.SteelIngot], 1, CraftStation.Forge, 20f,
-                Ing(it[ItemIds.IronIngot], 2)));
+                Ing(it[ItemIds.IronOre], 4)));
 
             // Tungsten takes a furnace too, and longer. It is the slowest thing in the
             // game to make, which is deliberate: an armoured base should be measured
@@ -840,7 +858,7 @@ namespace MadVoxel.Content
             // The block was the only "steel" in the game while no steel existed, which
             // left the name doing work the materials did not.
             var steel = Recipe("madvoxel:craft_block_steel", it[ItemIds.BlockSteel], 1, CraftStation.Workbench, 6f,
-                Ing(it[ItemIds.SteelIngot], 4));
+                Ing(it[ItemIds.SteelIngot], 2));
             steel.unlockedByDefault = false;
             steel.requiredPerkId = "madvoxel:perk_carpenter";
             steel.requiredPerkRank = 3;

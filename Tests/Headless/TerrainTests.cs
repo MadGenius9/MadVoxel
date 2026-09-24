@@ -135,7 +135,8 @@ namespace MadVoxel.Headless
             var tungsten = db.blocks.IdOf(BlockIds.TungstenOre);
 
             int coalCount = 0, ironCount = 0, tungstenCount = 0;
-            int deepestIron = int.MaxValue, shallowestTungsten = int.MinValue;
+            int shallowestTungsten = int.MaxValue;
+            int shallowestIron = int.MinValue;
 
             // A column of chunks through the whole world, in a few places, so a single
             // unlucky spot cannot decide the answer.
@@ -171,12 +172,12 @@ namespace MadVoxel.Headless
                                 else if (id == iron)
                                 {
                                     ironCount++;
-                                    if (wy < deepestIron) deepestIron = wy;
+                                    if (wy > shallowestIron) shallowestIron = wy;
                                 }
                                 else if (id == tungsten)
                                 {
                                     tungstenCount++;
-                                    if (wy > shallowestTungsten) shallowestTungsten = wy;
+                                    if (wy < shallowestTungsten) shallowestTungsten = wy;
                                 }
                             }
                         }
@@ -184,7 +185,6 @@ namespace MadVoxel.Headless
                 }
             }
 
-            // TEMP PROBE
             Harness.Check(coalCount > 0, string.Format("coal generates ({0} voxels)", coalCount));
             Harness.Check(ironCount > 0, string.Format("iron generates ({0} voxels)", ironCount));
             Harness.Check(tungstenCount > 0, string.Format("tungsten generates ({0} voxels)", tungstenCount));
@@ -193,9 +193,23 @@ namespace MadVoxel.Headless
             Harness.Check(tungstenCount < ironCount,
                 string.Format("and is rarer than iron ({0} against {1})", tungstenCount, ironCount));
 
-            // And genuinely deep. Digging a cellar must not turn it up.
-            Harness.Check(shallowestTungsten < 32,
-                string.Format("the shallowest tungsten is at y={0}", shallowestTungsten));
+            // And genuinely deep. Guarded on having found any at all: seeded with a
+            // sentinel, "no tungsten anywhere" would satisfy a depth bound vacuously
+            // and the test would pass hardest exactly when the ore was missing.
+            if (tungstenCount > 0)
+            {
+                Harness.Check(shallowestTungsten < 22,
+                    string.Format("the shallowest tungsten is at y={0}, under its ceiling", shallowestTungsten));
+            }
+
+            // The bands are in the right order: tungsten's ceiling is below where iron
+            // is still being found, so going deeper is what reaches it.
+            if (tungstenCount > 0 && ironCount > 0)
+            {
+                Harness.Check(shallowestIron > shallowestTungsten,
+                    string.Format("iron reaches up to y={0}, above tungsten's y={1}",
+                        shallowestIron, shallowestTungsten));
+            }
         }
 
         static void Coordinates()

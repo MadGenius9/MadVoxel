@@ -133,7 +133,7 @@ Assume tuning, and read `PLAYTEST.md` before believing any row in this table.
 | Area | Shipped | Still to write |
 | --- | --- | --- |
 | **Steel** | **Live.** Forged from iron and only in a furnace, which is what turns the furnace from a faster iron smelter into the gate on tier three. Steel pickaxe, axe and shovel at tool tier 3 — faster and far longer-lived than iron. No perk gate: the station is the gate, same rule iron follows. | A steel melee weapon worth choosing over the club. |
-| **Deeper ore** | **Live.** Tungsten, below y=22 and the only block in the game that needs a tier-3 pickaxe, so steel tools have somewhere to go. Density measured rather than guessed — about a fifth of iron's, which makes a seam worth walking back up for. | A reason to dig past it. |
+| **Deeper ore** | **Live.** Tungsten, below y=22 and the only block in the game that needs a tier-3 pickaxe, so steel tools have somewhere to go. Density measured rather than guessed — roughly a third of iron's rate in a band less than half as tall, which makes a seam worth walking back up for. | A reason to dig past it. |
 | **Armoured tier** | **In play.** Every armoured piece is paid for in steel plus one tungsten plate. The tier existed in the data since Phase 0 and cost more iron and a pile of coal, which made the top tier a bigger version of the one below it rather than a different material. | Armoured *deployables* — a crate or a door you can harden. |
 
 Still untouched: traps on dug killboxes, more POIs, guns, a second vehicle, a map and

@@ -22,6 +22,55 @@ namespace MadVoxel.Headless
             Fuel(db);
             Batches(db);
             Content(db);
+            NoCascades(db);
+        }
+
+        /// <summary>
+        /// No forge recipe may eat another forge recipe's output.
+        ///
+        /// A furnace has one shared inventory and runs every recipe it can afford,
+        /// round-robin, with nothing to choose between them. So a recipe whose
+        /// ingredient is another recipe's output consumes it the instant it appears -
+        /// and the furnace silently stops being able to produce that item at all,
+        /// including any the player put there for safekeeping.
+        ///
+        /// Steel was written this way first: iron ingots in, steel out, which would
+        /// have meant a furnace could never hand back an iron ingot again. Nothing
+        /// else in the suite would have caught it, because every recipe involved is
+        /// individually correct - the bug only exists in the combination.
+        /// </summary>
+        static void NoCascades(ContentDatabase db)
+        {
+            Harness.Section("furnace: one recipe never eats another's output");
+
+            var outputs = new HashSet<ItemDefinition>();
+            for (int i = 0; i < db.recipes.Count; i++)
+            {
+                var recipe = db.recipes[i];
+                if (recipe.station == CraftStation.Forge && recipe.output != null) outputs.Add(recipe.output);
+            }
+
+            Harness.Check(outputs.Count > 0, "the furnace makes something");
+
+            var cascades = new List<string>();
+            for (int i = 0; i < db.recipes.Count; i++)
+            {
+                var recipe = db.recipes[i];
+                if (recipe.station != CraftStation.Forge) continue;
+
+                for (int j = 0; j < recipe.ingredients.Count; j++)
+                {
+                    var ing = recipe.ingredients[j].item;
+                    if (ing != null && outputs.Contains(ing))
+                    {
+                        cascades.Add(recipe.stringId + " consumes " + ing.stringId);
+                    }
+                }
+            }
+
+            Harness.Check(cascades.Count == 0,
+                "no forge recipe consumes what another forges"
+                + (cascades.Count > 0 ? ": " + string.Join(", ", cascades) : ""));
         }
 
         static RecipeDefinition Forge(ContentDatabase db)
