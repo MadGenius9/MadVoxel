@@ -186,10 +186,13 @@ executed. Worlds record which mods built them and warn on load if one is missing
      density per voxel, so a crater there has a lip where this one has a whole-block
      edge. Adding it touches chunk storage, the save format and every caller that digs
      — and none of the smoothing has to be redone for it.
-  2. **Props and characters are boxes.** Deliberately — `PrimitiveBuilder` is a
-     placeholder and swapping real meshes in means replacing those calls and nothing
-     else. But Rust-grade models are the one thing that cannot be generated from code;
-     they need an artist, an asset store, or the project owner.
+  2. **Props and characters are boxes.** Deliberately — and they now swap out through
+     `ModelCatalogue` without touching the builders at all (see `MODELS.md`). Models
+     are the one thing that cannot be generated from code; they need an asset store.
+
+  The reference the project is actually chasing is **SurrounDead**: a realistic,
+  vegetated environment with faceted low-poly *characters*. Not flat-shaded stylised,
+  and not Rust's grit — a hybrid. Ground cover is in; trees are still blocks.
 
 - **No ambient occlusion on terrain meshes.** Corners read flat, which is the single
   strongest reason the cube path reads as a toy. The mesh carries positions, normals and

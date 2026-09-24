@@ -29,6 +29,30 @@ tanks, taps, sprinklers — could ever have worked before this.
 
 ---
 
+## 0a-grass. Is there grass? (1 minute)
+
+The reference for this game's look is SurrounDead, and the thing doing most of the work
+in those screenshots is not the terrain or the lighting — it is that the ground is
+covered in small plants. A bare mesh reads as a level; the same mesh with grass on it
+reads as a place.
+
+1. Stand on open grass. Look at the ground, then at the horizon.
+
+**Expected:** tufts on grass, scrubbier ones on bare dirt, sparse dry ones on sand.
+Thinning out with distance rather than stopping at a hard line. None under a roof, none
+on stone, none inside your base.
+
+**Watch for:**
+- **Grass that crawls or reshuffles as you walk.** It is scattered from a hash of world
+  position and should be nailed down — if it moves, the signature is churning.
+- A visible circle of grass sweeping across the ground with you.
+- Frame rate on a big open hillside. Two patches rebuild per frame at most, but nobody
+  has measured it. If it costs frames, grass shadows are already off and the draw
+  distance is one constant.
+- Grass growing on a floor you built, or inside a cellar.
+
+---
+
 ## 0aa. Is the ground still a staircase? (2 minutes)
 
 The biggest visual change in the project so far, and the least verified. Natural ground

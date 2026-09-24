@@ -52,6 +52,7 @@
     <Compile Include="SoilTests.cs" />
     <Compile Include="HitZoneTests.cs" />
     <Compile Include="TrapTests.cs" />
+    <Compile Include="GroundCoverTests.cs" />
   </ItemGroup>
 
   <ItemGroup Label="Game sources under test">
@@ -74,6 +75,7 @@
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/ChunkMeshData.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/ChunkMesher.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/SurfaceNets.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/GroundCover.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/PoiPlanner.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/TerrainGenerator.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Terrain/TerrainWorld.cs" />

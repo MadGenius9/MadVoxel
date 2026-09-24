@@ -40,6 +40,7 @@ namespace MadVoxel.Core
         FieldWorld _fields;
         Vehicles.VehicleWorld _vehicles;
         FieldCoverView _cover;
+        World.Terrain.GroundCoverView _groundCover;
         Traders.TraderWorld _traders;
         BlockDamageTracker _blockDamage;
         WorldClock _clock;
@@ -287,6 +288,11 @@ namespace MadVoxel.Core
             // The standing crop. It needs the player to know what is near enough to draw.
             _cover = _worldRoot.AddComponent<FieldCoverView>();
             _cover.Init(_fields, _voxels, _clock, _player.transform);
+
+            // And the wild ground cover. Nothing reads it - it does not block, collide
+            // or feed any rule - so it can be switched off without changing the game.
+            _groundCover = _worldRoot.AddComponent<World.Terrain.GroundCoverView>();
+            _groundCover.Init(_voxels, _player.transform);
 
             _vehicles = _worldRoot.AddComponent<VehicleWorld>();
             _vehicles.Init(_content, _structures, _voxels, _fields, _player, _ui.Hud);
