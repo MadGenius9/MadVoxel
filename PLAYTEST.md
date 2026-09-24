@@ -6,8 +6,11 @@ whether anything looks right, sits at a sensible height, is reachable with the c
 where it is, or sounds like the thing it is meant to be. If something looks or sounds
 wrong, it probably is — believe your eyes and ears over this file.
 
-Ordered so each step is reachable from the one before. `Shift+F6`-style developer hotkeys
-are listed in `CLAUDE.md` and will skip most of the grind.
+Ordered so each step is reachable from the one before. Developer hotkeys are listed in
+`CLAUDE.md` and will skip most of the grind — in particular **`Shift+F10`** hands over the
+tractor, all five implements, the grain bin, compost and the bow, which otherwise take
+Agronomist rank five and a trader's engine block to reach. Anything gated behind hours of
+play is a thing that never gets tested.
 
 ---
 

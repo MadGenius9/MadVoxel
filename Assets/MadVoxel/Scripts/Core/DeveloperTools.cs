@@ -24,7 +24,8 @@ namespace MadVoxel.Core
         public const string KeyHelp =
             "F1 utility kit   F2 +1 level   F4 fly   F5 +1h   F6 dawn   F7 blood moon\n" +
             "F8 spawn zombie   F9 refill   F10 test kit   F11 invulnerable   F12 ripen crops\n" +
-            "Shift+F5 cycle weather   Shift+F6 found colony + recruit   Shift+F7 heat +25";
+            "Shift+F5 cycle weather   Shift+F6 found colony + recruit   Shift+F7 heat +25\n" +
+            "Shift+F10 field and combat kit";
 
         ContentDatabase _content;
         WorldClock _clock;
@@ -60,6 +61,7 @@ namespace MadVoxel.Core
             if (shift && Input.GetKeyDown(KeyCode.F5)) { CycleWeather(); return; }
             if (shift && Input.GetKeyDown(KeyCode.F6)) { FoundAndRecruit(); return; }
             if (shift && Input.GetKeyDown(KeyCode.F7)) { StokeHeat(); return; }
+            if (shift && Input.GetKeyDown(KeyCode.F10)) { GiveFieldKit(); return; }
             if (Input.GetKeyDown(KeyCode.F4)) ToggleFly();
             if (Input.GetKeyDown(KeyCode.F5)) SkipHours(1f);
             if (Input.GetKeyDown(KeyCode.F6)) SkipToDawn();
@@ -307,6 +309,50 @@ namespace MadVoxel.Core
             Give(ItemIds.Bandage, 10);
 
             Notifications.Post("Test kit granted (check your bag)");
+        }
+
+        /// <summary>
+        /// Everything the machine and combat layers need, handed over directly.
+        ///
+        /// These are the systems least likely to get tested, because reaching them
+        /// legitimately means Agronomist rank five and an engine block from a trader -
+        /// hours of play before the tractor is even craftable. A tester who has to
+        /// earn the tractor will simply never see the tractor, and the whole field
+        /// layer goes unlooked at.
+        ///
+        /// The items are granted rather than the recipes unlocked, so this sidesteps
+        /// the perk tree entirely instead of quietly rewriting the player's progress.
+        /// </summary>
+        void GiveFieldKit()
+        {
+            Give(ItemIds.TractorKit, 1);
+            Give(ItemIds.BuggyKit, 1);
+            Give(ItemIds.GasCan, 24);
+
+            Give(ItemIds.ImplementPlow, 1);
+            Give(ItemIds.ImplementCultivator, 1);
+            Give(ItemIds.ImplementSeeder, 1);
+            Give(ItemIds.ImplementHarvester, 1);
+            Give(ItemIds.ImplementSpreader, 1);
+
+            // Somewhere to tip a harvest, and something to spread.
+            Give(ItemIds.PieceSilo, 1);
+            Give(ItemIds.Compost, 64);
+            Give(ItemIds.Rot, 32);
+
+            // Seed by the sack: the drill measures in litres, and a handful of seeds
+            // does not cover enough ground to tell whether a swath works.
+            Give(ItemIds.SeedWheat, 64);
+            Give(ItemIds.SeedCorn, 64);
+
+            // The bow, because hit zones cannot be looked at without one.
+            Give(ItemIds.WoodBow, 1);
+            Give(ItemIds.ArrowStone, 64);
+            Give(ItemIds.ArrowIron, 64);
+
+            Give(ItemIds.Hoe, 1);
+
+            Notifications.Post("Field kit granted - set the tractor down and hitch with V");
         }
 
         void Give(string itemId, int count)

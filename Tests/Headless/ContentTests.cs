@@ -313,6 +313,27 @@ namespace MadVoxel.Headless
             }
             Harness.Check(handRecipes.Count > 0, string.Format("{0} recipes craftable by hand from the start", handRecipes.Count));
 
+            // Every id in ItemIds has to resolve. They are string constants, so a
+            // renamed item leaves the constant compiling and pointing at nothing -
+            // and the only symptom is a developer kit that silently hands over
+            // fourteen things instead of fifteen, or a hand recipe nobody can make.
+            var missing = new List<string>();
+            var idFields = typeof(ItemIds).GetFields(
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+
+            for (int i = 0; i < idFields.Length; i++)
+            {
+                if (idFields[i].FieldType != typeof(string)) continue;
+
+                var id = (string)idFields[i].GetValue(null);
+                if (string.IsNullOrEmpty(id)) continue;
+                if (Database.Item(id) == null) missing.Add(idFields[i].Name + " (" + id + ")");
+            }
+
+            Harness.Check(missing.Count == 0,
+                "every id in ItemIds names a real item"
+                + (missing.Count > 0 ? ": " + string.Join(", ", missing) : ""));
+
             var bench = Database.Item(ItemIds.PieceWorkbench);
             bool benchByHand = false;
             for (int i = 0; i < Database.recipes.Count; i++)

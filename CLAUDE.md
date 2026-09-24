@@ -144,6 +144,7 @@ will quietly move it.
 `F6` dawn · `F7` blood moon · `F8` spawn zombie · `F9` refill · `F10` test kit ·
 `F11` invulnerable · `F12` ripen crops
 `Shift+F5` cycle weather · `Shift+F6` found colony + recruit · `Shift+F7` +25 heat
+`Shift+F10` field and combat kit — tractor, all five implements, grain bin, compost, bow
 
 ### Player keys worth knowing
 
