@@ -412,12 +412,18 @@ namespace MadVoxel.Content
             wheatSeed.description = "Plant in a farm plot, or sow a field with it later.";
             Add(wheatSeed);
 
-            // What everything turns into when nobody eats it. It does not spoil again,
-            // and it is the compost the garden will want in Phase 1.
+            // What everything turns into when nobody eats it. It does not spoil again.
             var rot = Item(ItemIds.Rot, "Rot", ItemCategory.Resource, 64, SurfaceFamily.Dirt,
                 new Color(0.32f, 0.28f, 0.20f), 1);
-            rot.description = "Spoiled food. Compost, eventually.";
+            rot.description = "Spoiled food. Worth composting rather than dropping.";
             Add(rot);
+
+            // The other end of spoilage, and the only way fertility goes back into the
+            // ground. Cheap to trade because its value is in what it does to an acre.
+            var compost = Item(ItemIds.Compost, "Compost", ItemCategory.Resource, 64, SurfaceFamily.Dirt,
+                new Color(0.22f, 0.18f, 0.13f), 3);
+            compost.description = "Rotted down and turned. Spread it on a field to put the heart back.";
+            Add(compost);
 
             // Shelf lives are in game hours, and a day is 20 real minutes. Raw produce
             // keeps a few days; a cooked meal is the thing you must actually eat or
@@ -668,6 +674,20 @@ namespace MadVoxel.Content
                 Ing(it[ItemIds.Plank], 4), Ing(it[ItemIds.PlantFibre], 4)));
             list.Add(Recipe("madvoxel:craft_hoe", it[ItemIds.Hoe], 1, CraftStation.Hand, 2.5f,
                 Ing(it[ItemIds.WoodLog], 1), Ing(it[ItemIds.Stone], 2), Ing(it[ItemIds.PlantFibre], 2)));
+
+            // Spoiled food stops being a nuisance and starts being the thing that keeps
+            // an acre paying. A hand recipe on purpose: a field goes hungry long before
+            // a player has a workbench to spare, and land that cannot be fed is a dead
+            // end rather than a difficulty.
+            list.Add(Recipe("madvoxel:craft_compost", it[ItemIds.Compost], 2, CraftStation.Hand, 3f,
+                Ing(it[ItemIds.Rot], 3), Ing(it[ItemIds.PlantFibre], 4)));
+
+            // And a second way in, from plant matter alone. Waste is the efficient
+            // route, but a player who eats everything they grow would otherwise have
+            // no waste and no way to feed an exhausted field - being tidy must not
+            // close off a mechanic. Deliberately the worse deal of the two.
+            list.Add(Recipe("madvoxel:craft_compost_green", it[ItemIds.Compost], 1, CraftStation.Hand, 4f,
+                Ing(it[ItemIds.PlantFibre], 10), Ing(it[ItemIds.Dirt], 2)));
 
             list.Add(Recipe("madvoxel:craft_hammer", it[ItemIds.Hammer], 1, CraftStation.Hand, 2.5f,
                 Ing(it[ItemIds.WoodLog], 2), Ing(it[ItemIds.Stone], 2), Ing(it[ItemIds.PlantFibre], 2)));

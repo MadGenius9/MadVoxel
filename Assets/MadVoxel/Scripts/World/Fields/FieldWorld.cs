@@ -99,6 +99,18 @@ namespace MadVoxel.World.Fields
             return Grid.Cultivate(cell.x, cell.z, NowHours);
         }
 
+        /// <summary>Has this cell been broken into a field yet?</summary>
+        public bool IsWorked(Vector3Int cell)
+        {
+            return Grid.Get(cell.x, cell.z).IsWorkable;
+        }
+
+        /// <summary>Spreads compost. False when the ground is wild or already rich.</summary>
+        public bool TryFertilise(Vector3Int cell)
+        {
+            return Grid.Fertilise(cell.x, cell.z);
+        }
+
         public bool TrySow(Vector3Int cell, CropDefinition crop)
         {
             if (crop == null || !crop.growsOnField) return false;

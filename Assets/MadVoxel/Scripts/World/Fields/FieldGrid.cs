@@ -65,8 +65,27 @@ namespace MadVoxel.World.Fields
             cell.State = FieldCellState.Plowed;
             cell.CropIndex = 0;
             cell.ChangedAtHours = nowHours;
-            // Turning stubble back in returns a little fertility.
-            cell.Fertiliser = Mathf.Clamp01(cell.Fertiliser + 0.1f);
+            // Turning stubble back in returns a little fertility - never enough on
+            // its own to hold a field that is being cropped.
+            cell.Fertiliser = SoilRules.AfterPlow(cell.Fertiliser);
+            Set(x, z, cell);
+            return true;
+        }
+
+        /// <summary>
+        /// Spreads a dose of compost. Returns false when the ground is already rich,
+        /// so a spreader crossing a full field does not quietly eat its hopper.
+        /// </summary>
+        public bool Fertilise(int x, int z)
+        {
+            var cell = Get(x, z);
+
+            // Wild ground is not a field yet. Break it first, or the muck is wasted on
+            // scrub that is about to be turned over anyway.
+            if (cell.State == FieldCellState.Wild) return false;
+            if (!SoilRules.WantsCompost(cell.Fertiliser)) return false;
+
+            cell.Fertiliser = SoilRules.AfterCompost(cell.Fertiliser);
             Set(x, z, cell);
             return true;
         }
@@ -138,13 +157,13 @@ namespace MadVoxel.World.Fields
 
             cropIndex = cell.CropIndex;
             float litres = litresPerCell * Mathf.Max(0f, cell.YieldFactor)
-                         * Mathf.Lerp(0.75f, 1.15f, cell.Fertiliser);
+                         * SoilRules.YieldMultiplier(cell.Fertiliser);
 
             cell.State = FieldCellState.Stubble;
             cell.CropIndex = 0;
             cell.ChangedAtHours = nowHours;
             // A crop takes fertility with it.
-            cell.Fertiliser = Mathf.Clamp01(cell.Fertiliser - 0.3f);
+            cell.Fertiliser = SoilRules.AfterHarvest(cell.Fertiliser);
             Set(x, z, cell);
 
             return litres;

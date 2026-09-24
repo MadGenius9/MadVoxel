@@ -172,9 +172,99 @@ namespace MadVoxel.Building
 
             if (Removed != null) Removed(structure);
 
-            // Anything inside a destroyed crate spills onto the ground as a new crate-less
-            // pile is out of scope for Phase 0, so contents are simply lost with a warning.
+            Spill(structure);
+
             UnityEngine.Object.Destroy(structure.gameObject);
+        }
+
+        /// <summary>
+        /// The sack a destroyed container leaves behind - the same one death drops,
+        /// because it is already a container that persists, is lootable, and gets
+        /// pruned when emptied. Looked up rather than injected so there is no wiring
+        /// step for a future caller to forget.
+        /// </summary>
+        StructureDefinition SpillContainer
+        {
+            get { return Content != null ? Content.Structure(StructureIds.DeathBackpack) : null; }
+        }
+
+        /// <summary>
+        /// Tips a destroyed container's contents onto the ground.
+        ///
+        /// They used to be deleted. A horde that reached a crate silently took
+        /// everything in it, which is the worst thing this game can do to someone - an
+        /// hour of mining is gone with no message, nothing on the floor, and no way to
+        /// tell a bug from a rule. A base falling over should cost you the base, and
+        /// make you go and pick your things up out of the wreckage.
+        /// </summary>
+        void Spill(PlacedStructure structure)
+        {
+            var contents = ContentsOf(structure);
+            if (contents == null || contents.IsEmpty) return;
+
+            var sack = PlaceSackNear(structure.Cell);
+            if (sack != null)
+            {
+                contents.MoveAllTo(sack.Contents);
+
+                // Anything that would not fit is still gone, but the player is told
+                // which it was rather than left to discover the hole later.
+                if (!contents.IsEmpty)
+                {
+                    Notifications.PostFormat("{0} was destroyed - some contents were lost",
+                        structure.Definition.displayName);
+                }
+                else
+                {
+                    Notifications.PostFormat("{0} was destroyed - its contents are on the ground",
+                        structure.Definition.displayName);
+                }
+                return;
+            }
+
+            Notifications.PostFormat("{0} was destroyed and its contents were lost",
+                structure.Definition.displayName);
+        }
+
+        static MadVoxel.Inventory.Inventory ContentsOf(PlacedStructure structure)
+        {
+            var storage = structure.GetComponent<StorageStructure>();
+            if (storage != null) return storage.Contents;
+
+            // A furnace holds ore, fuel and finished metal in one inventory, and
+            // losing a full one hurts as much as losing a crate.
+            var furnace = structure.GetComponent<FurnaceStructure>();
+            return furnace != null ? furnace.Contents : null;
+        }
+
+        /// <summary>
+        /// Finds somewhere the sack can actually sit. The crate's own cell is free by
+        /// the time this runs, so it is tried first and almost always takes it.
+        /// </summary>
+        StorageStructure PlaceSackNear(Vector3Int cell)
+        {
+            if (SpillContainer == null) return null;
+
+            for (int y = 0; y < 3; y++)
+            {
+                var candidate = new Vector3Int(cell.x, cell.y + y, cell.z);
+                if (candidate.y < 1 || candidate.y >= TerrainWorld.WorldHeight - 1) continue;
+                if (IsOccupied(candidate)) continue;
+                if (_voxels != null && _voxels.IsSolid(candidate.x, candidate.y, candidate.z)) continue;
+
+                var placed = Place(SpillContainer, candidate, 0, -1f, false);
+                if (placed == null) continue;
+
+                var sack = placed.GetComponent<StorageStructure>();
+                if (sack == null) continue;
+
+                // Flagged like a death backpack so the save layer prunes an empty one
+                // instead of leaving sacks scattered across the map forever.
+                sack.IsDeathBackpack = true;
+                return sack;
+            }
+
+            return null;
         }
 
         public void DestroyAll()

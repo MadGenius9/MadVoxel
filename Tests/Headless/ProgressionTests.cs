@@ -73,13 +73,27 @@ namespace MadVoxel.Headless
             Harness.Check(fromWorld > 8,
                 string.Format("{0} items come straight out of the world", fromWorld));
 
-            // 2. Everything a recipe can make from those, and from what those make.
+            // 2. Everything a recipe can make from those, and from what those make -
+            //    plus what they turn into when nobody eats them. Spoilage is a real
+            //    source with no trader and no recipe behind it, but it is not a free
+            //    one: rot only exists once you can already get something that rots,
+            //    so it belongs inside the closure rather than seeded alongside ore.
             bool grew = true;
             int rounds = 0;
             while (grew && rounds < 64)
             {
                 grew = false;
                 rounds++;
+
+                for (int i = 0; i < db.items.Count; i++)
+                {
+                    var item = db.items[i];
+                    if (item.spoiledInto == null) continue;
+                    if (!reachable.Contains(item) || reachable.Contains(item.spoiledInto)) continue;
+
+                    reachable.Add(item.spoiledInto);
+                    grew = true;
+                }
 
                 for (int i = 0; i < db.recipes.Count; i++)
                 {

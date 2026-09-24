@@ -30,8 +30,11 @@ namespace MadVoxel.Content
         public const string BakedPotato = "madvoxel:baked_potato";
         public const string CornBread = "madvoxel:corn_bread";
         public const string VegetableStew = "madvoxel:vegetable_stew";
-        /// <summary>What food becomes when nobody eats it. Compost, later.</summary>
+        /// <summary>What food becomes when nobody eats it. The input to compost.</summary>
         public const string Rot = "madvoxel:rot";
+
+        /// <summary>Worked rot. The only thing that puts fertility back into a field.</summary>
+        public const string Compost = "madvoxel:compost";
 
         public const string StonePickaxe = "madvoxel:stone_pickaxe";
         public const string StoneAxe = "madvoxel:stone_axe";

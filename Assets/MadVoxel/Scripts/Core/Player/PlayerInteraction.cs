@@ -1023,6 +1023,14 @@ namespace MadVoxel.Core.Player
                 return;
             }
 
+            // Muck goes on by hand, one cell at a time. Slow, and meant to be - it is
+            // the reason a spreader is worth building.
+            if (held.Item.stringId == MadVoxel.Content.ItemIds.Compost && Target.Kind == TargetKind.Block)
+            {
+                FertiliseTarget();
+                return;
+            }
+
             if (Target.Kind == TargetKind.None) return;
 
             if (held.Item.placeableBuildPiece != null) PlaceBuildPiece(held.Item);
@@ -1049,6 +1057,31 @@ namespace MadVoxel.Core.Player
             _inventory.WearSelected(1);
             _progression.AddXp(2f, XpSource.Harvest);
             Notifications.Post("Ground broken");
+        }
+
+        void FertiliseTarget()
+        {
+            if (_fields == null) return;
+
+            if (!_fields.TryFertilise(Target.BlockCell))
+            {
+                // Three refusals, because they need three different answers. Note that
+                // "tillable" covers ground both before and after the plow, so it
+                // cannot tell worked soil from scrub on its own.
+                string why;
+                if (!_fields.IsTillable(Target.BlockCell)) why = "Nothing here to feed";
+                else if (!_fields.IsWorked(Target.BlockCell)) why = "Break the ground before feeding it";
+                else why = "This ground has all the muck it can take";
+
+                Notifications.Post(why);
+                Audio.GameAudio.Play(Audio.Sound.Denied);
+                return;
+            }
+
+            _inventory.ConsumeSelected(1);
+            _progression.AddXp(1.5f, XpSource.Harvest);
+            Audio.GameAudio.PlayAt(Audio.Sound.Place, Target.HitPoint, 0.15f, 0.5f);
+            Notifications.Post("Muck spread");
         }
 
         void PlaceBuildPiece(ItemDefinition item)

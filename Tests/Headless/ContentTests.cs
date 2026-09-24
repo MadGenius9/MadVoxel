@@ -226,6 +226,16 @@ namespace MadVoxel.Headless
                 if (crop.seedItem != null) obtainable.Add(crop.seedItem);
             }
 
+            // And so is neglect. Rot has no drop, no recipe and no trader - it exists
+            // only because food left in a bag turns into it, which makes spoilage as
+            // real a source as a pickaxe. Without this, anything built out of waste
+            // reads as unobtainable.
+            for (int i = 0; i < Database.items.Count; i++)
+            {
+                var spoiled = Database.items[i].spoiledInto;
+                if (spoiled != null) obtainable.Add(spoiled);
+            }
+
             // Every tool has to be reachable, or a whole tier of digging is closed off.
             var strandedTools = new List<string>();
             for (int i = 0; i < Database.items.Count; i++)

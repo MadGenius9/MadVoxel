@@ -49,6 +49,7 @@
     <Compile Include="FluidTests.cs" />
     <Compile Include="MeleeTests.cs" />
     <Compile Include="SoundTests.cs" />
+    <Compile Include="SoilTests.cs" />
   </ItemGroup>
 
   <ItemGroup Label="Game sources under test">
@@ -99,6 +100,7 @@
     <Compile Include="../../Assets/MadVoxel/Scripts/Farming/Crops/CropDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Biomes/BiomeDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Fields/FieldCell.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/World/Fields/SoilRules.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Fields/FieldGrid.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/World/Fields/FieldCoverMesh.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/AI/ZombieDefinition.cs" />
