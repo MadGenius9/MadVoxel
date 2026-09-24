@@ -38,6 +38,7 @@ namespace MadVoxel.Content
         static readonly Color ColCobble = new Color(0.46f, 0.45f, 0.44f);
         static readonly Color ColIronPlate = new Color(0.44f, 0.42f, 0.40f);
         static readonly Color ColSteel = new Color(0.55f, 0.57f, 0.60f);
+        static readonly Color ColTungsten = new Color(0.34f, 0.38f, 0.44f);
         static readonly Color ColConcrete = new Color(0.55f, 0.54f, 0.51f);
         static readonly Color ColGlass = new Color(0.72f, 0.82f, 0.85f, 0.42f);
         static readonly Color ColBedrock = new Color(0.16f, 0.16f, 0.17f);
@@ -166,6 +167,11 @@ namespace MadVoxel.Content
             map[BlockIds.Clay] = Block(BlockIds.Clay, "Clay", SurfaceFamily.Dirt, ColClay, 0.7f, ToolType.Shovel, 0, 0.8f, 70f);
             map[BlockIds.CoalOre] = Block(BlockIds.CoalOre, "Coal Seam", SurfaceFamily.Ore, ColCoal, 2.6f, ToolType.Pickaxe, 1, 4f, 220f);
             map[BlockIds.IronOre] = Block(BlockIds.IronOre, "Iron Ore", SurfaceFamily.Ore, ColIron, 3.2f, ToolType.Pickaxe, 1, 5f, 240f);
+
+            // Tier three, and the only block in the game that needs it. Harder than
+            // iron and deeper, so the first one a player meets is a wall until they
+            // have built a furnace - which is the point of it.
+            map[BlockIds.TungstenOre] = Block(BlockIds.TungstenOre, "Tungsten Ore", SurfaceFamily.Ore, ColTungsten, 5.4f, ToolType.Pickaxe, 3, 9f, 340f);
             map[BlockIds.PineLog] = Block(BlockIds.PineLog, "Pine Log", SurfaceFamily.Wood, ColWood, 1.8f, ToolType.Axe, 0, 3f, 140f);
             map[BlockIds.ScrapHeap] = Block(BlockIds.ScrapHeap, "Scrap Heap", SurfaceFamily.Metal, ColRust, 2.0f, ToolType.Pickaxe, 0, 5f, 150f);
 
@@ -253,7 +259,7 @@ namespace MadVoxel.Content
                 // Appended rather than slotted next to tilled soil: runtime ids come
                 // from this order, and inserting one would renumber every block after
                 // it in a save written before this line existed.
-                BlockIds.CultivatedSoil
+                BlockIds.CultivatedSoil, BlockIds.TungstenOre
             };
 
             for (int i = 0; i < order.Length; i++) registry.blocks.Add(map[order[i]]);
@@ -305,6 +311,9 @@ namespace MadVoxel.Content
             Add(Item(ItemIds.Coal, "Coal", ItemCategory.Resource, 64, SurfaceFamily.Ore, ColCoal, 3));
             Add(Item(ItemIds.IronOre, "Iron Ore", ItemCategory.Resource, 64, SurfaceFamily.Ore, ColIron, 4));
             Add(Item(ItemIds.IronIngot, "Iron Ingot", ItemCategory.Resource, 64, SurfaceFamily.Metal, ColIronPlate, 9));
+            Add(Item(ItemIds.SteelIngot, "Steel Ingot", ItemCategory.Resource, 64, SurfaceFamily.Metal, ColSteel, 26));
+            Add(Item(ItemIds.TungstenOre, "Tungsten Ore", ItemCategory.Resource, 64, SurfaceFamily.Ore, ColTungsten, 14));
+            Add(Item(ItemIds.TungstenIngot, "Tungsten Ingot", ItemCategory.Resource, 64, SurfaceFamily.Metal, ColTungsten, 60));
             Add(Item(ItemIds.ScrapMetal, "Scrap Metal", ItemCategory.Resource, 64, SurfaceFamily.Metal, ColRust, 3));
             Add(Item(ItemIds.PlantFibre, "Plant Fibre", ItemCategory.Resource, 64, SurfaceFamily.Foliage, ColNeedle, 1));
             Add(Item(ItemIds.Cloth, "Cloth", ItemCategory.Resource, 64, SurfaceFamily.Cloth, new Color(0.64f, 0.60f, 0.52f), 4));
@@ -331,6 +340,14 @@ namespace MadVoxel.Content
             Add(Tool(ItemIds.StoneShovel, "Stone Shovel", ToolType.Shovel, 1, 2.6f, 6f, 110, ColStone, 16));
             Add(Tool(ItemIds.IronPickaxe, "Iron Pickaxe", ToolType.Pickaxe, 2, 4.2f, 10f, 400, ColIronPlate, 65));
             Add(Tool(ItemIds.IronAxe, "Iron Axe", ToolType.Axe, 2, 4.2f, 14f, 400, ColIronPlate, 65));
+
+            // Tier three. Faster and much longer-lived than iron rather than wildly
+            // stronger - the reason to want them is the ground they open up, not the
+            // numbers. A shovel joins the set because iron never had one, which left
+            // the fastest way to move dirt stuck two tiers back.
+            Add(Tool(ItemIds.SteelPickaxe, "Steel Pickaxe", ToolType.Pickaxe, 3, 6.4f, 13f, 900, ColSteel, 150));
+            Add(Tool(ItemIds.SteelAxe, "Steel Axe", ToolType.Axe, 3, 6.4f, 19f, 900, ColSteel, 150));
+            Add(Tool(ItemIds.SteelShovel, "Steel Shovel", ToolType.Shovel, 3, 6.8f, 10f, 800, ColSteel, 130));
             Add(Tool(ItemIds.Club, "Reinforced Club", ToolType.Melee, 1, 1.0f, 15f, 220, ColWood, 24));
             Add(Tool(ItemIds.Wrench, "Wrench", ToolType.Wrench, 1, 1.2f, 6f, 300, ColIronPlate, 40));
             Add(Tool(ItemIds.Hammer, "Building Hammer", ToolType.Hammer, 1, 1.0f, 8f, 600, ColWood, 30));
@@ -523,6 +540,7 @@ namespace MadVoxel.Content
             Drop(blocks[BlockIds.CultivatedSoil], items[ItemIds.Dirt], 1, 1);
             Drop(blocks[BlockIds.CoalOre], items[ItemIds.Coal], 1, 3);
             Drop(blocks[BlockIds.IronOre], items[ItemIds.IronOre], 1, 3);
+            Drop(blocks[BlockIds.TungstenOre], items[ItemIds.TungstenOre], 1, 3);
             Drop(blocks[BlockIds.PineLog], items[ItemIds.WoodLog], 1, 2);
             Drop(blocks[BlockIds.PineNeedles], items[ItemIds.PlantFibre], 0, 2);
             Drop(blocks[BlockIds.ScrapHeap], items[ItemIds.ScrapMetal], 2, 5);
@@ -765,6 +783,20 @@ namespace MadVoxel.Content
             list.Add(Recipe("madvoxel:forge_glass", it[ItemIds.BlockGlass], 2, CraftStation.Forge, 6f,
                 Ing(it[ItemIds.Sand], 3)));
 
+            // Steel, and only here. A campfire cannot make it and a workbench cannot
+            // make it, which is what turns the furnace from a faster iron smelter into
+            // the gate on tier three. Slow per batch on purpose: the furnace runs
+            // unattended on the world clock, so the cost of steel is a night rather
+            // than a wait at a screen.
+            list.Add(Recipe("madvoxel:forge_steel", it[ItemIds.SteelIngot], 1, CraftStation.Forge, 20f,
+                Ing(it[ItemIds.IronIngot], 2)));
+
+            // Tungsten takes a furnace too, and longer. It is the slowest thing in the
+            // game to make, which is deliberate: an armoured base should be measured
+            // in nights of smelting rather than in an afternoon's mining.
+            list.Add(Recipe("madvoxel:forge_tungsten", it[ItemIds.TungstenIngot], 1, CraftStation.Forge, 34f,
+                Ing(it[ItemIds.TungstenOre], 2)));
+
             // Not perk-gated. The workbench it is built at is the gate, and a station
             // this basic being locked behind a skill point is friction, not a decision.
             list.Add(Recipe("madvoxel:craft_furnace", it[ItemIds.PieceFurnace], 1, CraftStation.Workbench, 8f,
@@ -784,6 +816,17 @@ namespace MadVoxel.Content
             list.Add(Recipe("madvoxel:craft_block_iron", it[ItemIds.BlockIron], 1, CraftStation.Workbench, 3f,
                 Ing(it[ItemIds.IronIngot], 4)));
 
+            // Steel tools are not perk-gated, for the same reason iron ones are not:
+            // the station is the gate. You cannot hold a steel ingot without having
+            // built and fed a furnace, and locking the tool behind a skill point on
+            // top of that is friction rather than a decision.
+            list.Add(Recipe("madvoxel:craft_steel_pickaxe", it[ItemIds.SteelPickaxe], 1, CraftStation.Workbench, 7f,
+                Ing(it[ItemIds.SteelIngot], 4), Ing(it[ItemIds.Plank], 2)));
+            list.Add(Recipe("madvoxel:craft_steel_axe", it[ItemIds.SteelAxe], 1, CraftStation.Workbench, 7f,
+                Ing(it[ItemIds.SteelIngot], 4), Ing(it[ItemIds.Plank], 2)));
+            list.Add(Recipe("madvoxel:craft_steel_shovel", it[ItemIds.SteelShovel], 1, CraftStation.Workbench, 6f,
+                Ing(it[ItemIds.SteelIngot], 3), Ing(it[ItemIds.Plank], 2)));
+
             // The grain bin is the field layer's destination, so it is gated on Agronomist.
             var silo = Recipe("madvoxel:craft_silo", it[ItemIds.PieceSilo], 1, CraftStation.Workbench, 12f,
                 Ing(it[ItemIds.IronIngot], 14), Ing(it[ItemIds.ScrapMetal], 30), Ing(it[ItemIds.Plank], 12));
@@ -793,8 +836,11 @@ namespace MadVoxel.Content
             list.Add(silo);
 
             // Locked behind skills. Phase 1 turns the ranks into unlocks; the data is real now.
+            // Made of steel now, rather than of an iron block and a shovelful of coal.
+            // The block was the only "steel" in the game while no steel existed, which
+            // left the name doing work the materials did not.
             var steel = Recipe("madvoxel:craft_block_steel", it[ItemIds.BlockSteel], 1, CraftStation.Workbench, 6f,
-                Ing(it[ItemIds.BlockIron], 1), Ing(it[ItemIds.Coal], 4));
+                Ing(it[ItemIds.SteelIngot], 4));
             steel.unlockedByDefault = false;
             steel.requiredPerkId = "madvoxel:perk_carpenter";
             steel.requiredPerkRank = 3;
@@ -1511,9 +1557,18 @@ namespace MadVoxel.Content
                 chain[3].requiredPerkId = "madvoxel:perk_carpenter";
                 chain[3].requiredPerkRank = 2;
 
+                // Armoured is steel. It used to be more iron and a pile of coal, which
+                // made the top tier a bigger version of the one below it rather than a
+                // different material - and meant the steel tier existed everywhere in
+                // the fiction and nowhere in the costs.
+                // One plate, whatever the piece. Tungsten is the gate on armouring
+                // something, not the bulk of it - the measured density is about a
+                // fifth of iron's, and scaling the plate with the piece would have put
+                // a single armoured wall at several chunk-columns of digging. Steel
+                // carries the weight; tungsten just says you went down for it.
                 SetUpgradeCost(chain[4], items,
-                    Ing(items[ItemIds.IronIngot], Mathf.Max(8, spec.PlankCost * 2)),
-                    Ing(items[ItemIds.Coal], 8));
+                    Ing(items[ItemIds.SteelIngot], Mathf.Max(4, spec.PlankCost)),
+                    Ing(items[ItemIds.TungstenIngot], 1));
                 chain[4].requiredPerkId = "madvoxel:perk_carpenter";
                 chain[4].requiredPerkRank = 3;
 

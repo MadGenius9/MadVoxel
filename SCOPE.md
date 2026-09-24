@@ -91,15 +91,20 @@ its tier, health and open/closed state.
 
 ---
 
-## Phase 1 — data is real, runtime is next
+## Phase 1 — built
 
-All Phase 1 content is authored and loadable and its hooks exist; the runtime systems
-are deliberately unwritten until Phase 0 passes its success test.
+This heading used to read *"data is real, runtime is next"*, back when Phase 1 was
+authored content with nothing reading it. That stopped being true some time ago: every
+area below now has a runtime behind it, and the **Still to write** column is down to
+scraps — a crossbow, a gun tier, a second seat, an irrigator, a dart trap, colonist
+pathfinding.
 
-The one exception is the **skills screen**, pulled forward. Points accrued with nowhere
-to spend them is a dead end a tester walks into within the first hour, and it left
-fourteen authored perks as data nothing read. It is self-contained — a screen, a pure
-resolver and nine call sites — and changes nothing about the Phase 0 loop.
+What has *not* changed is the caveat. "Built" here means the code exists, compiles
+against Unity reference assemblies, and passes the headless checks. It does not mean
+anyone has played it. Phase 0's own success test still needs an editor, and the two
+defects a player actually hit — everything rendering magenta, and a startup exception
+from a uGUI input field — were both invisible to every check in this repository.
+Assume tuning, and read `PLAYTEST.md` before believing any row in this table.
 
 | Area | Shipped | Still to write |
 | --- | --- | --- |
@@ -123,12 +128,16 @@ resolver and nine call sites — and changes nothing about the Phase 0 loop.
 
 ---
 
-## Phase 2 — not started
+## Phase 2 — started
 
-Steel tools and the armored tier in play (the **data** chain exists on every piece, with
-`upgradesTo` links, per-tier health and resistance, and perk gates). Traps on dug
-killboxes. Deeper ore, more POIs, guns, a second vehicle. Map and compass. Mild repair
-tension.
+| Area | Shipped | Still to write |
+| --- | --- | --- |
+| **Steel** | **Live.** Forged from iron and only in a furnace, which is what turns the furnace from a faster iron smelter into the gate on tier three. Steel pickaxe, axe and shovel at tool tier 3 — faster and far longer-lived than iron. No perk gate: the station is the gate, same rule iron follows. | A steel melee weapon worth choosing over the club. |
+| **Deeper ore** | **Live.** Tungsten, below y=22 and the only block in the game that needs a tier-3 pickaxe, so steel tools have somewhere to go. Density measured rather than guessed — about a fifth of iron's, which makes a seam worth walking back up for. | A reason to dig past it. |
+| **Armoured tier** | **In play.** Every armoured piece is paid for in steel plus one tungsten plate. The tier existed in the data since Phase 0 and cost more iron and a pile of coal, which made the top tier a bigger version of the one below it rather than a different material. | Armoured *deployables* — a crate or a door you can harden. |
+
+Still untouched: traps on dug killboxes, more POIs, guns, a second vehicle, a map and
+compass, and mild repair tension.
 
 ---
 

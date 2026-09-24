@@ -229,6 +229,27 @@ nobody has farmed it.
 
 ---
 
+## 6d. Steel and tungsten — the first Phase 2 slice (15 minutes)
+
+1. Build a **furnace**, feed it iron ingots and fuel, and wait. Steel cannot be made
+   anywhere else — not a campfire, not a workbench.
+2. Craft a **steel pickaxe** at a workbench.
+3. Dig below **y=22** and look for **tungsten ore** — a dark blue-grey seam. Try it with
+   an iron pickaxe first: it should refuse, naming the tier.
+4. Smelt the ore, then hammer a wall from Metal to **Armoured**.
+
+**Expected:** armoured costs steel plus one tungsten plate per piece, whatever the piece.
+
+**Watch for:**
+- Tungsten you never find. Its density is measured (~0.2% of the band, about a fifth of
+  iron's) but nobody has dug for it. If a full chunk-column to bedrock turns up nothing,
+  the cut wants lowering.
+- Tungsten turning up in a cellar. It should be a deliberate descent, not something you
+  trip over — the ceiling is y=22 and iron's band starts at 46.
+- An iron pickaxe breaking it anyway, which would mean the tier gate is not being read.
+
+---
+
 ## 7. The grain bin (2 minutes)
 
 1. Tip a harvest into one, then `E` on it.

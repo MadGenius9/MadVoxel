@@ -266,8 +266,9 @@ namespace MadVoxel.Core
         /// </summary>
         void GiveTestKit()
         {
-            Give(ItemIds.IronPickaxe, 1);
-            Give(ItemIds.IronAxe, 1);
+            Give(ItemIds.SteelPickaxe, 1);
+            Give(ItemIds.SteelAxe, 1);
+            Give(ItemIds.SteelShovel, 1);
             Give(ItemIds.StoneShovel, 1);
             Give(ItemIds.Club, 1);
             Give(ItemIds.Wrench, 1);
@@ -275,6 +276,11 @@ namespace MadVoxel.Core
             Give(ItemIds.BlockWoodFrame, 128);
             Give(ItemIds.BlockCobblestone, 128);
             Give(ItemIds.BlockIron, 64);
+
+            // Enough steel and tungsten to armour something, since the whole point of
+            // the tier is what it looks like standing up.
+            Give(ItemIds.SteelIngot, 128);
+            Give(ItemIds.TungstenIngot, 32);
 
             // The full snap set, so the whole shack can go up without grinding planks.
             Give(ItemIds.SnapFoundation, 24);

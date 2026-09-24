@@ -24,6 +24,13 @@ namespace MadVoxel.World.Terrain
         public const string CultivatedSoil = "madvoxel:cultivated_soil";
         public const string CoalOre = "madvoxel:coal_ore";
         public const string IronOre = "madvoxel:iron_ore";
+
+        /// <summary>
+        /// The deep one. Only a tier-three pickaxe touches it, and it only forms well
+        /// below the iron band - which is what gives steel tools somewhere to go and
+        /// the armoured tier something to cost.
+        /// </summary>
+        public const string TungstenOre = "madvoxel:tungsten_ore";
         public const string PineLog = "madvoxel:pine_log";
         public const string PineNeedles = "madvoxel:pine_needles";
         public const string ScrapHeap = "madvoxel:scrap_heap";

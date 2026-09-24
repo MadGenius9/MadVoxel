@@ -11,7 +11,16 @@ namespace MadVoxel.Content
         public const string Clay = "madvoxel:clay";
         public const string Coal = "madvoxel:coal";
         public const string IronOre = "madvoxel:iron_ore";
+        public const string TungstenOre = "madvoxel:tungsten_ore";
+        public const string TungstenIngot = "madvoxel:tungsten_ingot";
         public const string IronIngot = "madvoxel:iron_ingot";
+
+        /// <summary>
+        /// Iron worked again in a furnace. The whole point of the steel tier is that
+        /// it cannot be made over a campfire, so the furnace stops being a faster way
+        /// to do what you could already do and becomes the way into tier three.
+        /// </summary>
+        public const string SteelIngot = "madvoxel:steel_ingot";
         public const string ScrapMetal = "madvoxel:scrap_metal";
         public const string PlantFibre = "madvoxel:plant_fibre";
         public const string Cloth = "madvoxel:cloth";
@@ -41,6 +50,9 @@ namespace MadVoxel.Content
         public const string StoneShovel = "madvoxel:stone_shovel";
         public const string IronPickaxe = "madvoxel:iron_pickaxe";
         public const string IronAxe = "madvoxel:iron_axe";
+        public const string SteelPickaxe = "madvoxel:steel_pickaxe";
+        public const string SteelAxe = "madvoxel:steel_axe";
+        public const string SteelShovel = "madvoxel:steel_shovel";
         public const string Club = "madvoxel:club";
         public const string Wrench = "madvoxel:wrench";
         public const string Hammer = "madvoxel:hammer";

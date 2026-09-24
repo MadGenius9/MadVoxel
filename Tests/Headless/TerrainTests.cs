@@ -18,6 +18,7 @@ namespace MadVoxel.Headless
             Mesher();
             Terrain(db);
             Pois(db);
+            OreBands(db);
         }
 
         static void Pois(ContentDatabase db)
@@ -111,6 +112,90 @@ namespace MadVoxel.Headless
                 }
             }
             Harness.Check(concreteOrIron > 0, string.Format("the outpost stamps built blocks into the world ({0} voxels)", concreteOrIron));
+        }
+
+        /// <summary>
+        /// That the ore bands actually produce ore, and in the right order of depth.
+        ///
+        /// A noise cut is one number, and a cut set slightly too high does not fail -
+        /// it just quietly generates a world with no tungsten in it anywhere. Nothing
+        /// else in this suite would notice: the block exists, the recipe resolves, the
+        /// reachability closure is satisfied because the block nominally drops it, and
+        /// the first sign of trouble is a player digging to bedrock for an evening and
+        /// finding nothing. So the generator gets asked directly.
+        /// </summary>
+        static void OreBands(ContentDatabase db)
+        {
+            Harness.Section("voxel: the ore bands");
+
+            var gen = new TerrainGenerator(133742, db.blocks);
+
+            var coal = db.blocks.IdOf(BlockIds.CoalOre);
+            var iron = db.blocks.IdOf(BlockIds.IronOre);
+            var tungsten = db.blocks.IdOf(BlockIds.TungstenOre);
+
+            int coalCount = 0, ironCount = 0, tungstenCount = 0;
+            int deepestIron = int.MaxValue, shallowestTungsten = int.MinValue;
+
+            // A column of chunks through the whole world, in a few places, so a single
+            // unlucky spot cannot decide the answer.
+            // Enough of them that rarity cannot be mistaken for absence. A single
+            // column of an 0.2%-dense band holds a handful of voxels on a good day and
+            // none on a bad one, and a test that flakes on the seed is worse than no
+            // test - it teaches you to ignore it.
+            var spots = new[]
+            {
+                new[] { 0, 0 }, new[] { 12, -7 }, new[] { -20, 31 }, new[] { 44, 44 },
+                new[] { -55, -13 }, new[] { 27, 61 }, new[] { -38, 48 }, new[] { 70, -29 },
+                new[] { 5, -62 }, new[] { -9, 19 }, new[] { 33, 8 }, new[] { -47, -41 }
+            };
+
+            for (int s = 0; s < spots.Length; s++)
+            {
+                for (int cy = 0; cy < TerrainWorld.WorldHeightChunks; cy++)
+                {
+                    var blocks = new ushort[Chunk.Volume];
+                    var coord = new ChunkCoord(spots[s][0], cy, spots[s][1]);
+                    gen.Generate(coord, blocks);
+
+                    for (int ly = 0; ly < Chunk.Size; ly++)
+                    {
+                        int wy = coord.Origin.y + ly;
+                        for (int lz = 0; lz < Chunk.Size; lz++)
+                        {
+                            for (int lx = 0; lx < Chunk.Size; lx++)
+                            {
+                                var id = blocks[Chunk.Index(lx, ly, lz)];
+
+                                if (id == coal) coalCount++;
+                                else if (id == iron)
+                                {
+                                    ironCount++;
+                                    if (wy < deepestIron) deepestIron = wy;
+                                }
+                                else if (id == tungsten)
+                                {
+                                    tungstenCount++;
+                                    if (wy > shallowestTungsten) shallowestTungsten = wy;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // TEMP PROBE
+            Harness.Check(coalCount > 0, string.Format("coal generates ({0} voxels)", coalCount));
+            Harness.Check(ironCount > 0, string.Format("iron generates ({0} voxels)", ironCount));
+            Harness.Check(tungstenCount > 0, string.Format("tungsten generates ({0} voxels)", tungstenCount));
+
+            // Rarer than iron, or the deep dig is not a dig.
+            Harness.Check(tungstenCount < ironCount,
+                string.Format("and is rarer than iron ({0} against {1})", tungstenCount, ironCount));
+
+            // And genuinely deep. Digging a cellar must not turn it up.
+            Harness.Check(shallowestTungsten < 32,
+                string.Format("the shallowest tungsten is at y={0}", shallowestTungsten));
         }
 
         static void Coordinates()

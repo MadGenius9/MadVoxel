@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using MadVoxel.Building;
 using MadVoxel.Content;
 using MadVoxel.Inventory;
 using MadVoxel.Perks;
@@ -27,6 +28,103 @@ namespace MadVoxel.Headless
 
             Reachability(db);
             PerkGates(db);
+            SteelTier(db);
+        }
+
+        /// <summary>
+        /// The shape of tier three.
+        ///
+        /// Steel is the first material in the game that a station gates rather than a
+        /// perk, and the whole design rests on one fact: it cannot be made anywhere
+        /// but a furnace. Add a campfire recipe for it by accident and the furnace
+        /// goes back to being a faster iron smelter, the armoured tier loses its
+        /// prerequisite, and nothing in the progression complains - it all still
+        /// crafts, just earlier and for less.
+        /// </summary>
+        static void SteelTier(ContentDatabase db)
+        {
+            Harness.Section("progression: the steel tier");
+
+            var ingot = db.Item(ItemIds.SteelIngot);
+            Harness.Check(ingot != null, "steel exists as a material");
+            if (ingot == null) return;
+
+            // Every recipe that produces steel, and where it can be made.
+            int forgeRoutes = 0;
+            var elsewhere = new List<string>();
+
+            for (int i = 0; i < db.recipes.Count; i++)
+            {
+                var recipe = db.recipes[i];
+                if (recipe.output != ingot) continue;
+
+                if (recipe.station == CraftStation.Forge) forgeRoutes++;
+                else elsewhere.Add(recipe.stringId + " at " + recipe.station);
+            }
+
+            Harness.Check(forgeRoutes > 0, "steel can be forged");
+            Harness.Check(elsewhere.Count == 0,
+                "and nowhere else"
+                + (elsewhere.Count > 0 ? ": " + string.Join(", ", elsewhere) : ""));
+
+            // Tools. Tier three has to actually be above tier two, or "steel" is a
+            // paint job on an iron pickaxe.
+            var steelPick = db.Item(ItemIds.SteelPickaxe);
+            var ironPick = db.Item(ItemIds.IronPickaxe);
+            Harness.Check(steelPick != null && ironPick != null, "both pickaxes exist");
+            if (steelPick != null && ironPick != null)
+            {
+                Harness.Check(steelPick.toolTier > ironPick.toolTier, "steel outranks iron");
+                Harness.Check(steelPick.harvestSpeed > ironPick.harvestSpeed, "and digs faster");
+                Harness.Check(steelPick.maxDurability > ironPick.maxDurability, "and lasts longer");
+            }
+
+            // Steel tools must themselves be made of steel, or the tier is decorative.
+            var steelIds = new[] { ItemIds.SteelPickaxe, ItemIds.SteelAxe, ItemIds.SteelShovel };
+            var notSteel = new List<string>();
+
+            for (int t = 0; t < steelIds.Length; t++)
+            {
+                var tool = db.Item(steelIds[t]);
+                if (tool == null) { notSteel.Add(steelIds[t] + " is missing"); continue; }
+
+                bool madeOfSteel = false;
+                for (int i = 0; i < db.recipes.Count; i++)
+                {
+                    var recipe = db.recipes[i];
+                    if (recipe.output != tool) continue;
+
+                    for (int j = 0; j < recipe.ingredients.Count; j++)
+                    {
+                        if (recipe.ingredients[j].item == ingot) madeOfSteel = true;
+                    }
+                }
+
+                if (!madeOfSteel) notSteel.Add(steelIds[t]);
+            }
+
+            Harness.Check(notSteel.Count == 0,
+                "every steel tool is made of steel"
+                + (notSteel.Count > 0 ? ": " + string.Join(", ", notSteel) : ""));
+
+            // And the armoured build tier is the other thing steel is for.
+            int armouredInSteel = 0;
+            int armoured = 0;
+
+            for (int i = 0; i < db.buildPieces.Count; i++)
+            {
+                var piece = db.buildPieces[i];
+                if (piece == null || piece.tier != BuildTier.Armored) continue;
+                armoured++;
+
+                for (int j = 0; j < piece.upgradeCost.Count; j++)
+                {
+                    if (piece.upgradeCost[j].item == ingot) { armouredInSteel++; break; }
+                }
+            }
+
+            Harness.Check(armoured > 0, "there are armoured pieces");
+            Harness.Equal(armouredInSteel, armoured, "and every one of them is paid for in steel");
         }
 
         /// <summary>

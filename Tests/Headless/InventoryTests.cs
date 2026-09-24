@@ -171,9 +171,16 @@ namespace MadVoxel.Headless
             Harness.Check(steel != null && !steel.unlockedByDefault, "the steel block recipe starts locked");
             if (steel != null)
             {
+                // Stocked from the recipe's own ingredient list rather than from a
+                // hard-coded pair. This test is about the skill gate, not about what
+                // steel happens to be made of this week - and listing the materials
+                // here meant re-costing the recipe broke an unrelated assertion.
                 var rich = new Inv(36);
-                rich.Add(db.Item(ItemIds.BlockIron), 4);
-                rich.Add(db.Item(ItemIds.Coal), 16);
+                for (int i = 0; i < steel.ingredients.Count; i++)
+                {
+                    var ing = steel.ingredients[i];
+                    if (ing.item != null) rich.Add(ing.item, ing.count * 4);
+                }
 
                 Harness.Equal(CraftingService.CanCraft(rich, steel, CraftStation.Workbench, unlocked), false,
                     "materials alone do not unlock steel");

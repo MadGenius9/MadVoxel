@@ -21,6 +21,25 @@ namespace MadVoxel.World.Terrain
         /// </summary>
         public const int WaterTableLevel = SeaLevel - 4;
 
+        /// <summary>
+        /// Ceiling on tungsten, in world Y. Comfortably under the iron band's 46 so
+        /// that finding it is a deliberate descent rather than something you trip over
+        /// while digging a cellar.
+        /// </summary>
+        const int TungstenCeiling = 22;
+
+        /// <summary>
+        /// Noise cut for tungsten, measured rather than guessed.
+        ///
+        /// Fbm3D does not fill 0..1 evenly, so a cut is not a percentage and cannot be
+        /// reasoned about by eye: at 0.876 this produced 0.027% of the band and a
+        /// player could dig out a level and find nothing. 0.845 gives about 0.2%,
+        /// which is roughly two fifths of iron's rate in a band less than half as
+        /// tall - rare enough that a seam is worth walking back up for, common enough
+        /// that looking for it works.
+        /// </summary>
+        const float TungstenCut = 0.845f;
+
         /// <summary>How thick the saturated band is before it goes back to stone.</summary>
         const int WaterTableThickness = 5;
         const int TreeCell = 8;
@@ -29,7 +48,7 @@ namespace MadVoxel.World.Terrain
 
         // Block ids are resolved once, on the main thread, so the worker touches no Unity objects.
         readonly ushort _air, _bedrock, _stone, _dirt, _grass, _sand, _gravel;
-        readonly ushort _coalOre, _ironOre, _log, _leaves, _scrap, _clay;
+        readonly ushort _coalOre, _ironOre, _tungstenOre, _log, _leaves, _scrap, _clay;
         readonly ushort _concrete, _planks, _ironBlock, _cobble;
         readonly ushort _wildYucca, _wildGrain, _wildCorn;
         readonly ushort _waterTable;
@@ -76,6 +95,7 @@ namespace MadVoxel.World.Terrain
             _gravel = registry.IdOf(BlockIds.Gravel);
             _coalOre = registry.IdOf(BlockIds.CoalOre);
             _ironOre = registry.IdOf(BlockIds.IronOre);
+            _tungstenOre = registry.IdOf(BlockIds.TungstenOre);
             _log = registry.IdOf(BlockIds.PineLog);
             _leaves = registry.IdOf(BlockIds.PineNeedles);
             _scrap = registry.IdOf(BlockIds.ScrapHeap);
@@ -291,6 +311,16 @@ namespace MadVoxel.World.Terrain
                                 id = _coalOre;
                             if (wy < ironCeiling && Noise.Fbm3D(wx * 0.062f, wy * 0.080f, wz * 0.062f, _seed + 509, 2) > ironCut)
                                 id = _ironOre;
+
+                            // Tungsten, last so it wins the cell it shares. Well below
+                            // the iron band and rarer than it: this is the bottom of
+                            // the map, and the dig down to it is most of what the
+                            // armoured tier costs. A biome's ore density is not
+                            // applied - a dry flat should not put the deepest metal
+                            // within reach of a shovel.
+                            if (wy < TungstenCeiling
+                                && Noise.Fbm3D(wx * 0.070f, wy * 0.090f, wz * 0.070f, _seed + 727, 2) > TungstenCut)
+                                id = _tungstenOre;
                         }
 
                         // Saturated ground, in a band rather than an ocean. This is the
