@@ -51,8 +51,9 @@ namespace MadVoxel.World.Terrain
         };
 
         [System.ThreadStatic] static int[] _vertexAt;
-        [System.ThreadStatic] static bool[] _solid;
-        [System.ThreadStatic] static ushort[] _block;
+
+        /// <summary>Reused per cell. Eight bools allocated 4913 times a chunk is not free.</summary>
+        [System.ThreadStatic] static bool[] _corner;
 
         static int CellIndex(int x, int y, int z)
         {
@@ -75,28 +76,12 @@ namespace MadVoxel.World.Terrain
         {
             int cells = Span * Span * Span;
 
-            if (_vertexAt == null || _vertexAt.Length != cells)
-            {
-                _vertexAt = new int[cells];
-                _solid = new bool[cells];
-                _block = new ushort[cells];
-            }
+            if (_vertexAt == null || _vertexAt.Length != cells) _vertexAt = new int[cells];
+            if (_corner == null) _corner = new bool[8];
 
             for (int i = 0; i < cells; i++) _vertexAt[i] = -1;
 
-            // Pass one: what is solid, and which block is responsible for it.
-            for (int y = Lo; y < S; y++)
-            for (int z = Lo; z < S; z++)
-            for (int x = Lo; x < S; x++)
-            {
-                var id = Sample(padded, x, y, z);
-                int index = CellIndex(x, y, z);
-
-                _solid[index] = IsSmooth(meta, id);
-                _block[index] = id;
-            }
-
-            // Pass two: a vertex wherever the surface passes through a cell.
+            // A vertex wherever the surface passes through a cell.
             for (int y = Lo; y < S; y++)
             for (int z = Lo; z < S; z++)
             for (int x = Lo; x < S; x++)
@@ -104,7 +89,7 @@ namespace MadVoxel.World.Terrain
                 PlaceVertex(padded, meta, data, x, y, z);
             }
 
-            // Pass three: quads across every sign change.
+            // Then quads across every sign change.
             for (int y = Lo; y < S; y++)
             for (int z = Lo; z < S; z++)
             for (int x = Lo; x < S; x++)
@@ -137,7 +122,7 @@ namespace MadVoxel.World.Terrain
             bool anyAir = false;
 
             // The eight voxels of this cell.
-            var corner = new bool[8];
+            var corner = _corner;
             for (int c = 0; c < 8; c++)
             {
                 corner[c] = SolidAt(padded, meta, cx + Corners[c, 0], cy + Corners[c, 1], cz + Corners[c, 2]);
@@ -164,18 +149,50 @@ namespace MadVoxel.World.Terrain
 
             if (crossings == 0) return;
 
+            // Shifted half a block on every axis.
+            //
+            // Surface nets works on the dual grid - a vertex sits inside a cell, which
+            // straddles eight blocks - so without this the whole surface is inset by
+            // half a block against the world it describes. Flat ground would render
+            // and collide half a metre below the block top every tree, bush and plot
+            // in the game is placed against, and a cliff face would sit half a metre
+            // inside the blocks that make it.
+            //
+            // With it, an axis-aligned surface lands exactly where the cube mesher put
+            // it, so every placement rule in the project keeps working untouched.
             var position = new Vector3(
-                cx + sx / crossings,
-                cy + sy / crossings,
-                cz + sz / crossings);
+                cx + sx / crossings + 0.5f,
+                cy + sy / crossings + 0.5f,
+                cz + sz / crossings + 0.5f);
 
             int index = CellIndex(cx, cy, cz);
             _vertexAt[index] = data.Vertices.Count;
 
+            var normal = GradientNormal(padded, meta, cx, cy, cz);
+
             data.Vertices.Add(position);
-            data.Normals.Add(GradientNormal(padded, meta, cx, cy, cz));
-            data.Uvs.Add(new Vector2(position.x, position.z));
+            data.Normals.Add(normal);
+            data.Uvs.Add(Project(position, normal));
             data.Colors.Add(Shade(corner));
+        }
+
+        /// <summary>
+        /// Picks the plane to lay the texture on, from whichever way the surface faces.
+        ///
+        /// A flat top-down projection is right for ground and wrong for everything
+        /// else: on a pit wall or a cliff the texture has no variation to run along
+        /// and smears into vertical streaks, which is the most obvious tell that a
+        /// surface is procedurally textured.
+        /// </summary>
+        static Vector2 Project(Vector3 position, Vector3 normal)
+        {
+            float ax = Mathf.Abs(normal.x);
+            float ay = Mathf.Abs(normal.y);
+            float az = Mathf.Abs(normal.z);
+
+            if (ay >= ax && ay >= az) return new Vector2(position.x, position.z);
+            if (ax >= az) return new Vector2(position.z, position.y);
+            return new Vector2(position.x, position.y);
         }
 
         /// <summary>
@@ -187,9 +204,10 @@ namespace MadVoxel.World.Terrain
         /// chunk into a soft one - a built wall would come out looking inflated, which
         /// is precisely the distinction this whole pass exists to draw.
         ///
-        /// Central differences over the 3x3x3 around the cell. Denser than sampling
-        /// six neighbours and worth it: a six-tap gradient on a lattice this coarse
-        /// snaps to the axes and puts visible facets back into the slope.
+        /// Weighted over the cell's own eight corners rather than sampling six
+        /// neighbours: a six-tap gradient on a lattice this coarse snaps to the axes
+        /// and puts visible facets back into a slope the vertex placement just
+        /// rounded off.
         /// </summary>
         static Vector3 GradientNormal(ushort[] padded, BlockMeta[] meta, int cx, int cy, int cz)
         {

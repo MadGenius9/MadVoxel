@@ -214,7 +214,11 @@ namespace MadVoxel.World.Terrain
             if (u == 0) px += du; else if (u == 1) py += du; else pz += du;
             if (v == 0) px += dv; else if (v == 1) py += dv; else pz += dv;
 
-            return IsHardOpaque(meta, Sample(padded, px, py, pz));
+            // Any opaque block occludes, smooth or not. Only face *culling* cares
+            // whether the neighbour is a cube - shading does not, and using the cube
+            // test here cost a wall its contact shading against the ground it stands
+            // in, which is the one seam where occlusion earns its keep.
+            return IsOpaque(meta, Sample(padded, px, py, pz));
         }
 
         static bool IsOpaque(BlockMeta[] meta, ushort id)

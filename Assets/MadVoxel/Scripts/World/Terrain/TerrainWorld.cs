@@ -167,16 +167,39 @@ namespace MadVoxel.World.Terrain
             chunk.MeshDirty = true;
             if (MeshInvalidated != null) MeshInvalidated(coord);
 
-            // A face on the chunk border also changes the neighbour's silhouette.
-            if (lx == 0) InvalidateNeighbour(coord.Offset(-1, 0, 0));
-            if (lx == Chunk.Mask) InvalidateNeighbour(coord.Offset(1, 0, 0));
-            if (ly == 0) InvalidateNeighbour(coord.Offset(0, -1, 0));
-            if (ly == Chunk.Mask) InvalidateNeighbour(coord.Offset(0, 1, 0));
-            if (lz == 0) InvalidateNeighbour(coord.Offset(0, 0, -1));
-            if (lz == Chunk.Mask) InvalidateNeighbour(coord.Offset(0, 0, 1));
+            // A block on the border changes the neighbour's silhouette - and for
+            // smooth ground it changes the diagonal neighbours too, because surface
+            // nets reads a block's corners rather than only its faces. Six neighbours
+            // was right while everything was cubes; with rounded terrain it leaves a
+            // crack in the mesh and, worse, in the collider, which is a hole a player
+            // falls through at the exact place they were just digging.
+            int nx = lx == 0 ? -1 : (lx == Chunk.Mask ? 1 : 0);
+            int ny = ly == 0 ? -1 : (ly == Chunk.Mask ? 1 : 0);
+            int nz = lz == 0 ? -1 : (lz == Chunk.Mask ? 1 : 0);
 
-            if (BlockChanged != null) BlockChanged(new Vector3Int(wx, wy, wz), old, id);
+            // Every neighbour this block touches, including the diagonals. At most
+            // seven, and only for a block actually on a border.
+            for (int dx = -1; dx <= 1; dx++)
+            for (int dy = -1; dy <= 1; dy++)
+            for (int dz = -1; dz <= 1; dz++)
+            {
+                if (dx == 0 && dy == 0 && dz == 0) continue;
+
+                // Only step towards a face this block is actually against.
+                if (dx != 0 && dx != nx) continue;
+                if (dy != 0 && dy != ny) continue;
+                if (dz != 0 && dz != nz) continue;
+
+                InvalidateNeighbour(coord.Offset(dx, dy, dz));
+            }
+
+            RaiseChanged(wx, wy, wz, old, id);
             return true;
+        }
+
+        void RaiseChanged(int wx, int wy, int wz, ushort old, ushort id)
+        {
+            if (BlockChanged != null) BlockChanged(new Vector3Int(wx, wy, wz), old, id);
         }
 
         void InvalidateNeighbour(ChunkCoord coord)

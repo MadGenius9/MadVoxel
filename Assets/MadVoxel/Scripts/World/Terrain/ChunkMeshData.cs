@@ -26,7 +26,28 @@ namespace MadVoxel.World.Terrain
         public readonly Dictionary<ushort, List<int>> Triangles = new Dictionary<ushort, List<int>>();
         public readonly List<ushort> BlockOrder = new List<ushort>();
 
-        public bool IsEmpty { get { return Vertices.Count == 0; } }
+        /// <summary>
+        /// Nothing to draw. Triangles decide it, not vertices.
+        ///
+        /// Surface nets places a vertex in any cell the surface crosses, including the
+        /// border cells a chunk shares with the one below it - so a chunk of pure air
+        /// sitting on top of ground produces a few hundred vertices and not one
+        /// triangle. Counting vertices, the streamer would keep a live renderer and a
+        /// zero-triangle mesh collider for every empty chunk above the landscape.
+        /// </summary>
+        public bool IsEmpty
+        {
+            get
+            {
+                if (Vertices.Count == 0) return true;
+
+                foreach (var list in Triangles)
+                {
+                    if (list.Value.Count > 0) return false;
+                }
+                return true;
+            }
+        }
 
         public List<int> TrianglesFor(ushort blockId)
         {

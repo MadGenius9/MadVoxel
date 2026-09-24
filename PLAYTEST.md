@@ -50,8 +50,14 @@ without redoing any of this.
   same mesh, so collision is smooth now too. This is the change most likely to break
   movement, and I could not test it.
 - Terrain with holes in it, or seams between chunks.
-- Farm fields going lumpy. Tilled and cultivated soil are deliberately *not* smoothed —
-  a field is a grid you flattened, and the crop cover is drawn on flat block tops.
+- Farm fields going lumpy, or sitting proud of the ground like raised beds. Tilled and
+  cultivated soil are deliberately *not* smoothed — a field is a grid you flattened, and
+  the crop cover is drawn on flat block tops — but flat smooth ground and a soil cube
+  should now top out at exactly the same height.
+- Trees, bushes, crates or plots floating half a metre above the ground, or sunk into
+  it. The smooth surface is offset to land exactly where the cube mesher put it, so
+  every placement rule in the game still lines up. If anything floats, that offset is
+  wrong and it will be wrong for everything at once.
 - Built walls looking inflated or soft. Their normals are exact and untouched; if they
   look rounded, the two meshers are treading on each other.
 

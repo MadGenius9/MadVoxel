@@ -21,6 +21,7 @@ namespace MadVoxel.Headless
             OreBands(db);
             AmbientOcclusion(db);
             SmoothTerrain(db);
+            SmoothAlignment(db);
         }
 
         static void Pois(ContentDatabase db)
@@ -228,7 +229,13 @@ namespace MadVoxel.Headless
             Harness.Section("voxel: baked ambient occlusion");
 
             var meta = BlockMeta.Snapshot(db.blocks);
-            ushort stone = db.blocks.IdOf(BlockIds.Stone);
+
+            // Planks, not stone. Stone is natural ground now and goes through surface
+            // nets, so building this out of it would quietly test the smooth shading
+            // twice and leave the cube mesher's corner AO - the merge key, the
+            // three-neighbour test - with no coverage at all.
+            ushort stone = db.blocks.IdOf(BlockIds.Planks);
+            Harness.Check(!meta[stone].Smooth, "the AO fixtures are built from a hard block");
 
             // A single block alone in the void: every corner of every face is open.
             var lone = Padded();
@@ -390,6 +397,77 @@ namespace MadVoxel.Headless
             var buriedMesh = ChunkMesher.Build(buried, meta);
             Harness.Check(buriedMesh.Triangles.ContainsKey(planks),
                 "a block walled into the ground still draws, since smooth ground cannot cull a cube");
+        }
+
+        /// <summary>
+        /// That smooth ground sits where the block grid says it does, and that a
+        /// chunk of air is empty.
+        ///
+        /// Both of these produce symptoms a playtester would misread. Ground half a
+        /// block low looks like floating trees and a camera sunk into the floor;
+        /// chunks that are not empty but have nothing to draw look like a performance
+        /// problem. Neither looks like what it is.
+        /// </summary>
+        static void SmoothAlignment(ContentDatabase db)
+        {
+            Harness.Section("voxel: smooth ground lines up with the block grid");
+
+            var meta = BlockMeta.Snapshot(db.blocks);
+            ushort stone = db.blocks.IdOf(BlockIds.Stone);
+
+            // Ground filled solid to y=6 inclusive. The block top is y=7, which is
+            // where every tree, bush, plot and deployable in the game is placed.
+            var ground = Padded();
+            for (int x = -1; x <= 16; x++)
+                for (int z = -1; z <= 16; z++)
+                    for (int y = -1; y <= 6; y++)
+                        Set(ground, x, y, z, stone);
+
+            var mesh = ChunkMesher.Build(ground, meta);
+            Harness.Check(mesh.Vertices.Count > 0, "flat ground meshes");
+
+            float highest = float.MinValue;
+            float lowest = float.MaxValue;
+            for (int i = 0; i < mesh.Vertices.Count; i++)
+            {
+                float y = mesh.Vertices[i].y;
+                if (y > highest) highest = y;
+                if (y < lowest) lowest = y;
+            }
+
+            Harness.Check(Mathf.Abs(highest - 7f) < 0.001f,
+                string.Format("its surface is at y={0}, where the block top is", highest));
+            Harness.Check(Mathf.Abs(lowest - 7f) < 0.001f, "and it is flat");
+
+            // A vertical face lines up the same way. Solid where x < 8 means the wall
+            // of earth stands at x = 8, not half a metre inside it.
+            var cliff = Padded();
+            for (int x = -1; x < 8; x++)
+                for (int z = -1; z <= 16; z++)
+                    for (int y = -1; y <= 10; y++)
+                        Set(cliff, x, y, z, stone);
+
+            var cliffMesh = ChunkMesher.Build(cliff, meta);
+            float furthest = float.MinValue;
+            for (int i = 0; i < cliffMesh.Vertices.Count; i++)
+            {
+                if (cliffMesh.Vertices[i].x > furthest) furthest = cliffMesh.Vertices[i].x;
+            }
+
+            Harness.Check(Mathf.Abs(furthest - 8f) < 0.001f,
+                string.Format("a cliff face stands at x={0}, on the block boundary", furthest));
+
+            // Air above ground. Surface nets places vertices in the border cells this
+            // chunk shares with the one below, so it is not vertex-free - but it has
+            // no triangles, and a chunk with nothing to draw has to read as empty or
+            // the streamer keeps a renderer and a collider alive for every one.
+            var air = Padded();
+            for (int x = -1; x <= 16; x++)
+                for (int z = -1; z <= 16; z++)
+                    Set(air, x, -1, z, stone);
+
+            var airMesh = ChunkMesher.Build(air, meta);
+            Harness.Check(airMesh.IsEmpty, "a chunk of air above ground counts as empty");
         }
 
         /// <summary>Is this coordinate exactly on a block boundary?</summary>
