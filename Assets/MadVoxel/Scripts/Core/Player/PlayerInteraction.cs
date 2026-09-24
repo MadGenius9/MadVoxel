@@ -528,6 +528,7 @@ namespace MadVoxel.Core.Player
             {
                 // Too little draw to be worth an arrow, so the arrow is kept.
                 Notifications.Post("Not drawn enough");
+                Audio.GameAudio.Play(Audio.Sound.Denied);
                 return;
             }
 
@@ -536,6 +537,7 @@ namespace MadVoxel.Core.Player
             if (!_stats.TrySpendStamina(bow.drawStamina * draw01))
             {
                 Notifications.Post("Too tired to draw");
+                Audio.GameAudio.Play(Audio.Sound.Denied);
                 return;
             }
 
@@ -543,6 +545,9 @@ namespace MadVoxel.Core.Player
             if (arrow == null) return;
 
             _inventory.Bag.Remove(arrow, 1);
+
+            // Pitched by the draw, so the bow tells you how hard you pulled it.
+            Audio.GameAudio.Play(Audio.Sound.BowRelease, 0.05f, 0.6f + draw01 * 0.4f);
 
             float speed = Combat.Ballistics.LaunchSpeed(bow.minLaunchSpeed, bow.maxLaunchSpeed, draw01);
             // Bow plus head: a better arrow is a real upgrade without needing a second
@@ -599,9 +604,26 @@ namespace MadVoxel.Core.Player
                     ResetMining();
                     break;
                 default:
+                    SwingAtNothing();
                     ResetMining();
                     break;
             }
+        }
+
+        /// <summary>
+        /// A swing that connects with nothing still has to sound like a swing.
+        ///
+        /// Silence on a miss is the same silence a broken button makes, and a player
+        /// who cannot tell those apart stops trusting the button. Costs no stamina -
+        /// you are paying for the hit, not for the gesture.
+        /// </summary>
+        void SwingAtNothing()
+        {
+            if (Time.time < _nextAttackTime) return;
+
+            var held = _inventory.SelectedItem;
+            _nextAttackTime = Time.time + (held != null ? Mathf.Max(0.2f, held.attackCooldown) : BareHandCooldown);
+            Audio.GameAudio.Play(Audio.Sound.MeleeSwing, 0.12f, 0.7f);
         }
 
         void MineBlock()
@@ -664,6 +686,8 @@ namespace MadVoxel.Core.Player
                 int extra = UnityEngine.Random.Range(def.secondaryDropMin, def.secondaryDropMax + 1);
                 if (extra > 0) _inventory.Collect(def.secondaryDropItem, extra);
             }
+
+            Audio.GameAudio.PlayAt(Audio.Sound.BlockBreak, cell + Vector3.one * 0.5f);
 
             bool wasPlayerPlaced = _playerPlaced.Remove(cell);
             if (!wasPlayerPlaced && def.harvestXp > 0f)
@@ -906,11 +930,13 @@ namespace MadVoxel.Core.Player
                 {
                     _nextWindedMessage = Time.time + 1.5f;
                     Notifications.Post("Too winded to swing");
+                    Audio.GameAudio.Play(Audio.Sound.Denied);
                 }
                 return;
             }
 
             _nextAttackTime = Time.time + cooldown;
+            Audio.GameAudio.Play(Audio.Sound.MeleeSwing);
 
             damageable.ApplyDamage(new DamageInfo
             {
@@ -922,12 +948,26 @@ namespace MadVoxel.Core.Player
                 ToolTier = held.Item != null ? held.Item.toolTier : 0
             });
 
+            // Flesh and stone have to be told apart by ear alone: in a fight the
+            // player is looking at the zombie, not at the wall they just clipped.
+            Audio.GameAudio.PlayAt(
+                damageable is IMeleeTarget ? Audio.Sound.MeleeHitFlesh : Audio.Sound.MeleeHitHard,
+                ImpactPoint(damageable));
+
             LandedHit(damageable, damage);
 
             if (held.Item != null && held.Item.HasDurability && _inventory.WearSelected(1))
             {
                 Notifications.PostFormat("{0} broke", held.Item.displayName);
             }
+        }
+
+        /// <summary>Where a blow landed, for putting its sound in the world.</summary>
+        Vector3 ImpactPoint(IDamageable victim)
+        {
+            var body = victim as IMeleeTarget;
+            if (body != null) return body.CentreOfMass;
+            return Target.Kind != TargetKind.None ? Target.HitPoint : transform.position;
         }
 
         /// <summary>
@@ -1024,6 +1064,7 @@ namespace MadVoxel.Core.Player
 
             if (_buildings.Place(def, address) == null) return;
             _inventory.ConsumeSelected(1);
+            Audio.GameAudio.PlayAt(Audio.Sound.Place, Target.HitPoint);
         }
 
         void UpgradePiece(BuildPiece piece)
@@ -1083,6 +1124,8 @@ namespace MadVoxel.Core.Player
             }
 
             _inventory.ConsumeSelected(1);
+            Audio.GameAudio.PlayAt(Audio.Sound.Place, Target.HitPoint);
+
             if (def.kind == StructureKind.ToolCupboard)
             {
                 Notifications.PostFormat("Land claimed - {0}m protected", Mathf.RoundToInt(placed.Definition.claimRadius > 0f ? placed.Definition.claimRadius : _config.claimRadius));

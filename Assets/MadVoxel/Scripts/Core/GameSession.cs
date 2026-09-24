@@ -216,6 +216,10 @@ namespace MadVoxel.Core
             _streamer = _worldRoot.AddComponent<ChunkStreamer>();
             _streamer.Init(_voxels, _content.config, _store, _player.transform);
 
+            // Built once, here, because every clip is synthesised and rendering the
+            // bank mid-fight would hitch the frame the player can least afford.
+            MadVoxel.Audio.GameAudio.Install(_worldRoot.transform);
+
             _spawner = _worldRoot.AddComponent<SpawnDirector>();
             _spawner.Init(_content.config, _clock, _voxels, _streamer, _structures, _blockDamage,
                           _player.transform, _player.Stats, _content.Zombie(ZombieIds.Shambler));

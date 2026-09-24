@@ -54,6 +54,7 @@ namespace MadVoxel.AI
         float _health;
         float _verticalVelocity;
         float _staggerUntil;
+        float _nextGroanTime;
         Vector3 _knockback;
         Combat.HitFlash _flash;
         float _nextAttackTime;
@@ -175,6 +176,8 @@ namespace MadVoxel.AI
             _animPhase += dt * Mathf.Lerp(2.5f, 7f, Mathf.Clamp01(moved / 3f));
             ZombieVisuals.Animate(_limbs, _animPhase, Mathf.Clamp01(moved / 3f));
 
+            Groan(dt);
+
             if (!IsHordeUnit && _player != null)
             {
                 float d = Vector3.Distance(transform.position, _player.position);
@@ -242,6 +245,27 @@ namespace MadVoxel.AI
         {
             var look = Quaternion.LookRotation(new Vector3(dir.x, 0f, dir.z), Vector3.up);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, look, 280f * Time.deltaTime);
+        }
+
+        /// <summary>
+        /// Says where it is, every few seconds, while it is coming for you.
+        ///
+        /// Staggered per body by its own instance id rather than by a shared timer, so
+        /// a horde arrives as a crowd of separate things rather than as one chord.
+        /// Only when chasing: a wandering shambler you have not noticed is a better
+        /// scare than one that announces itself across the valley.
+        /// </summary>
+        void Groan(float dt)
+        {
+            if (_mode == Mode.Wander) return;
+            if (Time.time < _nextGroanTime) return;
+
+            // First call only arms the timer - otherwise every zombie in a wave groans
+            // on the frame it starts chasing.
+            bool armed = _nextGroanTime > 0f;
+            _nextGroanTime = Time.time + UnityEngine.Random.Range(3.5f, 7.5f);
+
+            if (armed) Audio.GameAudio.PlayAt(Audio.Sound.ZombieGroan, CentreOfMass, 0.18f, 0.8f);
         }
 
         bool TryAttackPlayer()
@@ -402,6 +426,7 @@ namespace MadVoxel.AI
         public void Kill(GameObject killer)
         {
             _health = 0f;
+            Audio.GameAudio.PlayAt(Audio.Sound.ZombieDeath, CentreOfMass, 0.14f);
             if (Died != null) Died(this, killer);
             UnityEngine.Object.Destroy(gameObject);
         }

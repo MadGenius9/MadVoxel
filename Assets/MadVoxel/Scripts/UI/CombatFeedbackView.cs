@@ -190,6 +190,8 @@ namespace MadVoxel.UI
             // same. Floored well above nothing: every hit has to be noticed.
             float share = _stats != null && _stats.MaxHealth > 0f ? info.Amount / _stats.MaxHealth : 0.1f;
             _flashStrength = Mathf.Clamp(share * 3.2f, 0.35f, 1f);
+
+            Audio.GameAudio.Play(Audio.Sound.PlayerHurt, 0.1f, _flashStrength);
         }
 
         void ShowDamage(int amount, bool killed)

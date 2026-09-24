@@ -130,6 +130,8 @@ namespace MadVoxel.Combat
                         ToolTier = _tier
                     });
 
+                    Audio.GameAudio.PlayAt(Audio.Sound.ArrowHit, hit.point);
+
                     // An arrow that hit something is in the something.
                     Destroy(gameObject);
                     return true;
