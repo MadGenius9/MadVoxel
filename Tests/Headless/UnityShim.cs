@@ -222,6 +222,8 @@ namespace UnityEngine
         public static int Abs(int f) { return Math.Abs(f); }
         public static float Sin(float f) { return (float)Math.Sin(f); }
         public static float Cos(float f) { return (float)Math.Cos(f); }
+        public static float Asin(float f) { return (float)Math.Asin(f); }
+        public static float Acos(float f) { return (float)Math.Acos(f); }
         public static float Atan2(float y, float x) { return (float)Math.Atan2(y, x); }
         public const float Rad2Deg = 57.29578f;
         public const float Deg2Rad = 0.01745329f;

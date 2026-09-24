@@ -220,6 +220,10 @@ namespace MadVoxel.Core
             _spawner.Init(_content.config, _clock, _voxels, _streamer, _structures, _blockDamage,
                           _player.transform, _player.Stats, _content.Zombie(ZombieIds.Shambler));
 
+            // Melee sweeps this list rather than the physics scene, so it has to be
+            // handed over before the player can swing at anything.
+            _player.Interaction.Spawns = _spawner;
+
             _horde = _worldRoot.AddComponent<HordeDirector>();
             _horde.Init(_content.hordeSchedule, _clock, _spawner, _structures, _buildings, _sky, _player.Progression, _player.transform);
             _horde.LoadState(hordeNumber);

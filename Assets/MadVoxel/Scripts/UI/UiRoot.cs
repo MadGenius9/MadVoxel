@@ -50,6 +50,7 @@ namespace MadVoxel.UI
         /// <summary>The machine yard, so the bag key can open a bed. Set by the session.</summary>
         public MadVoxel.Vehicles.VehicleWorld Vehicles { get; set; }
         public DebugOverlay Debug { get; private set; }
+        public CombatFeedbackView CombatFeedback { get; private set; }
 
         public UiState State { get; private set; }
 
@@ -146,6 +147,11 @@ namespace MadVoxel.UI
             Silo = _gameplayUi.AddComponent<SiloScreen>();
             Silo.Init(player, content);
 
+            // Above the HUD, below every screen: hit markers, damage numbers and the
+            // blood vignette. Combat had no visible feedback at all before this.
+            CombatFeedback = _gameplayUi.AddComponent<CombatFeedbackView>();
+            CombatFeedback.Init(player.Stats);
+
             Debug = _gameplayUi.AddComponent<DebugOverlay>();
             Debug.Init(player, voxels, streamer, seed, developerTools);
 
@@ -180,6 +186,7 @@ namespace MadVoxel.UI
             Silo = null;
             Vehicles = null;
             Debug = null;
+            CombatFeedback = null;
         }
 
         void OnStorageOpen(StorageStructure storage)

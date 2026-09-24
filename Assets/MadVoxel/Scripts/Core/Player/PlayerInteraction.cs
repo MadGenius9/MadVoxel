@@ -94,6 +94,18 @@ namespace MadVoxel.Core.Player
 
         readonly RaycastHit[] _hitBuffer = new RaycastHit[8];
 
+        // Grown on demand. A blood moon can put a lot of bodies inside one swing.
+        Combat.MeleeArc.Candidate[] _swingBuffer = new Combat.MeleeArc.Candidate[16];
+
+        /// <summary>Metres to the body the last sweep chose, for beating the crosshair.</summary>
+        float _swingDistance;
+
+        /// <summary>Seconds of empty-handed cooldown, so a bare fist is not a machine gun.</summary>
+        const float BareHandCooldown = 0.6f;
+
+        /// <summary>Rate limit on the winded message, which would otherwise arrive every frame.</summary>
+        float _nextWindedMessage;
+
         Vector3Int _miningCell;
         float _miningProgress;
         float _salvageProgress;
@@ -118,6 +130,12 @@ namespace MadVoxel.Core.Player
         /// both exist, which is after this component is created.
         /// </summary>
         public Vehicles.VehicleWorld Vehicles { get; set; }
+
+        /// <summary>
+        /// Who is alive to be swung at. Set by the session once the spawner exists;
+        /// melee simply finds nothing until then rather than needing to care.
+        /// </summary>
+        public AI.SpawnDirector Spawns { get; set; }
 
         public void Init(GameConfig config, TerrainWorld voxels, StructureWorld structures, BuildingWorld buildings,
                          FieldWorld fields, PlayerInventory inventory, PlayerStats stats,
@@ -550,6 +568,21 @@ namespace MadVoxel.Core.Player
         {
             if (HandleWiring(true)) { ResetMining(); return; }
 
+            // A swing beats the crosshair.
+            //
+            // The probe is a single ray, and a shambler's physics capsule is narrower
+            // than the body drawn over it, so the ray happily finds the wall behind a
+            // zombie that is chewing on you - and you mine it while you are eaten. If
+            // something hostile is closer than whatever the crosshair landed on, the
+            // swing goes to the zombie. That is what the player meant.
+            var swing = FindSwingTarget();
+            if (swing != null && SwingBeatsCrosshair(swing))
+            {
+                Attack(swing);
+                ResetMining();
+                return;
+            }
+
             switch (Target.Kind)
             {
                 case TargetKind.Block:
@@ -715,6 +748,145 @@ namespace MadVoxel.Core.Player
             ResetMining();
         }
 
+        /// <summary>
+        /// What is inside the swing, or null.
+        ///
+        /// Deliberately reads the live zombie list rather than sweeping physics. An
+        /// overlap query would come back full of terrain, walls and floors and would
+        /// have to be sieved for the one collider that matters, and in a base it would
+        /// overflow its buffer before it reached the zombie standing in the doorway.
+        /// The list is short, exact, and already maintained.
+        /// </summary>
+        IMeleeTarget FindSwingTarget()
+        {
+            if (Spawns == null || _camera == null) return null;
+
+            var alive = Spawns.Alive;
+            if (alive == null || alive.Count == 0) return null;
+
+            if (_swingBuffer.Length < alive.Count)
+            {
+                _swingBuffer = new Combat.MeleeArc.Candidate[Mathf.NextPowerOfTwo(alive.Count)];
+            }
+
+            Vector3 eye = _camera.transform.position;
+            Vector3 forward = _camera.transform.forward;
+
+            int count = 0;
+            for (int i = 0; i < alive.Count; i++)
+            {
+                var zombie = alive[i];
+                if (zombie == null || !zombie.IsAlive) continue;
+
+                _swingBuffer[count] = new Combat.MeleeArc.Candidate
+                {
+                    Id = i,
+                    Centre = zombie.CentreOfMass,
+                    Radius = zombie.BodyRadius
+                };
+                count++;
+            }
+
+            // Resolve, check the line, and if a wall is in the way drop that body and
+            // ask again. A single pass would give up the whole swing because the arc's
+            // favourite target happened to be behind a door - while a shambler stood
+            // in the open a metre to the left.
+            for (int attempt = 0; attempt < 4 && count > 0; attempt++)
+            {
+                var result = Combat.MeleeArc.Resolve(eye, forward, _swingBuffer, count);
+                if (!result.Hit) return null;
+
+                var chosen = alive[result.Id];
+                if (chosen != null && chosen.IsAlive)
+                {
+                    IMeleeTarget inTheWay;
+                    if (!Blocked(eye, chosen, out inTheWay))
+                    {
+                        _swingDistance = result.Distance;
+                        return chosen;
+                    }
+
+                    // Another body between you and it. That one is nearer and the
+                    // player is swinging through it either way, so it takes the blow.
+                    if (inTheWay != null)
+                    {
+                        _swingDistance = result.Distance;
+                        return inTheWay;
+                    }
+                }
+
+                count = Drop(result.Id, count);
+            }
+
+            return null;
+        }
+
+        /// <summary>Removes a candidate by its id, keeping the buffer dense.</summary>
+        int Drop(int id, int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (_swingBuffer[i].Id != id) continue;
+                _swingBuffer[i] = _swingBuffer[count - 1];
+                return count - 1;
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// Is something solid between the eye and the body?
+        ///
+        /// <paramref name="inTheWay"/> comes back set when the obstruction is itself
+        /// something you could hit, which the caller would rather swing at than
+        /// abandon the whole attack over.
+        /// </summary>
+        bool Blocked(Vector3 eye, IMeleeTarget target, out IMeleeTarget inTheWay)
+        {
+            inTheWay = null;
+
+            Vector3 toTarget = target.CentreOfMass - eye;
+            float distance = toTarget.magnitude;
+            if (distance <= 0.01f) return false;
+
+            RaycastHit hit;
+            if (!Physics.Raycast(eye, toTarget / distance, out hit, distance, ~0, QueryTriggerInteraction.Ignore))
+            {
+                return false;
+            }
+
+            // Hitting the target itself, or our own capsule on the way out, is clear.
+            if (hit.collider.transform.IsChildOf(transform)) return false;
+
+            var blocker = hit.collider.GetComponentInParent<IMeleeTarget>();
+            if (ReferenceEquals(blocker, target)) return false;
+
+            if (blocker != null && blocker.IsAlive) inTheWay = blocker;
+            return true;
+        }
+
+        /// <summary>
+        /// Should the swing take the shot instead of the crosshair?
+        ///
+        /// Only when the body is actually nearer than whatever the ray found. Looking
+        /// past a zombie at a wall two metres behind it is a swing at the zombie;
+        /// mining a wall with one shambling somewhere off to the side is still mining.
+        /// </summary>
+        bool SwingBeatsCrosshair(IMeleeTarget swing)
+        {
+            if (Target.Kind == TargetKind.None || Target.Kind == TargetKind.Fixture) return true;
+
+            // A hammer is for repairing, not for fighting. Someone patching a wall
+            // mid-siege must not find themselves punching instead.
+            var held = _inventory.SelectedItem;
+            if (held != null && held.toolType == ToolType.Hammer
+                && (Target.Kind == TargetKind.BuildPiece || Target.Kind == TargetKind.Structure))
+            {
+                return false;
+            }
+
+            return _swingDistance <= Target.Distance;
+        }
+
         void Attack(IDamageable damageable)
         {
             if (damageable == null || Time.time < _nextAttackTime) return;
@@ -722,10 +894,23 @@ namespace MadVoxel.Core.Player
             var held = _inventory.SelectedStack;
             float damage = held.Item != null && held.Item.meleeDamage > 0f ? held.Item.meleeDamage : 4f;
             damage *= Perks.Multiplier(PerkEffectType.MeleeDamageMultiplier);
-            float cooldown = held.Item != null ? Mathf.Max(0.2f, held.Item.attackCooldown) : 0.6f;
-            _nextAttackTime = Time.time + cooldown;
+            float cooldown = held.Item != null ? Mathf.Max(0.2f, held.Item.attackCooldown) : BareHandCooldown;
 
-            if (!_stats.TrySpendStamina(3f)) return;
+            // Stamina is checked before the cooldown is spent, and it says so when it
+            // refuses. The old order burned the cooldown on a swing that never
+            // happened and reported nothing, so a player who had just sprinted away
+            // from a shambler stood there mashing a button that was silently dead.
+            if (!_stats.TrySpendStamina(3f))
+            {
+                if (Time.time >= _nextWindedMessage)
+                {
+                    _nextWindedMessage = Time.time + 1.5f;
+                    Notifications.Post("Too winded to swing");
+                }
+                return;
+            }
+
+            _nextAttackTime = Time.time + cooldown;
 
             damageable.ApplyDamage(new DamageInfo
             {
@@ -737,10 +922,27 @@ namespace MadVoxel.Core.Player
                 ToolTier = held.Item != null ? held.Item.toolTier : 0
             });
 
+            LandedHit(damageable, damage);
+
             if (held.Item != null && held.Item.HasDurability && _inventory.WearSelected(1))
             {
                 Notifications.PostFormat("{0} broke", held.Item.displayName);
             }
+        }
+
+        /// <summary>
+        /// Raised on every landed melee blow: the victim, and what it cost them.
+        ///
+        /// The HUD listens. Until something did, a connecting swing produced no
+        /// evidence whatsoever that it had connected, which is the single worst thing
+        /// a melee game can do to a player.
+        /// </summary>
+        public static event System.Action<IDamageable, float, bool> HitLanded;
+
+        void LandedHit(IDamageable victim, float damage)
+        {
+            if (HitLanded == null) return;
+            HitLanded(victim, damage, !victim.IsAlive);
         }
 
         // ------------------------------------------------------------------ placing

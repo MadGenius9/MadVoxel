@@ -12,7 +12,7 @@ namespace MadVoxel.AI
     /// blocks the way when it stops making progress.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
-    public class Zombie : MonoBehaviour, IDamageable
+    public class Zombie : MonoBehaviour, IDamageable, MadVoxel.Core.IMeleeTarget
     {
         enum Mode { Wander, Chase, Siege }
 
@@ -53,6 +53,9 @@ namespace MadVoxel.AI
 
         float _health;
         float _verticalVelocity;
+        float _staggerUntil;
+        Vector3 _knockback;
+        Combat.HitFlash _flash;
         float _nextAttackTime;
         float _stuckTimer;
         float _animPhase;
@@ -64,6 +67,26 @@ namespace MadVoxel.AI
 
         public bool IsAlive { get { return _health > 0f; } }
         public float Health { get { return _health; } }
+
+        /// <summary>
+        /// Chest height, matching the torso the player is actually looking at. The
+        /// transform sits on the floor, and a swing judged from there reads as a miss.
+        /// </summary>
+        public Vector3 CentreOfMass
+        {
+            get
+            {
+                float h = Definition != null ? Definition.height : 1.8f;
+                return transform.position + Vector3.up * (h * 0.62f);
+            }
+        }
+
+        /// <summary>
+        /// Wider than the 0.32m physics capsule on purpose. The rendered body reaches
+        /// out past 0.43m at the arms, so the capsule alone lets a swing pass through a
+        /// shoulder the player can plainly see.
+        /// </summary>
+        public float BodyRadius { get { return 0.5f; } }
 
         public void Init(ZombieDefinition def, TerrainWorld voxels, StructureWorld structures,
                          BlockDamageTracker blockDamage, LandClaimRegistry claims,
@@ -87,6 +110,10 @@ namespace MadVoxel.AI
             _controller.skinWidth = 0.04f;
 
             _limbs = ZombieVisuals.Build(transform, def);
+
+            _flash = gameObject.AddComponent<Combat.HitFlash>();
+            _flash.Capture();
+
             _wanderTarget = transform.position;
             name = def.displayName;
         }
@@ -108,6 +135,11 @@ namespace MadVoxel.AI
 
             if (TryAttackPlayer()) speed *= 0.2f;
 
+            // A hit interrupts. Without this a shambler walks through a full swing
+            // without breaking stride, and the player reads that as the swing missing.
+            bool staggered = Time.time < _staggerUntil;
+            if (staggered) speed *= 0.15f;
+
             Vector3 before = transform.position;
             Vector3 move = Vector3.zero;
 
@@ -116,6 +148,14 @@ namespace MadVoxel.AI
                 Vector3 dir = toTarget / planarDistance;
                 move = dir * speed;
                 FaceDirection(dir);
+            }
+
+            // Shoved backwards, decaying fast. It buys the player the half-step that
+            // makes melee a fight rather than a shoving match they always lose.
+            if (_knockback.sqrMagnitude > 0.0001f)
+            {
+                move += _knockback;
+                _knockback = Vector3.Lerp(_knockback, Vector3.zero, Mathf.Clamp01(dt * 7f));
             }
 
             if (_controller.isGrounded)
@@ -320,7 +360,43 @@ namespace MadVoxel.AI
             _lastSeenTime = Time.time;
             if (info.Source != null) _lastKnownPlayerPos = info.Source.transform.position;
 
-            if (_health <= 0f) Kill(info.Source);
+            if (_health <= 0f) { Kill(info.Source); return; }
+
+            React(info);
+        }
+
+        /// <summary>
+        /// What being hit looks like from outside. Flash, stagger, shove.
+        ///
+        /// Only for blows that land from somewhere - a starving zombie is not a thing,
+        /// but a zombie standing in a storm is, and weather should not make the horde
+        /// flinch and skid.
+        /// </summary>
+        void React(DamageInfo info)
+        {
+            if (_flash != null) _flash.Flash(HitColour(info.Kind));
+
+            if (info.Kind != DamageKind.Melee && info.Kind != DamageKind.Explosion) return;
+
+            _staggerUntil = Time.time + 0.22f;
+
+            Vector3 push = info.Direction;
+            push.y = 0f;
+            if (push.sqrMagnitude < 0.0001f) return;
+
+            // Scaled by the blow, and capped: a club should rock a shambler, not punt
+            // it across the clearing and out of reach of the follow-up swing.
+            float force = Mathf.Clamp(info.Amount * 0.22f, 1.2f, 4.5f);
+            _knockback = push.normalized * force;
+        }
+
+        static Color HitColour(DamageKind kind)
+        {
+            // Red for a weapon, white for everything else. The player is reading
+            // "I did that" off the colour as much as off the flash.
+            return kind == DamageKind.Melee || kind == DamageKind.Explosion
+                ? new Color(1f, 0.35f, 0.28f)
+                : new Color(1f, 0.92f, 0.85f);
         }
 
         public void Kill(GameObject killer)
