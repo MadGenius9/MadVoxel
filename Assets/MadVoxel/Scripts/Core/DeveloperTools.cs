@@ -352,7 +352,7 @@ namespace MadVoxel.Core
 
             Give(ItemIds.Hoe, 1);
 
-            Notifications.Post("Field kit granted - set the tractor down and hitch with V");
+            Notifications.Post("Field kit granted - set the tractor down, G to hitch, V to load");
         }
 
         void Give(string itemId, int count)

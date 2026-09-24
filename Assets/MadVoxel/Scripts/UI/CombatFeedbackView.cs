@@ -48,7 +48,7 @@ namespace MadVoxel.UI
         Text[] _numbers;
         float[] _numberUntil;
         Vector2[] _numberDrift;
-        bool[] _numberIsLoud;
+        bool[] _numberIsKill;
         int _nextNumber;
 
         public void Init(PlayerStats stats)
@@ -161,7 +161,7 @@ namespace MadVoxel.UI
             _numbers = new Text[DamageNumberCount];
             _numberUntil = new float[DamageNumberCount];
             _numberDrift = new Vector2[DamageNumberCount];
-            _numberIsLoud = new bool[DamageNumberCount];
+            _numberIsKill = new bool[DamageNumberCount];
 
             for (int i = 0; i < DamageNumberCount; i++)
             {
@@ -236,7 +236,7 @@ namespace MadVoxel.UI
                        : tag.Length > 0 ? amount + "  " + tag
                        : amount.ToString();
             label.fontSize = loud ? 38 : 30;
-            _numberIsLoud[slot] = loud;
+            _numberIsKill[slot] = killed;
             label.gameObject.SetActive(true);
 
             _numberUntil[slot] = Time.time + DamageNumberSeconds;
@@ -304,7 +304,11 @@ namespace MadVoxel.UI
 
                 // Holds full strength for the first third, then goes. A number that
                 // starts fading immediately is one the player never quite reads.
-                var colour = _numberIsLoud[i] ? ClaimSlate.OxideRust : ClaimSlate.SodiumGold;
+                // Kills are rust, headshots gold, everything else the ordinary gold.
+                // The marker uses exactly these two colours for exactly these two
+                // meanings, and a non-lethal headshot printed in the kill colour had
+                // the two channels disagreeing about whether the thing had died.
+                var colour = _numberIsKill[i] ? ClaimSlate.OxideRust : ClaimSlate.SodiumGold;
                 colour.a = Mathf.Clamp01((1f - t) * 1.5f);
                 _numbers[i].color = colour;
             }

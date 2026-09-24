@@ -100,7 +100,7 @@ to measure. The bow is where aim pays.
 2. Then shoot a **brute**, which is 2.15 m rather than 1.8 m.
 
 **Expected:** a head shot pops a gold marker, prints "HEADSHOT" and does two and a half
-times the damage. A leg shot does two thirds.
+times the damage. A leg shot does seven tenths.
 
 **Watch for:** the boundary being wrong on the brute. Zones are a fraction of body
 height, not a fixed metre, so a brute's head should be higher up in world space than a

@@ -105,6 +105,24 @@ namespace MadVoxel.Core.Player
             foreach (var cell in cells) _playerPlaced.Add(cell);
         }
 
+        /// <summary>
+        /// Forgets a cell whoever emptied it.
+        ///
+        /// The set used to be pruned only where the player mined, which was harmless
+        /// while it lived for one session. Now that it is saved, a zombie chewing
+        /// through a wall - or a plough turning a block into tilled soil - would leave
+        /// an entry behind that is written to disk on every autosave from then on, and
+        /// the set would grow for as long as the world does rather than staying
+        /// bounded by what is standing.
+        /// </summary>
+        void OnBlockChanged(Vector3Int cell, ushort oldId, ushort newId)
+        {
+            if (_playerPlaced.Count == 0) return;
+            if (_voxels != null && _voxels.Registry.IsAir(oldId)) return;
+
+            _playerPlaced.Remove(cell);
+        }
+
         readonly RaycastHit[] _hitBuffer = new RaycastHit[8];
 
         // Grown on demand. A blood moon can put a lot of bodies inside one swing.
@@ -164,10 +182,14 @@ namespace MadVoxel.Core.Player
             _progression = progression;
             _camera = camera;
             _ghost.EnsureBuilt(null);
+
+            // Whoever removes a block, the "I put this here" guard forgets it.
+            _voxels.BlockChanged += OnBlockChanged;
         }
 
         void OnDestroy()
         {
+            if (_voxels != null) _voxels.BlockChanged -= OnBlockChanged;
             _ghost.Dispose();
         }
 
@@ -691,6 +713,12 @@ namespace MadVoxel.Core.Player
 
         void BreakBlock(Vector3Int cell, BlockDefinition def, ItemDefinition tool)
         {
+            // Asked before the block goes. Clearing it raises BlockChanged, and this
+            // class listens to that in order to forget cells whoever emptied them - so
+            // by the time SetBlock returns, the answer would always be "no" and every
+            // block the player laid would pay full XP on the way back out.
+            bool wasPlayerPlaced = _playerPlaced.Contains(cell);
+
             if (!_voxels.SetBlock(cell.x, cell.y, cell.z, _voxels.AirId)) return;
 
             if (def.dropItem != null)
@@ -709,7 +737,6 @@ namespace MadVoxel.Core.Player
 
             Audio.GameAudio.PlayAt(Audio.Sound.BlockBreak, cell + Vector3.one * 0.5f);
 
-            bool wasPlayerPlaced = _playerPlaced.Remove(cell);
             if (!wasPlayerPlaced && def.harvestXp > 0f)
             {
                 _progression.AddXp(def.harvestXp, XpSource.Harvest);
