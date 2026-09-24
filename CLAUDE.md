@@ -80,6 +80,11 @@ will quietly move it.
   because the current build reads as neither: hard cubes everywhere and box props. The
   blockiness is placeholder art falling short of the brief, not a design decision to
   defend. Do not "simplify" toward the voxel look on the assumption it is intended.
+- **Real models drop in through `ModelCatalogue`, not by editing the builders.** Every
+  visual builder asks it for a model by id before stacking boxes; a hit skips the box
+  code, a miss runs it unchanged. So art can arrive one prop at a time and the game
+  works with none. See `MODELS.md`. It is **not covered headlessly** — `Resources` and
+  `GameObject` are not in the shim — so it is compile-checked only.
 - **No prefabs, no .mat assets, no art.** Every material, mesh, prop and UI element is
   built in code at runtime. The scene contains exactly one GameObject. This is
   deliberate: nothing can drift out of sync with the scripts, and there is no scene

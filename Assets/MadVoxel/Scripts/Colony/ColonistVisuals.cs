@@ -17,6 +17,9 @@ namespace MadVoxel.Colony
 
         public static void Build(Transform parent)
         {
+            GameObject model;
+            if (Core.ModelCatalogue.TryBuild("colonist", parent, out model)) return;
+
             var cloth = MaterialLibrary.Get(SurfaceFamily.Cloth, Canvas, 0.05f, 0f);
             var jeans = MaterialLibrary.Get(SurfaceFamily.Cloth, Denim, 0.05f, 0f);
             var skin = MaterialLibrary.Get(SurfaceFamily.Cloth, Skin, 0.1f, 0f);

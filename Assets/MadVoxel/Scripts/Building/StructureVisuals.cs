@@ -10,6 +10,15 @@ namespace MadVoxel.Building
 
         public static void Build(PlacedStructure structure)
         {
+            // An installed model replaces the whole silhouette. Colliders are still
+            // added below, because gameplay must not depend on whether art is present.
+            GameObject model;
+            if (Core.ModelCatalogue.TryBuild(structure.Definition.stringId, structure.transform, out model))
+            {
+                AddCollider(structure);
+                return;
+            }
+
             var def = structure.Definition;
             var mat = MaterialLibrary.Get(def.surfaceFamily, def.tint, 0.12f,
                 def.surfaceFamily == SurfaceFamily.Metal ? 0.6f : 0f);

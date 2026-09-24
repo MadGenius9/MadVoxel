@@ -19,6 +19,12 @@ namespace MadVoxel.Building
         public static void Build(BuildPiece piece)
         {
             var def = piece.Definition;
+
+            // A snap piece has a model per kind and tier, so a wooden wall and an
+            // armoured one can be different meshes rather than the same mesh tinted.
+            GameObject model;
+            if (Core.ModelCatalogue.TryBuild(def.stringId, piece.transform, out model)) return;
+
             var body = new GameObject("Body");
             body.transform.SetParent(piece.transform, false);
 

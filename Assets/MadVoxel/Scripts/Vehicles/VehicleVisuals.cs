@@ -17,6 +17,9 @@ namespace MadVoxel.Vehicles
     {
         public static void Build(Transform root, VehicleDefinition def)
         {
+            GameObject vehicleModel;
+            if (Core.ModelCatalogue.TryBuild(def.stringId, root, out vehicleModel)) return;
+
             var body = MaterialLibrary.Get(SurfaceFamily.Metal, def.tint, 0.25f, 0.55f);
             var rubber = MaterialLibrary.Get(SurfaceFamily.Metal, new Color(0.10f, 0.09f, 0.09f), 0.1f, 0.1f);
             var glass = MaterialLibrary.Get(SurfaceFamily.Metal, new Color(0.62f, 0.66f, 0.63f), 0.8f, 0.2f);
@@ -77,6 +80,9 @@ namespace MadVoxel.Vehicles
     {
         public static void Build(Transform root, ImplementDefinition def)
         {
+            GameObject implementModel;
+            if (Core.ModelCatalogue.TryBuild(def.stringId, root, out implementModel)) return;
+
             var frame = MaterialLibrary.Get(SurfaceFamily.Metal, new Color(0.40f, 0.20f, 0.14f), 0.2f, 0.55f);
             var steel = MaterialLibrary.Get(SurfaceFamily.Metal, new Color(0.55f, 0.55f, 0.57f), 0.6f, 0.8f);
 

@@ -13,6 +13,13 @@ namespace MadVoxel.AI
 
         public static Limbs Build(Transform root, ZombieDefinition def)
         {
+            // A real model, if one has been installed for this zombie. It brings its
+            // own rig and its own animation, so there are no limbs to swing - Animate
+            // already does nothing when handed a null, which is the whole reason this
+            // returns one rather than an empty set.
+            GameObject model;
+            if (Core.ModelCatalogue.TryBuild(def.stringId, root, out model)) return null;
+
             float h = def.height;
             var flesh = MaterialLibrary.Get(SurfaceFamily.Flesh, def.tint, 0.05f);
             var cloth = MaterialLibrary.Get(SurfaceFamily.Cloth, def.tint * 0.55f, 0.05f);
