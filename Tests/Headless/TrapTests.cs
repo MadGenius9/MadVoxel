@@ -1,4 +1,7 @@
 using MadVoxel.Building;
+using MadVoxel.Content;
+using MadVoxel.Inventory;
+using UnityEngine;
 
 namespace MadVoxel.Headless
 {
@@ -12,11 +15,64 @@ namespace MadVoxel.Headless
     /// </summary>
     public static class TrapTests
     {
-        public static void Run()
+        public static void Run(ContentDatabase db)
         {
             Sharpness();
             Wearing();
             Upkeep();
+            if (db != null) Economics(db);
+        }
+
+        /// <summary>
+        /// That mending a trap beats recycling it.
+        ///
+        /// Salvage used to return a piece's full build cost whatever state it was in,
+        /// which made wear decorative: pull a blunt trap, set it down again, and it
+        /// came back sharp for nothing - cheaper and quicker than the hammer repair
+        /// the entire upkeep loop is built on. Salvage scales with condition now, and
+        /// this is the arithmetic that says so.
+        /// </summary>
+        static void Economics(ContentDatabase db)
+        {
+            Harness.Section("traps: mending beats recycling");
+
+            var trap = db.Structure(StructureIds.SpikeTrap);
+            Harness.Check(trap != null, "the spike trap exists");
+            if (trap == null) return;
+
+            Harness.Check(trap.salvageItem != null, "and salvages into something");
+            Harness.Check(trap.repairItem != null && trap.repairCount > 0,
+                "and costs a material to mend, which is where the upkeep lives");
+
+            // Salvage scales with condition, the way PlayerInteraction applies it.
+            int atBlunt = Mathf.RoundToInt(trap.salvageCount * TrapRules.BluntAt);
+            Harness.Equal(atBlunt, 0, "a blunt trap salvages to nothing");
+
+            int atFull = Mathf.RoundToInt(trap.salvageCount * 1f);
+            Harness.Check(atFull >= 1, "an undamaged one still salvages properly");
+
+            // And the recycling loop has to actually lose you material. Find what one
+            // trap costs to build, and compare with what a blunt one hands back.
+            RecipeDefinition recipe = null;
+            for (int i = 0; i < db.recipes.Count; i++)
+            {
+                if (db.recipes[i].output == trap.salvageItem) { recipe = db.recipes[i]; break; }
+            }
+
+            Harness.Check(recipe != null, "the trap is craftable");
+            if (recipe == null) return;
+
+            Harness.Check(atBlunt < recipe.outputCount,
+                "recycling a worn trap returns less than building one, so it is never the cheap path");
+
+            // Mending it back from blunt costs a known, finite amount of material.
+            int swings = 0;
+            float f = TrapRules.BluntAt;
+            while (f < 1f && swings < 100) { f = TrapRules.AfterRepair(f); swings++; }
+
+            int mendCost = swings * trap.repairCount;
+            Harness.Check(mendCost > 0 && mendCost < 40,
+                string.Format("blunt to sharp costs {0} {1}", mendCost, trap.repairItem.displayName));
         }
 
         // -------------------------------------------------------------- sharpness

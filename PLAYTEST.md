@@ -287,6 +287,12 @@ go rust-coloured and read "Blunt" when it is spent. Hammer it back (costs scrap)
   onto them, not into them.
 - A trap that vanishes when worn out. It should stop at blunt and stay standing.
 - Getting hurt by your own spikes. You should not; traps do not bite their builder.
+- **Trap kills should pay.** XP, quest kill credit and loot all count now — but a trap's
+  loot drops in a sack where the zombie fell rather than into your bag, so you have to
+  walk the killbox afterwards. That is deliberate: walking it is how you notice the
+  spikes have gone blunt.
+- Wrench-salvaging a worn trap should return little or nothing. Salvage scales with
+  condition, so pulling and re-placing is never cheaper than mending.
 
 ---
 

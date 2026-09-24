@@ -34,6 +34,14 @@ namespace MadVoxel.Building
         /// save gets it without anyone remembering to wire it up again.
         /// </summary>
         public MadVoxel.Perks.PlayerProgression Progression { get; set; }
+
+        /// <summary>
+        /// Who is alive, for deployables that need to find something to bite. Read
+        /// rather than swept out of the physics scene: an overlap query inside a base
+        /// fills its buffer with walls and floors before it reaches the zombie
+        /// standing on the trap, which is the exact bug melee had.
+        /// </summary>
+        public AI.SpawnDirector Spawns { get; set; }
         public ContentDatabase Content { get; private set; }
 
         public event Action<PlacedStructure> Placed;
@@ -243,6 +251,21 @@ namespace MadVoxel.Building
 
             Notifications.PostFormat("{0} was destroyed and its contents were lost",
                 structure.Definition.displayName);
+        }
+
+        /// <summary>
+        /// Puts items on the ground at a cell, in the sack a destroyed container uses.
+        /// Returns false when nowhere will take them.
+        /// </summary>
+        public bool DropLoot(Vector3Int cell, MadVoxel.Inventory.ItemDefinition item, int count)
+        {
+            if (item == null || count <= 0) return false;
+
+            var sack = PlaceSackNear(cell);
+            if (sack == null) return false;
+
+            sack.Contents.Add(item, count);
+            return true;
         }
 
         static MadVoxel.Inventory.Inventory ContentsOf(PlacedStructure structure)

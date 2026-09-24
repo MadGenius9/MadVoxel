@@ -98,7 +98,11 @@ namespace MadVoxel.Building
         public static int BitesRemaining(float conditionFraction)
         {
             if (IsBlunt(conditionFraction)) return 0;
-            return Mathf.Max(0, Mathf.FloorToInt((Mathf.Clamp01(conditionFraction) - BluntAt) / WearPerBite));
+
+            // Rounded up, so a trap that still bites never reads zero. Flooring made
+            // the last bite of every trap's life report "about 0 more" in healthy
+            // colour, which says "this is finished" about something that is not.
+            return Mathf.Max(1, Mathf.CeilToInt((Mathf.Clamp01(conditionFraction) - BluntAt) / WearPerBite));
         }
     }
 }

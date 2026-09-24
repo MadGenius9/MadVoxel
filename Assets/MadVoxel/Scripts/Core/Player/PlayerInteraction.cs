@@ -780,8 +780,19 @@ namespace MadVoxel.Core.Player
                 var def = structure.Definition;
                 if (def.salvageItem != null)
                 {
-                    _inventory.Collect(def.salvageItem,
-                        Perks.ScaleCount(PerkEffectType.LootQuantityMultiplier, def.salvageCount));
+                    // You get back what is left of it, not what it cost.
+                    //
+                    // A flat salvage made wear pointless: pull a blunt spike trap,
+                    // drop it again, and it comes back sharp for nothing - cheaper
+                    // and faster than the hammer repair the whole upkeep loop is
+                    // built on. Scaling by condition means a worn-out anything
+                    // salvages to scraps, and mending is the cheap path because it
+                    // is supposed to be.
+                    int salvage = Mathf.RoundToInt(def.salvageCount * structure.HealthFraction);
+                    salvage = Perks.ScaleCount(PerkEffectType.LootQuantityMultiplier, salvage);
+
+                    if (salvage > 0) _inventory.Collect(def.salvageItem, salvage);
+                    else Notifications.PostFormat("The {0} was too far gone to salvage", def.displayName);
                 }
                 _structures.Destroy(structure, true);
                 ResetMining();

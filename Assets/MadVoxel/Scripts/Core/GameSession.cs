@@ -228,8 +228,10 @@ namespace MadVoxel.Core
             // handed over before the player can swing at anything.
             _player.Interaction.Spawns = _spawner;
 
-            // Deployables that scale with a perk read it off the world that owns them.
+            // Deployables that scale with a perk, or need to find something to bite,
+            // read both off the world that owns them.
             _structures.Progression = _player.Progression;
+            _structures.Spawns = _spawner;
 
             _horde = _worldRoot.AddComponent<HordeDirector>();
             _horde.Init(_content.hordeSchedule, _clock, _spawner, _structures, _buildings, _sky, _player.Progression, _player.transform);
@@ -476,18 +478,41 @@ namespace MadVoxel.Core
 
         void OnZombieKilled(Zombie zombie, GameObject killer)
         {
-            if (zombie == null || zombie.Definition == null) return;
-            if (killer == null || _player == null || killer != _player.gameObject) return;
+            if (zombie == null || zombie.Definition == null || _player == null || killer == null) return;
+
+            // Your traps kill on your behalf. Crediting only blows landed by hand
+            // meant a killbox earned no experience, no quest progress and no loot -
+            // so the better your defences worked, the less you got for the night, and
+            // a trap could never pay for the scrap it costs to keep sharp.
+            bool byHand = killer == _player.gameObject;
+            var trap = byHand ? null : killer.GetComponentInParent<Building.SpikeTrapStructure>();
+            if (!byHand && trap == null) return;
 
             _player.Progression.AddXp(zombie.Definition.xpReward, Perks.XpSource.Kill);
             _player.Quests.ReportKill(_content.Quest, zombie.Definition.stringId);
 
             var def = zombie.Definition;
-            if (def.dropItem != null && def.dropMax > 0)
-            {
-                int count = Random.Range(def.dropMin, def.dropMax + 1);
-                if (count > 0) _player.Inventory.Collect(def.dropItem, count);
-            }
+            if (def.dropItem == null || def.dropMax <= 0) return;
+
+            int count = Random.Range(def.dropMin, def.dropMax + 1);
+            if (count <= 0) return;
+
+            // A trap's kill drops where it fell rather than into the bag: a killbox
+            // that teleported loot across the base would make going out to look at it
+            // pointless, and looking at it is how you notice the spikes are blunt.
+            if (byHand) _player.Inventory.Collect(def.dropItem, count);
+            else SpillLoot(zombie.transform.position, def.dropItem, count);
+        }
+
+        /// <summary>
+        /// Drops a trap kill's loot on the ground, into the same sack a destroyed
+        /// container tips into. If none will fit, the loot is lost rather than
+        /// silently teleported - the player was not there to catch it either way.
+        /// </summary>
+        void SpillLoot(Vector3 where, MadVoxel.Inventory.ItemDefinition item, int count)
+        {
+            if (_structures == null || item == null || count <= 0) return;
+            _structures.DropLoot(Vector3Int.FloorToInt(where), item, count);
         }
 
         void OnBedrollUsed(BedrollStructure bedroll)

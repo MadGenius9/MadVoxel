@@ -789,9 +789,12 @@ namespace MadVoxel.UI
 
             if (spikes != null)
             {
-                title = spikes.Readout;
-                colour = spikes.IsBlunt ? ClaimSlate.OxideRust : ClaimSlate.Bone;
-                detail = "";
+                // Same guard the utility branch uses: a wire half-run is the more
+                // urgent thing to say, and it has already claimed the title line.
+                if (string.IsNullOrEmpty(title)) title = spikes.Readout;
+                else detail = spikes.Readout;
+
+                if (spikes.IsBlunt) colour = ClaimSlate.OxideRust;
                 return;
             }
 

@@ -22,8 +22,6 @@ namespace MadVoxel.Building
         /// <summary>How often it looks. Traps do not need frame-rate reflexes.</summary>
         const float LookInterval = 0.2f;
 
-        static readonly Collider[] Hits = new Collider[16];
-
         public PlacedStructure Structure { get; private set; }
 
         float _nextLook;
@@ -92,22 +90,63 @@ namespace MadVoxel.Building
             Bite(victim);
         }
 
-        /// <summary>The nearest live hostile standing on the spikes.</summary>
+        /// <summary>
+        /// The nearest live hostile standing on the spikes.
+        ///
+        /// Reads the live zombie list rather than sweeping physics, for the reason
+        /// melee had to: an overlap query in a dense spike bed fills its buffer with
+        /// neighbouring traps, foundations and terrain before it reaches the zombie
+        /// actually standing on this one, and the trap then silently never fires -
+        /// worst exactly where the player built the most of them.
+        /// </summary>
         AI.Zombie Sweep()
         {
+            var spawns = Structure.Owner != null ? Structure.Owner.Spawns : null;
+            if (spawns == null) return null;
+
+            var alive = spawns.Alive;
+            if (alive == null || alive.Count == 0) return null;
+
             float radius = Mathf.Max(0.4f, Structure.Definition.trapRadius);
-            Vector3 centre = transform.position + Vector3.up * 0.4f;
+            Vector3 centre = Centre;
 
-            int count = Physics.OverlapSphereNonAlloc(centre, radius, Hits, ~0, QueryTriggerInteraction.Ignore);
-            for (int i = 0; i < count; i++)
+            AI.Zombie best = null;
+            float bestSqr = radius * radius;
+
+            for (int i = 0; i < alive.Count; i++)
             {
-                if (Hits[i] == null) continue;
-                if (Hits[i].transform.IsChildOf(transform)) continue;
+                var zombie = alive[i];
+                if (zombie == null || !zombie.IsAlive) continue;
 
-                var zombie = Hits[i].GetComponentInParent<AI.Zombie>();
-                if (zombie != null && zombie.IsAlive) return zombie;
+                // Measured at the feet: a zombie is standing on the spikes or it is
+                // not, and its chest being within reach of a bed on the floor below
+                // would have traps biting through a ceiling.
+                Vector3 feet = zombie.transform.position;
+                float dy = feet.y - centre.y;
+                if (dy < -0.6f || dy > 1.2f) continue;
+
+                float dx = feet.x - centre.x;
+                float dz = feet.z - centre.z;
+                float sqr = dx * dx + dz * dz;
+
+                if (sqr > bestSqr) continue;
+
+                bestSqr = sqr;
+                best = zombie;
             }
-            return null;
+
+            return best;
+        }
+
+        /// <summary>
+        /// The middle of the trap's cell. A structure's transform sits on the cell
+        /// corner, so measuring from it skews the whole reach three quarters of a
+        /// metre towards -X and -Z - biting things on the diagonal neighbour while
+        /// barely covering its own far corner.
+        /// </summary>
+        Vector3 Centre
+        {
+            get { return transform.position + new Vector3(0.5f, 0.2f, 0.5f); }
         }
 
         void Bite(AI.Zombie victim)
@@ -124,18 +163,23 @@ namespace MadVoxel.Building
             {
                 Amount = damage,
                 Kind = DamageKind.Melee,
-                Point = transform.position,
+                Point = Centre,
                 Direction = Vector3.up,
                 Source = gameObject,
                 ToolTier = 2
             });
 
-            Audio.GameAudio.PlayAt(Audio.Sound.MeleeHitFlesh, transform.position, 0.18f, 0.8f);
+            Audio.GameAudio.PlayAt(Audio.Sound.MeleeHitFlesh, Centre, 0.18f, 0.8f);
 
             // Blunting goes through the structure's health, so a spike that has been
             // chewed on by the horde and one that has been busy are the same trap.
             float worn = TrapRules.WearAfterBite(Structure.HealthFraction);
             Structure.SetHealthDirect(worn * def.maxHealth);
+
+            // Through the same tint a chewed-on wall gets. Without this a trap worn
+            // out by working looks brand new while one the horde hit looks battered,
+            // which is backwards.
+            StructureVisuals.ShowDamage(Structure);
         }
     }
 }
