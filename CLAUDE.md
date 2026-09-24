@@ -183,6 +183,20 @@ counter within 14 m, else a grain bin within 8 m · shift-click trades ten at a 
   simply invisible to the crosshair. The trader counter shipped unreachable for exactly
   this reason: it has no health, so every branch above it walked past. If you add
   something the player should be able to use, check it has a branch.
+- **Nobody has heard the audio.** Every clip is synthesised at runtime from a swept
+  oscillator and a filtered noise burst. The tests prove each voice is finite, audible,
+  un-clipped and silent at both ends — which catches exactly the failures you cannot
+  diagnose by ear — but say nothing about whether a groan is unsettling or a thud reads
+  as an impact. Expect tuning in `SoundBank`, which is numbers only.
+- **Melee is a cone, not a ray, and has never been swung in an engine.** `MeleeArc`
+  picks a target by score, and `PlayerInteraction.FindSwingTarget` reads the live zombie
+  list rather than sweeping physics — an overlap query inside a base overflows its
+  buffer on walls and floors before it reaches the zombie in the doorway. If a new
+  hostile type is added, it must implement `IMeleeTarget` and be in that list, or
+  swings will pass straight through it.
+- **A swing must never find your own things.** Walls, doors, vehicles and colonists are
+  all `IDamageable`. Only `IMeleeTarget` opts into being sought out, and that is the
+  only thing standing between a fight next to your base and demolishing it.
 - **Colonists do not pathfind.** They walk at a target and let the character controller
   handle terrain. Fine on dug ground and ramps; they will wedge on a wall corner.
 - **No machine has ever been driven.** The swath, the hopper and the tillage cycle are

@@ -113,11 +113,12 @@ resolver and nine call sites — and changes nothing about the Phase 0 loop.
 | **Electricity** | **Live.** Generator, battery and solar banks, relays, switches and splitters, lights, a fridge, a blade trap and a fence post, all on one graph with a wire tool, a predictable brown-out and a real fuel economy. | A dart trap, a turret, and the timer-relay puzzles this pass deliberately skipped. |
 | **Water** | **Live.** A dug well on a water-table block, electric pump, pipes, tanks, barrels, taps and plot sprinklers on one fluid graph, with breaks, freezes and drought. | A field irrigator on the FS-style cells, and surface ponds as a source. |
 | **Weather** | **Live.** Six states rolled per region, turning dials on the pump, the panels, the soil, barrels, morale and crops. | Seasons with their own economies. |
-| **Spoilage** | **Live.** Shelf life on the stack, rot, and a fridge that earns its watts. | Compost as a fertiliser input. |
+| **Spoilage** | **Live.** Shelf life on the stack, rot, a fridge that earns its watts, and rot composted back into field fertility so waste has somewhere to go. | — |
 | **Claim heat** | **Live.** One number fed by lights, the generator, population, acreage and traps, read by the wanderer cap and the horde budget. | — |
 | **Mad Colony** | **Live.** A charter on a board, up to six people with four jobs, needs, morale and a walk-out, fed and watered from the base you built. Wanderers arrive overnight at a claim with a spare bed, supplies and enough noise to be found. | A trader quest that sends someone; pathfinding; The Marker. |
 | **Furnace** | **Live.** A deployable that smelts unattended on the world clock, one shared inventory for ore, fuel and output, burning cheapest fuel first. Catches up across a save. The campfire smelts stay as the way in. | Steel, and a bellows or a powered furnace that runs faster. |
 | **Ranged combat** | **Live.** A bow you draw and loose, craftable in the first hour. Draw decides speed and damage; arrows sweep rather than teleport, land, and are half recoverable. Stone and iron heads. | A crossbow, a gun tier, and headshots. |
+| **Melee combat** | **Live.** A swing is a scored cone rather than a pinpoint ray, so it lands on a shoulder, on a body pressed against you, and on whatever is in the way — but never on your own walls or colonists, and never through a door. Hit flash, stagger, knockback, hit markers, damage numbers and a blood vignette. | Blocking or parrying, and a reason to choose one weapon over another beyond damage. |
 | **Horde** | **Live.** Budgets on base footprint and heat, and reads the approach: twelve scored lanes round the claim, a wave spread across them by how walkable each is, each zombie given a way in before the base itself. | Ladders, and zombies that dig rather than route around. |
 
 ---
@@ -174,8 +175,10 @@ executed. Worlds record which mods built them and warn on load if one is missing
 - **Cultivated ground looks like plowed ground.** The crop cover shows everything from
   sowing onwards, but the second tillage pass has no visual of its own — you have to
   remember whether you cultivated a strip. The block would need a second tilled variant.
-- **No water or fertiliser gameplay.** The cell fields exist and fertility does fall
-  with each crop, but nothing adds it back yet.
+- **Fertiliser is in; irrigation is not.** Compost is made from spoiled food and fibre
+  and spread by hand, one cell at a time, and the economics are pinned by tests. There
+  is still no implement that spreads an acre, and the moisture field is written by
+  sprinklers but nothing else feeds it.
 - **Farm snap pieces are limited to the fence.** Barn, shed, pen and greenhouse frame
   are Phase 1; the grain bin ships as a deployable rather than a snap piece.
 - **The seed bag is just the seed stack.** No dedicated seeding container.
@@ -184,10 +187,15 @@ executed. Worlds record which mods built them and warn on load if one is missing
 - **XP farming guard is session-only.** Blocks you placed are remembered in memory and
   pay no XP when re-mined, but the set is not saved. Crafted building blocks pay no
   harvest XP at all, which covers the common case.
-- **Destroying a full crate loses its contents.** They do not spill.
+- **A destroyed container now spills** into the same sack death drops, crates and
+  furnaces alike. Where no sack will fit, the loss is reported rather than silent.
 - **Developer hotkeys ship enabled.** Untick *Developer Tools* on the `MadVoxel` object
   before a release build.
-- **Audio.** There is none.
+- **Audio is synthesised and unheard.** Fourteen voices generated at runtime from a
+  swept oscillator and a filtered noise burst — no audio files, same rule as the art.
+  The tests check every voice is finite, audible, free of clipping and silent at both
+  ends, which catches the failures that cannot be diagnosed by ear. Whether any of it
+  actually sounds good is unknown; nobody has heard it.
 - **The colony's second recruit path is unbuilt.** A wanderer turns up at the fence on
   their own now, but the trader quest that should also send someone is not written.
   `Shift+F6` still forces one for testing.

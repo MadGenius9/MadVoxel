@@ -1,12 +1,41 @@
 # What to try first
 
-None of what follows has ever been rendered. It compiles, and 1,261 headless checks say
-the logic is right, but the tests are silent on whether anything *looks* right, sits at a
-sensible height, or is reachable with the camera where it is. If something looks wrong,
-it probably is — believe your eyes over this file.
+None of what follows has ever been rendered, and none of it has ever been *heard*. It
+compiles, and 1,396 headless checks say the logic is right, but the tests are silent on
+whether anything looks right, sits at a sensible height, is reachable with the camera
+where it is, or sounds like the thing it is meant to be. If something looks or sounds
+wrong, it probably is — believe your eyes and ears over this file.
 
 Ordered so each step is reachable from the one before. `Shift+F6`-style developer hotkeys
 are listed in `CLAUDE.md` and will skip most of the grind.
+
+---
+
+## 0. Combat, first (5 minutes)
+
+**Start here.** A previous playtest could not hit zombies at all, and everything below
+assumes you can survive long enough to reach it.
+
+1. Find a shambler in daylight. Swing at it with the starting **stone axe**.
+2. Then let one get right up against you and swing again.
+3. Kill it. Seven axe blows, give or take.
+
+**Expected:** every swing whooshes whether or not it connects. A landed hit flashes the
+body red, staggers and shoves it, pops a hit marker on the crosshair, floats a damage
+number, and thuds. The kill marker is rust-coloured and bigger. Taking a bite darkens
+the screen edges red and grunts; under a third health the edges stay lit and breathe.
+
+**Watch for:**
+- **A swing that does nothing at all.** This was the bug. The swing is now a 60° cone
+  out to 3.2 m rather than a pinpoint ray, so aiming at a shoulder should land.
+- Hitting a zombie *through* a wall or a closed door — it should be impossible.
+- Mining a block when you meant to hit a zombie standing in front of it, or the reverse:
+  a body wins only when it is genuinely nearer than what the crosshair found.
+- Punching your own colonists or your own walls. The sweep should never find either.
+- Swinging a **hammer** at a damaged wall with a zombie beside you — it must still
+  repair, not punch.
+- "Too winded to swing" after sprinting. That is correct now; it used to fail silently.
+- Audio that machine-guns, cuts itself off, or plays a hit from the wrong direction.
 
 ---
 
@@ -154,6 +183,23 @@ they should switch to the thinnest part of the wall instead of the nearest.
 
 ---
 
+## 6c. Compost, and whether an acre keeps paying (10 minutes)
+
+Fertility used to fall forever with no way back. It should now be a loop.
+
+1. Let some food spoil into **rot** (or `F12`-ripen and just leave produce in the bag).
+2. Craft **compost** — rot + fibre, or fibre + dirt if you have eaten everything.
+3. Right-click a *plowed* field cell with compost in hand.
+
+**Expected:** "Muck spread", one compost consumed. On wild ground it should say to break
+it first; on ground that is already rich, that it will not take any more.
+
+**Watch for:** harvesting the same strip four or five times and seeing the litres fall,
+then recovering after muck. The numbers say one dose a crop holds a field indefinitely;
+nobody has farmed it.
+
+---
+
 ## 7. The grain bin (2 minutes)
 
 1. Tip a harvest into one, then `E` on it.
@@ -172,6 +218,13 @@ pipeline. **Assets → Create → Rendering → URP Asset (with Universal Render
 it as **Default Render Pipeline** in Project Settings → Graphics (and in Quality). The
 game is playable without it — it falls back to the Standard shader — but it will not look
 the way it is meant to.
+
+---
+
+## Destroyed crates
+
+Blow up or mine a **full crate** and check a sack appears where it was with your things
+in it. Contents used to be deleted outright. Same for a furnace mid-smelt.
 
 ---
 
