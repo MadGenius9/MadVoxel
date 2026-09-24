@@ -378,6 +378,7 @@ namespace MadVoxel.Content
             Add(Item(ItemIds.PieceFarmPlot, "Farm Plot", ItemCategory.Structure, 16, SurfaceFamily.Dirt, new Color(0.33f, 0.24f, 0.16f), 14));
             Add(Item(ItemIds.PieceSilo, "Grain Bin", ItemCategory.Structure, 2, SurfaceFamily.Metal, new Color(0.55f, 0.53f, 0.49f), 240));
             Add(Item(ItemIds.PieceFurnace, "Furnace", ItemCategory.Structure, 2, SurfaceFamily.Stone, new Color(0.38f, 0.36f, 0.34f), 90));
+            Add(Item(ItemIds.PieceSpikeTrap, "Spike Trap", ItemCategory.Structure, 8, SurfaceFamily.Wood, new Color(0.40f, 0.31f, 0.20f), 22));
 
             // Ranged. The bow's rating and the arrow's head are added together, so a
             // better arrow is a real upgrade without needing a second bow.
@@ -531,6 +532,7 @@ namespace MadVoxel.Content
             items[ItemIds.PieceFarmPlot].placeableStructure = structures[StructureIds.FarmPlot];
             items[ItemIds.PieceSilo].placeableStructure = structures[StructureIds.Silo];
             items[ItemIds.PieceFurnace].placeableStructure = structures[StructureIds.Furnace];
+            items[ItemIds.PieceSpikeTrap].placeableStructure = structures[StructureIds.SpikeTrap];
             items[ItemIds.PieceBedroll].placeableStructure = structures[StructureIds.Bedroll];
         }
 
@@ -633,6 +635,18 @@ namespace MadVoxel.Content
             cupboard.claimRadius = 24f;
             cupboard.salvageItem = items[ItemIds.PieceToolCupboard];
             map[cupboard.stringId] = cupboard;
+
+            // Spikes. Low health on purpose - that number is the trap's edge, not its
+            // toughness, and it is spent by biting rather than by being hit.
+            var spikes = Structure(StructureIds.SpikeTrap, "Spike Trap", StructureKind.Trap, Vector3Int.one, SurfaceFamily.Wood, new Color(0.40f, 0.31f, 0.20f), 120f);
+            spikes.blocksMovement = false;   // things have to walk onto it
+            spikes.trapDamage = 26f;
+            spikes.trapIntervalSeconds = 1.1f;
+            spikes.trapRadius = 1.1f;
+            spikes.repairItem = items[ItemIds.ScrapMetal];
+            spikes.repairCount = 2;
+            spikes.salvageItem = items[ItemIds.PieceSpikeTrap];
+            map[spikes.stringId] = spikes;
 
             var bedroll = Structure(StructureIds.Bedroll, "Bedroll", StructureKind.Bedroll, Vector3Int.one, SurfaceFamily.Cloth, new Color(0.45f, 0.42f, 0.36f), 60f);
             bedroll.blocksMovement = false;
@@ -814,6 +828,13 @@ namespace MadVoxel.Content
             // in nights of smelting rather than in an afternoon's mining.
             list.Add(Recipe("madvoxel:forge_tungsten", it[ItemIds.TungstenIngot], 1, CraftStation.Forge, 34f,
                 Ing(it[ItemIds.TungstenOre], 2)));
+
+            // Spikes, cheap and early. They are the answer to a horde before there is
+            // any electricity to answer it with, so gating them behind a perk or a
+            // workbench tier would leave the first few blood moons with nothing in
+            // them but a wall and a hope.
+            list.Add(Recipe("madvoxel:craft_spike_trap", it[ItemIds.PieceSpikeTrap], 2, CraftStation.Hand, 3f,
+                Ing(it[ItemIds.WoodLog], 4), Ing(it[ItemIds.ScrapMetal], 3)));
 
             // Not perk-gated. The workbench it is built at is the gate, and a station
             // this basic being locked behind a skill point is friction, not a decision.

@@ -228,6 +228,9 @@ namespace MadVoxel.Core
             // handed over before the player can swing at anything.
             _player.Interaction.Spawns = _spawner;
 
+            // Deployables that scale with a perk read it off the world that owns them.
+            _structures.Progression = _player.Progression;
+
             _horde = _worldRoot.AddComponent<HordeDirector>();
             _horde.Init(_content.hordeSchedule, _clock, _spawner, _structures, _buildings, _sky, _player.Progression, _player.transform);
             _horde.LoadState(hordeNumber);

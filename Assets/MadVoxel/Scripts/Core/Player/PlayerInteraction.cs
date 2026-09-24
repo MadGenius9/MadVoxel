@@ -788,7 +788,56 @@ namespace MadVoxel.Core.Player
                 return;
             }
 
+            // A hammer mends a deployable, the same way it mends a snap piece. It
+            // never could before, which made every crate, furnace and trap in the game
+            // a consumable: once the horde had chewed on it, the only way back was a
+            // wrench and a rebuild.
+            if (held != null && held.toolType == ToolType.Hammer)
+            {
+                RepairStructure(structure);
+                return;
+            }
+
             Attack(structure);
+        }
+
+        void RepairStructure(PlacedStructure structure)
+        {
+            if (Time.time < _nextAttackTime) return;
+            _nextAttackTime = Time.time + 0.35f;
+
+            var def = structure.Definition;
+
+            if (structure.HealthFraction >= 1f)
+            {
+                Notifications.PostFormat("{0} is undamaged", def.displayName);
+                return;
+            }
+
+            // Some deployables cost a material to mend. Spikes do, which is where a
+            // killbox's upkeep actually bites; a crate does not, because charging for
+            // a dent would be bookkeeping rather than tension.
+            if (def.repairItem != null && def.repairCount > 0)
+            {
+                if (_inventory.Bag.CountOf(def.repairItem) < def.repairCount)
+                {
+                    Notifications.PostFormat("Need {0} x{1} to mend it", def.repairItem.displayName, def.repairCount);
+                    Audio.GameAudio.Play(Audio.Sound.Denied);
+                    return;
+                }
+                _inventory.Bag.Remove(def.repairItem, def.repairCount);
+            }
+
+            float fraction = def.kind == StructureKind.Trap
+                ? Building.TrapRules.RepairFraction
+                : 0.2f;
+
+            structure.Repair(def.maxHealth * fraction
+                             * Perks.Multiplier(PerkEffectType.RepairSpeedMultiplier));
+
+            Audio.GameAudio.PlayAt(Audio.Sound.Place, Target.HitPoint, 0.12f, 0.6f);
+            Notifications.PostFormat("Repaired {0} ({1}%)", def.displayName,
+                Mathf.RoundToInt(structure.HealthFraction * 100f));
         }
 
         /// <summary>Hammer repairs a snap piece; anything else just hits it.</summary>

@@ -54,6 +54,9 @@ namespace MadVoxel.Building
                 case StructureKind.ColonyBoard:
                     BuildBoard(body.transform, mat);
                     break;
+                case StructureKind.Trap:
+                    BuildSpikes(body.transform, mat);
+                    break;
                 case StructureKind.PowerDevice:
                 case StructureKind.FluidDevice:
                     BuildUtility(body.transform, def);
@@ -64,6 +67,36 @@ namespace MadVoxel.Building
             }
 
             AddCollider(structure);
+        }
+
+        /// <summary>
+        /// A low frame with stakes sticking out of it. Kept under half a metre so a
+        /// bed of them in a dug channel still reads as a channel - a killbox you
+        /// cannot see the bottom of is just a hole.
+        /// </summary>
+        static void BuildSpikes(Transform body, Material mat)
+        {
+            PrimitiveBuilder.Box(body, new Vector3(0.5f, 0.06f, 0.5f),
+                new Vector3(0.92f, 0.1f, 0.92f), mat, "Frame");
+
+            // Five, off-centre, leaning slightly different ways. A neat grid of them
+            // looks like a fence panel lying down rather than like something sharp.
+            var offsets = new[]
+            {
+                new Vector3(0.28f, 0f, 0.30f), new Vector3(0.72f, 0f, 0.26f),
+                new Vector3(0.50f, 0f, 0.52f),
+                new Vector3(0.24f, 0f, 0.74f), new Vector3(0.76f, 0f, 0.70f)
+            };
+
+            for (int i = 0; i < offsets.Length; i++)
+            {
+                float height = 0.34f + (i % 3) * 0.05f;
+                var spike = PrimitiveBuilder.Box(body,
+                    offsets[i] + new Vector3(0f, height * 0.5f + 0.1f, 0f),
+                    new Vector3(0.07f, height, 0.07f), mat, "Spike" + i);
+
+                spike.transform.localRotation = Quaternion.Euler((i % 2 == 0 ? 8f : -6f), i * 37f, (i % 3 == 0 ? -7f : 5f));
+            }
         }
 
         static void AddCollider(PlacedStructure structure)

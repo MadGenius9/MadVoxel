@@ -781,6 +781,20 @@ namespace MadVoxel.UI
                 return;
             }
 
+            // A trap answers for itself too: how many bites it has left, or that it
+            // has none. Blunt spikes look exactly like sharp ones, so the readout is
+            // the only way anyone finds out before a blood moon rather than during.
+            var spikes = target.Structure != null
+                ? target.Structure.GetComponentInChildren<SpikeTrapStructure>() : null;
+
+            if (spikes != null)
+            {
+                title = spikes.Readout;
+                colour = spikes.IsBlunt ? ClaimSlate.OxideRust : ClaimSlate.Bone;
+                detail = "";
+                return;
+            }
+
             // A person, not a health bar: "JULES  FARM  HUNGRY".
             var colonist = target.Damageable as Colonist;
             if (colonist != null && colonist.IsAlive)

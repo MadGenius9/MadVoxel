@@ -51,6 +51,7 @@
     <Compile Include="SoundTests.cs" />
     <Compile Include="SoilTests.cs" />
     <Compile Include="HitZoneTests.cs" />
+    <Compile Include="TrapTests.cs" />
   </ItemGroup>
 
   <ItemGroup Label="Game sources under test">
@@ -92,6 +93,7 @@
     <Compile Include="../../Assets/MadVoxel/Scripts/Building/StructureDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Building/BuildGrid.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Building/FurnaceRules.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Building/TrapRules.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Building/BuildPieceDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Power/PowerDeviceDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Power/PowerNode.cs" />

@@ -27,6 +27,13 @@ namespace MadVoxel.Building
 
         /// <summary>Crops grow on the world clock, so plots need it.</summary>
         public WorldClock Clock { get; private set; }
+
+        /// <summary>
+        /// The player's perks, for deployables whose output they scale. Read through
+        /// the owner rather than pushed into each piece, so something restored from a
+        /// save gets it without anyone remembering to wire it up again.
+        /// </summary>
+        public MadVoxel.Perks.PlayerProgression Progression { get; set; }
         public ContentDatabase Content { get; private set; }
 
         public event Action<PlacedStructure> Placed;

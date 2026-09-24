@@ -265,6 +265,31 @@ nobody has farmed it.
 
 ---
 
+## 6e. A killbox (15 minutes, best on a blood moon)
+
+The horde already reads the ground — twelve scored lanes round your claim, each zombie
+given a way in before the base itself — so a dug channel is a real instruction to it.
+Until now there was nothing to put at the end of one.
+
+1. Craft **spike traps** by hand (wood + scrap), or take the two dozen in the **`F10`**
+   test kit.
+2. Dig a channel toward your tool cupboard and line the floor of it with spikes.
+3. `F7` to jump to a blood moon, and watch.
+
+**Expected:** zombies funnel down the channel and take damage walking over the bed. Look
+at a trap afterwards — the crosshair should say roughly how many bites it has left, and
+go rust-coloured and read "Blunt" when it is spent. Hammer it back (costs scrap).
+
+**Watch for:**
+- Zombies routing *around* the channel. That is the lane scoring doing its job or
+  failing at it, and it is the whole reason to dig one.
+- Spikes that never trigger — they do not block movement, so things must be able to walk
+  onto them, not into them.
+- A trap that vanishes when worn out. It should stop at blunt and stay standing.
+- Getting hurt by your own spikes. You should not; traps do not bite their builder.
+
+---
+
 ## 7. The grain bin (2 minutes)
 
 1. Tip a harvest into one, then `E` on it.

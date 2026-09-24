@@ -25,7 +25,13 @@ namespace MadVoxel.Building
         /// <summary>The colony charter. One per claim.</summary>
         ColonyBoard,
         /// <summary>A furnace: a container that works on its own while you are away.</summary>
-        Furnace
+        Furnace,
+        /// <summary>
+        /// Spikes. The unpowered defence: no grid, no watts, no claim heat - it wears
+        /// out instead of drawing attention, which is the whole trade against a blade
+        /// trap.
+        /// </summary>
+        Trap
     }
 
     /// <summary>
@@ -74,6 +80,17 @@ namespace MadVoxel.Building
         public bool requiresSoil;
         [Tooltip("Silo only: how many litres of produce it holds (Phase 1).")]
         public float siloCapacityLitres = 20000f;
+
+        [Header("Trap")]
+        [Tooltip("Trap only: damage a fresh set of spikes does per bite.")]
+        public float trapDamage;
+        [Tooltip("Trap only: seconds between bites on the same victim.")]
+        public float trapIntervalSeconds = 1.1f;
+        [Tooltip("Trap only: metres from the trap's centre that it reaches.")]
+        public float trapRadius = 1.1f;
+        [Tooltip("Trap only: what one hammer repair costs.")]
+        public ItemDefinition repairItem;
+        public int repairCount = 1;
 
         [Header("Utilities")]
         [Tooltip("Set on a PowerDevice: which electrical device this deployable carries.")]

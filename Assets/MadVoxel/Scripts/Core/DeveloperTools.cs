@@ -307,6 +307,7 @@ namespace MadVoxel.Core
             Give(ItemIds.PieceWorkbench, 2);
             Give(ItemIds.PieceCampfire, 2);
             Give(ItemIds.PieceToolCupboard, 1);
+            Give(ItemIds.PieceSpikeTrap, 24);
 
             // The garden, ready to plant.
             Give(ItemIds.PieceFarmPlot, 12);
