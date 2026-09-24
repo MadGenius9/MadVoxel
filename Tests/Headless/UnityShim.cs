@@ -83,6 +83,16 @@ namespace UnityEngine
         public static T Load<T>(string path) where T : Object { return null; }
     }
 
+    /// <summary>
+    /// Packed byte colour. The mesher writes baked ambient occlusion into these, so
+    /// the shim needs it to run the real mesher.
+    /// </summary>
+    public struct Color32
+    {
+        public byte r, g, b, a;
+        public Color32(byte r, byte g, byte b, byte a) { this.r = r; this.g = g; this.b = b; this.a = a; }
+    }
+
     public struct Color
     {
         public float r, g, b, a;

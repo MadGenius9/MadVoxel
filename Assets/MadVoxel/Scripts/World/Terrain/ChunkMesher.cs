@@ -18,10 +18,34 @@ namespace MadVoxel.World.Terrain
             public ushort Block;
             public bool Back;
 
+            /// <summary>
+            /// Corner occlusion, 0 (buried) to 3 (open), in the quad's vertex order.
+            ///
+            /// Part of the merge key, which is the whole trick: two faces only join if
+            /// their corners are shaded the same, so a merged run has AO that is
+            /// constant along the direction it was merged in - and stretching a
+            /// constant across a run is exact rather than approximate.
+            /// </summary>
+            public byte A0, A1, A2, A3;
+
             public bool Same(MaskEntry other)
             {
-                return Block == other.Block && Back == other.Back;
+                return Block == other.Block && Back == other.Back
+                    && A0 == other.A0 && A1 == other.A1 && A2 == other.A2 && A3 == other.A3;
             }
+        }
+
+        /// <summary>
+        /// How much light reaches a vertex, given the three neighbours that share it.
+        ///
+        /// Two neighbours meeting at a corner close it off completely, which is why
+        /// they short-circuit: that is the inside of a right angle, and it is the shape
+        /// the eye reads as depth. Everything else is a straight count.
+        /// </summary>
+        static byte CornerAo(bool side1, bool side2, bool corner)
+        {
+            if (side1 && side2) return 0;
+            return (byte)(3 - ((side1 ? 1 : 0) + (side2 ? 1 : 0) + (corner ? 1 : 0)));
         }
 
         [System.ThreadStatic] static MaskEntry[] _mask;
@@ -72,11 +96,13 @@ namespace MadVoxel.World.Terrain
                             {
                                 mask[n].Block = a;
                                 mask[n].Back = false;
+                                ShadeCorners(padded, meta, ref mask[n], x, q, u, v, 1);
                             }
                             else
                             {
                                 mask[n].Block = b;
                                 mask[n].Back = true;
+                                ShadeCorners(padded, meta, ref mask[n], x, q, u, v, 0);
                             }
                             n++;
                         }
@@ -120,7 +146,7 @@ namespace MadVoxel.World.Terrain
                             du[u] = w;
                             dv[v] = h;
 
-                            AddQuad(data, mask[n].Block, mask[n].Back, d, x, du, dv, i, j, w, h);
+                            AddQuad(data, mask[n], d, x, du, dv, i, j, w, h);
 
                             for (int l = 0; l < h; l++)
                             {
@@ -137,14 +163,58 @@ namespace MadVoxel.World.Terrain
             return data;
         }
 
+        /// <summary>
+        /// Fills a mask entry's four corner shades.
+        ///
+        /// Everything is sampled on the open side of the face, because that is where
+        /// the light is coming from and where an occluder has to sit to block it. The
+        /// padded copy runs from -1 to Size, and every sample here stays inside that,
+        /// so no bounds check is needed - which is the reason the padding exists.
+        /// </summary>
+        static void ShadeCorners(ushort[] padded, BlockMeta[] meta, ref MaskEntry entry,
+                                 int[] x, int[] q, int u, int v, int airStep)
+        {
+            // The cell on the open side of this face.
+            var air = new int[3];
+            air[0] = x[0] + q[0] * airStep;
+            air[1] = x[1] + q[1] * airStep;
+            air[2] = x[2] + q[2] * airStep;
+
+            entry.A0 = Corner(padded, meta, air, u, v, -1, -1);
+            entry.A1 = Corner(padded, meta, air, u, v, +1, -1);
+            entry.A2 = Corner(padded, meta, air, u, v, +1, +1);
+            entry.A3 = Corner(padded, meta, air, u, v, -1, +1);
+        }
+
+        static byte Corner(ushort[] padded, BlockMeta[] meta, int[] air, int u, int v, int su, int sv)
+        {
+            bool side1 = OpaqueAt(padded, meta, air, u, su, v, 0);
+            bool side2 = OpaqueAt(padded, meta, air, u, 0, v, sv);
+            bool corner = OpaqueAt(padded, meta, air, u, su, v, sv);
+            return CornerAo(side1, side2, corner);
+        }
+
+        static bool OpaqueAt(ushort[] padded, BlockMeta[] meta, int[] air, int u, int du, int v, int dv)
+        {
+            int px = air[0], py = air[1], pz = air[2];
+
+            if (u == 0) px += du; else if (u == 1) py += du; else pz += du;
+            if (v == 0) px += dv; else if (v == 1) py += dv; else pz += dv;
+
+            return IsOpaque(meta, Sample(padded, px, py, pz));
+        }
+
         static bool IsOpaque(BlockMeta[] meta, ushort id)
         {
             return id < meta.Length && meta[id].Opaque;
         }
 
-        static void AddQuad(ChunkMeshData data, ushort block, bool back, int axis,
+        static void AddQuad(ChunkMeshData data, MaskEntry entry, int axis,
                             int[] x, int[] du, int[] dv, int uOff, int vOff, int w, int h)
         {
+            ushort block = entry.Block;
+            bool back = entry.Back;
+
             var v0 = new Vector3(x[0], x[1], x[2]);
             var v1 = new Vector3(x[0] + du[0], x[1] + du[1], x[2] + du[2]);
             var v2 = new Vector3(x[0] + du[0] + dv[0], x[1] + du[1] + dv[1], x[2] + du[2] + dv[2]);
@@ -168,11 +238,18 @@ namespace MadVoxel.World.Terrain
             data.Uvs.Add(new Vector2(uOff + w, vOff + h));
             data.Uvs.Add(new Vector2(uOff, vOff + h));
 
+            // The corners, in the same order the vertices went in.
+            data.Colors.Add(Shade(entry.A0));
+            data.Colors.Add(Shade(entry.A1));
+            data.Colors.Add(Shade(entry.A2));
+            data.Colors.Add(Shade(entry.A3));
+
             var tris = data.TrianglesFor(block);
 
             // Winding depends on which axis pair we walked; derive it instead of
             // hand-tabling six cases.
             bool flip = Vector3.Dot(Vector3.Cross(v1 - v0, v2 - v0), normal) < 0f;
+
             if (flip)
             {
                 tris.Add(baseIndex); tris.Add(baseIndex + 2); tris.Add(baseIndex + 1);
@@ -183,6 +260,21 @@ namespace MadVoxel.World.Terrain
                 tris.Add(baseIndex); tris.Add(baseIndex + 1); tris.Add(baseIndex + 2);
                 tris.Add(baseIndex); tris.Add(baseIndex + 2); tris.Add(baseIndex + 3);
             }
+        }
+
+        /// <summary>
+        /// Turns a 0-3 corner count into a vertex tint.
+        ///
+        /// The darkest step is deliberately not black. A buried corner in a survival
+        /// game is still lit by something, and crushing it to zero makes dug tunnels
+        /// read as holes in the render rather than as dark corners.
+        /// </summary>
+        static Color32 Shade(byte ao)
+        {
+            const float Darkest = 0.45f;
+            float light = Mathf.Lerp(Darkest, 1f, ao / 3f);
+            byte c = (byte)Mathf.RoundToInt(Mathf.Clamp01(light) * 255f);
+            return new Color32(c, c, c, 255);
         }
     }
 }

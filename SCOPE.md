@@ -176,8 +176,26 @@ executed. Worlds record which mods built them and warn on load if one is missing
   cleanup.
 - **Roofs are flat.** No pitched or conical roof pieces.
 - **Stairs use stepped box colliders**, not a smooth ramp.
-- **No ambient occlusion on terrain meshes.** Corners read flat. Fixing it properly
-  needs a custom URP shader with baked vertex AO.
+- **The look is the furthest thing from its target.** The brief is *Rust building and
+  look, 7 Days to Die terrain* — and the build currently reads closer to Minecraft than
+  to either, for two separate reasons that need two separate fixes:
+
+  1. **Terrain is hard cubes everywhere.** 7DTD stores a density per voxel and renders
+     natural ground as a smoothed isosurface, keeping hard edges only for player-built
+     blocks — which is why a dug crater there looks like a crater and here looks like a
+     staircase. `Chunk` stores only a block id, so occupancy is binary and there is
+     nothing for a smooth mesher to read. Closing this means a density field, a second
+     mesher (surface nets is the pragmatic pick), and touching chunk storage, the save
+     format, collision and digging. It is real work and it is in scope.
+  2. **Props and characters are boxes.** Deliberately — `PrimitiveBuilder` is a
+     placeholder and swapping real meshes in means replacing those calls and nothing
+     else. But Rust-grade models are the one thing that cannot be generated from code;
+     they need an artist, an asset store, or the project owner.
+
+- **No ambient occlusion on terrain meshes.** Corners read flat, which is the single
+  strongest reason the cube path reads as a toy. The mesh carries positions, normals and
+  UVs and no vertex colours at all. Baking AO into the greedy mesher is cheap and helps
+  whichever way the terrain goes.
 - **No texture atlas.** One sub-mesh and material per block type per chunk.
 - **Terrain structural integrity is one rule deep.** Snap pieces collapse when
   undermined; overhanging *terrain* does not fall.

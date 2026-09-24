@@ -29,6 +29,25 @@ tanks, taps, sprinklers — could ever have worked before this.
 
 ---
 
+## 0b. Does the world have corners? (1 minute)
+
+Terrain meshes now carry baked ambient occlusion, and a hand-written shader
+(`MadVoxel/VoxelLit`) is the only thing that reads it.
+
+1. Dig a trench two blocks deep and stand in it. Look at where the floor meets the wall.
+
+**Expected:** the inside corner is visibly darker than open ground, and open ground is
+still evenly lit.
+
+**If everything looks exactly as flat as before**, the shader was not found and the game
+fell back to stock URP Lit — which is the safe failure, not a broken one. Run
+**MadVoxel → Setup → Configure Project** and check the console.
+
+**If anything is magenta, tell me and stop** — that is the shader failing to compile, and
+it is the one thing here I had no way to test.
+
+---
+
 ## 0. Combat, first (5 minutes)
 
 **Start here.** A previous playtest could not hit zombies at all, and everything below

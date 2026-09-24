@@ -15,6 +15,11 @@ namespace MadVoxel.EditorTools
     {
         static readonly string[] RuntimeShaders =
         {
+            // The project's own, first: it is the one that reads baked ambient
+            // occlusion, and it is the one a build is most likely to strip because
+            // nothing in a scene references it.
+            "MadVoxel/VoxelLit",
+
             "Universal Render Pipeline/Lit",
             "Universal Render Pipeline/Unlit",
             "Standard",

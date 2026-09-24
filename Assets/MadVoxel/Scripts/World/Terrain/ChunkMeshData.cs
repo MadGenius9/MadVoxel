@@ -13,6 +13,15 @@ namespace MadVoxel.World.Terrain
         public readonly List<Vector3> Normals = new List<Vector3>(2048);
         public readonly List<Vector2> Uvs = new List<Vector2>(2048);
 
+        /// <summary>
+        /// Baked ambient occlusion, one greyscale value per vertex.
+        ///
+        /// Corners, trenches and doorways read perfectly flat without it, which is the
+        /// single strongest reason a cube world looks like a toy. Computed on the
+        /// worker thread from neighbour occupancy, so it costs nothing at runtime.
+        /// </summary>
+        public readonly List<Color32> Colors = new List<Color32>(2048);
+
         /// <summary>Block runtime id -> triangle indices into <see cref="Vertices"/>.</summary>
         public readonly Dictionary<ushort, List<int>> Triangles = new Dictionary<ushort, List<int>>();
         public readonly List<ushort> BlockOrder = new List<ushort>();
@@ -36,6 +45,7 @@ namespace MadVoxel.World.Terrain
             Vertices.Clear();
             Normals.Clear();
             Uvs.Clear();
+            Colors.Clear();
             Triangles.Clear();
             BlockOrder.Clear();
         }

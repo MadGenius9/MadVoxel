@@ -76,6 +76,10 @@ will quietly move it.
 - **No god manager.** `GameSession` is a composition root that builds systems in a
   strict order and hands them to each other. Ordering bugs there are real — one was
   found where the colony was handed a spawner that did not exist yet.
+- **The visual target is Rust's look and 7DTD's terrain, not Minecraft.** Worth stating
+  because the current build reads as neither: hard cubes everywhere and box props. The
+  blockiness is placeholder art falling short of the brief, not a design decision to
+  defend. Do not "simplify" toward the voxel look on the assumption it is intended.
 - **No prefabs, no .mat assets, no art.** Every material, mesh, prop and UI element is
   built in code at runtime. The scene contains exactly one GameObject. This is
   deliberate: nothing can drift out of sync with the scripts, and there is no scene

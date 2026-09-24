@@ -54,10 +54,24 @@ namespace MadVoxel.Core
             }
         }
 
+        /// <summary>
+        /// The project's own lit shader, or null when it is not there.
+        ///
+        /// It is the only thing that reads the ambient occlusion the mesher bakes, and
+        /// it is deliberately optional: asked for by name, and simply absent if the
+        /// file was stripped from a build or failed to compile. Terrain without AO is
+        /// a disappointment; terrain that does not render is the magenta world this
+        /// project has already shipped once.
+        /// </summary>
+        public const string VoxelLitName = "MadVoxel/VoxelLit";
+
         static Shader FindLit()
         {
             if (UsingScriptablePipeline)
             {
+                var voxel = Shader.Find(VoxelLitName);
+                if (voxel != null) return voxel;
+
                 var urp = Shader.Find("Universal Render Pipeline/Lit");
                 if (urp != null) return urp;
             }

@@ -53,6 +53,10 @@ namespace MadVoxel.World.Terrain
             _mesh.SetNormals(data.Normals);
             _mesh.SetUVs(0, data.Uvs);
 
+            // Baked ambient occlusion. Harmless if the shader in use ignores vertex
+            // colours - which stock URP Lit does - so uploading it is never a risk.
+            _mesh.SetColors(data.Colors);
+
             int subMeshCount = data.BlockOrder.Count;
             _mesh.subMeshCount = subMeshCount;
 

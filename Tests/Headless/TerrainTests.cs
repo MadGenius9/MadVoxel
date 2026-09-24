@@ -19,6 +19,7 @@ namespace MadVoxel.Headless
             Terrain(db);
             Pois(db);
             OreBands(db);
+            AmbientOcclusion(db);
         }
 
         static void Pois(ContentDatabase db)
@@ -210,6 +211,96 @@ namespace MadVoxel.Headless
                     string.Format("iron reaches up to y={0}, above tungsten's y={1}",
                         shallowestIron, shallowestTungsten));
             }
+        }
+
+        /// <summary>
+        /// Baked ambient occlusion, checked as geometry rather than looked at.
+        ///
+        /// AO is the one part of the look that is arithmetic all the way down: a
+        /// vertex is darker because three specific neighbours are solid, and whether
+        /// the mesher agrees is a question with an answer. What cannot be checked here
+        /// is whether it looks good - only that an inside corner is darker than an
+        /// open plain, which is the entire point of having it.
+        /// </summary>
+        static void AmbientOcclusion(ContentDatabase db)
+        {
+            Harness.Section("voxel: baked ambient occlusion");
+
+            var meta = BlockMeta.Snapshot(db.blocks);
+            ushort stone = db.blocks.IdOf(BlockIds.Stone);
+
+            // A single block alone in the void: every corner of every face is open.
+            var lone = Padded();
+            Set(lone, 8, 8, 8, stone);
+
+            var loneMesh = ChunkMesher.Build(lone, meta);
+            Harness.Check(loneMesh.Colors.Count == loneMesh.Vertices.Count,
+                "every vertex carries a shade");
+            Harness.Check(loneMesh.Colors.Count > 0, "and a lone block produces some");
+
+            Harness.Equal(Darkest(loneMesh), Brightest(loneMesh),
+                "a block with nothing near it is evenly lit");
+
+            // An inside corner. Two neighbours meeting at a right angle is the shape
+            // the eye reads as depth, and it has to come out darker than open ground.
+            var corner = Padded();
+            for (int x = 4; x < 12; x++)
+                for (int z = 4; z < 12; z++)
+                    Set(corner, x, 6, z, stone);          // a floor
+
+            for (int y = 7; y < 11; y++)
+                for (int z = 4; z < 12; z++)
+                    Set(corner, 4, y, z, stone);          // a wall rising out of it
+
+            var cornerMesh = ChunkMesher.Build(corner, meta);
+            Harness.Check(Darkest(cornerMesh) < Brightest(cornerMesh),
+                "a floor meeting a wall is shaded, not flat");
+
+            // A flat plain has nothing to occlude anything, so it must stay even -
+            // otherwise the whole world would be dirty rather than only its corners.
+            var plain = Padded();
+            for (int x = 0; x < 16; x++)
+                for (int z = 0; z < 16; z++)
+                    Set(plain, x, 6, z, stone);
+
+            var plainMesh = ChunkMesher.Build(plain, meta);
+            Harness.Equal(Darkest(plainMesh), Brightest(plainMesh), "open ground is evenly lit");
+
+            // And the darkest shade is never black: a buried corner in a survival game
+            // is still lit by something, and crushing it reads as a hole in the render.
+            Harness.Check(Darkest(cornerMesh) > 0, "the deepest corner is dark, not black");
+
+            // Merging must respect it. Two faces only join when their corners match, so
+            // a wall that is shaded along its length cannot be merged into one quad
+            // carrying a single shade.
+            Harness.Check(cornerMesh.Vertices.Count > loneMesh.Vertices.Count,
+                "a shaded surface is not merged flat");
+        }
+
+        static ushort[] Padded()
+        {
+            const int p = Chunk.Size + 2;
+            return new ushort[p * p * p];
+        }
+
+        static void Set(ushort[] padded, int x, int y, int z, ushort id)
+        {
+            const int p = Chunk.Size + 2;
+            padded[((y + 1) * p + (z + 1)) * p + (x + 1)] = id;
+        }
+
+        static int Darkest(ChunkMeshData data)
+        {
+            int min = 255;
+            for (int i = 0; i < data.Colors.Count; i++) if (data.Colors[i].r < min) min = data.Colors[i].r;
+            return min;
+        }
+
+        static int Brightest(ChunkMeshData data)
+        {
+            int max = 0;
+            for (int i = 0; i < data.Colors.Count; i++) if (data.Colors[i].r > max) max = data.Colors[i].r;
+            return max;
         }
 
         static void Coordinates()
