@@ -137,6 +137,10 @@ namespace MadVoxel.UI
         public void Open()
         {
             _canvas.enabled = true;
+
+            // Switched on with the screen, not with the build. See UIKit.Input.
+            UIKit.Wake(_nameField);
+
             if (_colony != null && _colony.Founded) _nameField.text = _colony.ColonyName;
 
             RebuildRoster();

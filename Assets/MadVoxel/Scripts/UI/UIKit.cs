@@ -128,7 +128,33 @@ namespace MadVoxel.UI
             field.textComponent = text;
             field.placeholder = hint;
             field.text = value;
+
+            // Built inactive.
+            //
+            // uGUI generates an InputField's caret during a canvas rebuild, against a
+            // text component it assumes has been laid out. A field built into a screen
+            // that is created and immediately hidden has never been laid out, and the
+            // caret generation throws a NullReferenceException from inside uGUI on the
+            // first rebuild - every time, at startup, from a screen nobody opened.
+            //
+            // The owner switches it on when the screen is shown, by which point there
+            // is a laid-out canvas behind it.
+            field.gameObject.SetActive(false);
             return field;
+        }
+
+        /// <summary>
+        /// Switches a field built by <see cref="Input"/> on, once its screen is visible.
+        ///
+        /// Every screen that owns an <see cref="InputField"/> has to call this from its
+        /// Open - a field left inactive never takes a keystroke. The rule lives here
+        /// rather than in each screen so there is one place to read it, and one place
+        /// to change it if uGUI ever stops needing the dance.
+        /// </summary>
+        public static void Wake(InputField field)
+        {
+            if (field == null) return;
+            if (!field.gameObject.activeSelf) field.gameObject.SetActive(true);
         }
 
         public static void Stretch(RectTransform rect, float padding = 0f)

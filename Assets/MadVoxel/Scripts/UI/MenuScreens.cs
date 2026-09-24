@@ -119,6 +119,11 @@ namespace MadVoxel.UI
         public void Open()
         {
             _canvas.enabled = true;
+
+            // Switched on with the screen, not with the build. See UIKit.Input.
+            UIKit.Wake(_nameField);
+            UIKit.Wake(_seedField);
+
             RefreshWorldList();
         }
 
