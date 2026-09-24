@@ -572,7 +572,7 @@ namespace MadVoxel.UI
                 // day and the time instead of earning a widget of its own.
                 string line = _weather != null
                     ? _weather.ClockLine()
-                    : string.Format("DAY {0}   {1}", _clock.Day, _clock.FormatClock());
+                    : string.Format("DAY {0}   {1}", _clock.Day, _clock.FormatTime());
 
                 _compass.SetClock(line, _clock.IsNight);
             }

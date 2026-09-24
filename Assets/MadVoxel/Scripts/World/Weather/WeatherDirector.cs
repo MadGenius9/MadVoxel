@@ -170,7 +170,9 @@ namespace MadVoxel.World.Weather
         public string ClockLine()
         {
             if (_clock == null) return "";
-            return WeatherSchedule.ClockLine(_clock.Day, _clock.FormatClock(), Current);
+            // The bare time: ClockLine prints the day itself, and its check has always
+            // passed it a bare "17:41".
+            return WeatherSchedule.ClockLine(_clock.Day, _clock.FormatTime(), Current);
         }
     }
 }

@@ -95,12 +95,25 @@ namespace MadVoxel.Core
             }
         }
 
-        public string FormatClock()
+        /// <summary>
+        /// Just the time, for callers that print the day themselves.
+        ///
+        /// Both HUD paths used to pass <see cref="FormatClock"/> - which already says
+        /// the day - into a format that says it again, so the compass read
+        /// "DAY 1   Day 1  08:59".
+        /// </summary>
+        public string FormatTime()
         {
             float h = HourOfDay;
             int hh = Mathf.FloorToInt(h);
             int mm = Mathf.FloorToInt((h - hh) * 60f);
-            return string.Format("Day {0}  {1:00}:{2:00}", Day, hh, mm);
+            return string.Format("{0:00}:{1:00}", hh, mm);
+        }
+
+        /// <summary>The day and the time together, for a line that carries nothing else.</summary>
+        public string FormatClock()
+        {
+            return string.Format("Day {0}  {1}", Day, FormatTime());
         }
     }
 }

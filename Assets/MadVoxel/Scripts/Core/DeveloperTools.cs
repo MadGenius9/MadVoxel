@@ -106,7 +106,7 @@ namespace MadVoxel.Core
             }
 
             _clock.SetTotalHours(target);
-            Notifications.PostFormat("Blood moon imminent - day {0}, {1}", _clock.Day, _clock.FormatClock());
+            Notifications.PostFormat("Blood moon imminent - day {0}, {1}", _clock.Day, _clock.FormatTime());
         }
 
         void SpawnZombieAhead()

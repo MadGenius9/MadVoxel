@@ -219,6 +219,12 @@ namespace MadVoxel.Headless
             Harness.Check(table.Find(WeatherKind.Rain).barrelFillLitresPerHour > 0f, "rain fills a barrel");
 
             // Clear says nothing. That is the point of the one-word line.
+            // ClockLine prints the day itself, so what it is handed must be a bare
+            // time. Both HUD call sites passed the day-and-time string instead, and the
+            // compass read "DAY 1   Day 1  08:59" on screen for weeks.
+            Harness.Check(!WeatherSchedule.ClockLine(14, "17:41", null).Contains("Day 14"),
+                "the clock line says the day once, not twice");
+
             Harness.Equal(WeatherSchedule.ClockLine(14, "17:41", table.Find(WeatherKind.Clear)),
                 "DAY 14   17:41", "clear weather adds no word to the clock");
             Harness.Equal(WeatherSchedule.ClockLine(14, "17:41", drought),
