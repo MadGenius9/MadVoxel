@@ -151,6 +151,7 @@ namespace UnityEngine
         public static Vector3 zero { get { return new Vector3(0, 0, 0); } }
         public static Vector3 one { get { return new Vector3(1, 1, 1); } }
         public static Vector3 up { get { return new Vector3(0, 1, 0); } }
+        public static Vector3 down { get { return new Vector3(0, -1, 0); } }
         public static Vector3 forward { get { return new Vector3(0, 0, 1); } }
         public static Vector3 right { get { return new Vector3(1, 0, 0); } }
         public float this[int i]
@@ -196,6 +197,7 @@ namespace UnityEngine
     {
         public int x, y, z;
         public Vector3Int(int x, int y, int z) { this.x = x; this.y = y; this.z = z; }
+        public static Vector3Int zero { get { return new Vector3Int(0, 0, 0); } }
         public static Vector3Int one { get { return new Vector3Int(1, 1, 1); } }
         public static Vector3Int up { get { return new Vector3Int(0, 1, 0); } }
         public static Vector3Int FloorToInt(Vector3 v)

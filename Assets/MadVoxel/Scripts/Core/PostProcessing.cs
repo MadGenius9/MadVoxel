@@ -40,9 +40,27 @@ namespace MadVoxel.Core
         /// <summary>Why it did not install, for the console. Empty when it did.</summary>
         public static string Reason { get; private set; }
 
+        static GameObject _installed;
+        static ScriptableObject _profile;
+
+        /// <summary>
+        /// Drops the stack. Called before installing another, so a world reloaded in
+        /// place does not leave a volume and a profile behind each time - and a
+        /// profile is a ScriptableObject, which nothing else will ever collect.
+        /// </summary>
+        public static void Remove()
+        {
+            if (_installed != null) UnityEngine.Object.Destroy(_installed);
+            if (_profile != null) UnityEngine.Object.Destroy(_profile);
+
+            _installed = null;
+            _profile = null;
+            Installed = false;
+        }
+
         public static void Install(Transform parent, Camera camera)
         {
-            Installed = false;
+            Remove();
             Reason = "";
 
             if (camera == null) { Reason = "no camera"; return; }
@@ -68,8 +86,10 @@ namespace MadVoxel.Core
             catch (Exception e)
             {
                 // Reflection against a package that has moved. Not worth taking the
-                // game down for: the picture is merely plainer.
+                // game down for: the picture is merely plainer. Tear down whatever was
+                // half-built, so a failure does not leave an inert volume behind.
                 Reason = e.GetType().Name + ": " + e.Message;
+                Remove();
             }
         }
 
@@ -103,16 +123,18 @@ namespace MadVoxel.Core
 
             var go = new GameObject("PostProcessing");
             if (parent != null) go.transform.SetParent(parent, false);
+            _installed = go;
 
             var volume = go.AddComponent(volumeType);
-            if (volume == null) { Reason = "could not attach a volume"; return false; }
+            if (volume == null) { Reason = "could not attach a volume"; Remove(); return false; }
 
             SetProperty(volume, "isGlobal", true);
             SetProperty(volume, "priority", 0f);
 
             var profile = ScriptableObject.CreateInstance(profileType);
-            if (profile == null) { Reason = "could not create a profile"; return false; }
+            if (profile == null) { Reason = "could not create a profile"; Remove(); return false; }
 
+            _profile = profile;
             profile.name = "MadVoxel Post";
             SetProperty(volume, "sharedProfile", profile);
 
@@ -232,11 +254,31 @@ namespace MadVoxel.Core
 
             var valueField = holder.GetType().GetProperty("value",
                 BindingFlags.Public | BindingFlags.Instance);
-            var overrideField = holder.GetType().GetField("overrideState",
-                BindingFlags.Public | BindingFlags.Instance);
 
             if (valueField != null && valueField.CanWrite) valueField.SetValue(holder, value);
-            if (overrideField != null) overrideField.SetValue(holder, true);
+            Override(holder);
+        }
+
+        /// <summary>
+        /// Marks a parameter overridden.
+        ///
+        /// <c>overrideState</c> is a property on VolumeParameter, not a field, and
+        /// asking for it as a field simply returns null - so the earlier version of
+        /// this never marked anything and worked only because Add(type, true) had
+        /// already set every override on the way in. Something that works by accident
+        /// stops working the moment the accident does.
+        /// </summary>
+        static void Override(object parameter)
+        {
+            if (parameter == null) return;
+
+            var property = parameter.GetType().GetProperty("overrideState",
+                BindingFlags.Public | BindingFlags.Instance);
+            if (property != null && property.CanWrite) { property.SetValue(parameter, true); return; }
+
+            var field = parameter.GetType().GetField("overrideState",
+                BindingFlags.Public | BindingFlags.Instance);
+            if (field != null) field.SetValue(parameter, true);
         }
 
         static void SetEnum(object component, string field, int value)
@@ -250,14 +292,12 @@ namespace MadVoxel.Core
 
             var valueProperty = holder.GetType().GetProperty("value",
                 BindingFlags.Public | BindingFlags.Instance);
-            var overrideField = holder.GetType().GetField("overrideState",
-                BindingFlags.Public | BindingFlags.Instance);
 
             if (valueProperty != null && valueProperty.CanWrite)
             {
                 valueProperty.SetValue(holder, Enum.ToObject(valueProperty.PropertyType, value));
             }
-            if (overrideField != null) overrideField.SetValue(holder, true);
+            Override(holder);
         }
     }
 }

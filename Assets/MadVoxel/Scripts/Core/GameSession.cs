@@ -645,6 +645,7 @@ namespace MadVoxel.Core
             _traders = null;
             _blockDamage = null;
             _clock = null;
+            PostProcessing.Remove();
             _sky = null;
             _spawner = null;
             _horde = null;

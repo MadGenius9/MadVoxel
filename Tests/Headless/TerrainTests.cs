@@ -526,21 +526,83 @@ namespace MadVoxel.Headless
             }
             Harness.Check(identical, "and meshes identically every time");
 
-            // A canopy. Fronds droop, so some geometry has to hang below the block it
-            // belongs to - that is what stops a pine looking like a green box.
+            // A canopy. It must not land in the main buffers at all: that mesh is also
+            // the collider, needles were never solid, and a player has always been
+            // able to walk through a treetop. Drawing them as fronds in the same mesh
+            // would have silently made every tree in the world solid.
             var canopy = Padded();
             Set(canopy, 8, 8, 8, needles);
 
             var canopyMesh = ChunkMesher.Build(canopy, meta);
-            Harness.Check(canopyMesh.Vertices.Count > 0, "a canopy block meshes");
+            Harness.Check(canopyMesh.Decoration != null, "a chunk has somewhere to put decoration");
+            Harness.Equal(canopyMesh.Vertices.Count, 0,
+                "and a canopy puts nothing in the mesh that becomes the collider");
+
+            var fronds = canopyMesh.Decoration;
+            Harness.Check(fronds.Vertices.Count > 0, "while the fronds themselves are meshed");
 
             float lowest = float.MaxValue;
-            for (int i = 0; i < canopyMesh.Vertices.Count; i++)
+            for (int i = 0; i < fronds.Vertices.Count; i++)
             {
-                if (canopyMesh.Vertices[i].y < lowest) lowest = canopyMesh.Vertices[i].y;
+                if (fronds.Vertices[i].y < lowest) lowest = fronds.Vertices[i].y;
             }
             Harness.Check(lowest < 8f,
-                string.Format("and its fronds hang below the block (lowest y={0:0.00})", lowest));
+                string.Format("and hang below the block (lowest y={0:0.00})", lowest));
+
+            // Fronds must stay close enough to their own block that aiming at one
+            // resolves to the cell it belongs to. Mining and placing both derive the
+            // cell from where the ray lands, so foliage that sprawls into a neighbour
+            // is foliage you cannot chop.
+            float reach = 0f;
+            for (int i = 0; i < fronds.Vertices.Count; i++)
+            {
+                var v = fronds.Vertices[i];
+                reach = Mathf.Max(reach, Mathf.Abs(v.x - 8.5f));
+                reach = Mathf.Max(reach, Mathf.Abs(v.z - 8.5f));
+            }
+            Harness.Check(reach < 1f,
+                string.Format("and stay within a block of their own centre (reach {0:0.00}m)", reach));
+
+            // A lone trunk is a stump, and a stump is something a player stands on.
+            var stump = Padded();
+            Set(stump, 8, 4, 8, log);
+
+            var stumpMesh = ChunkMesher.Build(stump, meta);
+            float top = float.MinValue;
+            for (int i = 0; i < stumpMesh.Vertices.Count; i++)
+            {
+                if (stumpMesh.Vertices[i].y > top) top = stumpMesh.Vertices[i].y;
+            }
+
+            int atTop = 0;
+            for (int i = 0; i < stumpMesh.Vertices.Count; i++)
+            {
+                if (Mathf.Abs(stumpMesh.Vertices[i].y - top) < 0.001f) atTop++;
+            }
+            Harness.Check(atTop > 4,
+                string.Format("a stump is capped, not an open pipe ({0} vertices on its top face)", atTop));
+
+            // Where a trunk continues, it is not capped - a disc inside the tree at
+            // every metre is triangles nobody ever sees.
+            var column = Padded();
+            for (int y = 2; y < 9; y++) Set(column, 8, y, 8, log);
+
+            var columnMesh = ChunkMesher.Build(column, meta);
+            Harness.Check(columnMesh.Vertices.Count < stumpMesh.Vertices.Count * 7,
+                "and a seven-block trunk is cheaper than seven stumps");
+
+            // Where the tree stands decides how it looks, not where it sits in its
+            // chunk. Two identical columns in different chunks must not be identical
+            // trees, or every chunk grows the same forest at the same offsets.
+            var here = ChunkMesher.Build(column, meta, new Vector3Int(0, 0, 0));
+            var there = ChunkMesher.Build(column, meta, new Vector3Int(64, 0, 112));
+
+            bool same = here.Vertices.Count == there.Vertices.Count;
+            for (int i = 0; same && i < here.Vertices.Count; i++)
+            {
+                same = here.Vertices[i] == there.Vertices[i];
+            }
+            Harness.Check(!same, "and the same column in another chunk grows a different tree");
 
             // A tree must not shade the ground under it like a wall would. Trunks have
             // air all round them and canopies are mostly gaps, so treating either as

@@ -66,9 +66,23 @@ namespace MadVoxel.World.Terrain
         /// </summary>
         public static ChunkMeshData Build(ushort[] padded, BlockMeta[] meta)
         {
-            var data = new ChunkMeshData();
+            return Build(padded, meta, Vector3Int.zero);
+        }
+
+        /// <summary>
+        /// Meshes a chunk that knows where it is.
+        ///
+        /// <paramref name="origin"/> is the chunk's world corner. Foliage needs it:
+        /// a tree's lean, its bark and its randomness all have to come from where the
+        /// tree stands, not from where it happens to sit inside its chunk - otherwise
+        /// identical trees appear at the same offset in every chunk and a trunk
+        /// snaps back into line at every chunk boundary.
+        /// </summary>
+        public static ChunkMeshData Build(ushort[] padded, BlockMeta[] meta, Vector3Int origin)
+        {
+            var data = new ChunkMeshData(true);
             SurfaceNets.Build(padded, meta, data);
-            FoliageMesher.Build(padded, meta, data);
+            FoliageMesher.Build(padded, meta, data, origin);
             if (_mask == null || _mask.Length != S * S) _mask = new MaskEntry[S * S];
             var mask = _mask;
 

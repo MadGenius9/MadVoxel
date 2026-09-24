@@ -315,7 +315,7 @@ namespace MadVoxel.World.Terrain
 
             Task.Run(() =>
             {
-                var data = ChunkMesher.Build(padded, meta);
+                var data = ChunkMesher.Build(padded, meta, coord.Origin);
                 _meshDone.Enqueue(new MeshResult { Coord = coord, Data = data });
             });
         }

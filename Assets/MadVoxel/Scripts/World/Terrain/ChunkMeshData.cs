@@ -35,6 +35,23 @@ namespace MadVoxel.World.Terrain
         /// triangle. Counting vertices, the streamer would keep a live renderer and a
         /// zero-triangle mesh collider for every empty chunk above the landscape.
         /// </summary>
+        /// <summary>
+        /// Canopy geometry, kept apart from everything else.
+        ///
+        /// It is not in the main buffers because the main mesh is also the collider,
+        /// and needles were <c>opaque = false</c> - they produced no faces at all, so
+        /// a player has always been able to walk through a canopy. Drawing them as
+        /// fronds in the same mesh would have quietly made every tree in the world
+        /// solid, which is exactly the kind of thing that must not leak out of
+        /// rendering.
+        /// </summary>
+        public readonly ChunkMeshData Decoration;
+
+        public ChunkMeshData(bool withDecoration = false)
+        {
+            if (withDecoration) Decoration = new ChunkMeshData();
+        }
+
         public bool IsEmpty
         {
             get
@@ -69,6 +86,7 @@ namespace MadVoxel.World.Terrain
             Colors.Clear();
             Triangles.Clear();
             BlockOrder.Clear();
+            if (Decoration != null) Decoration.Clear();
         }
     }
 

@@ -47,6 +47,10 @@ and no hard square shadow stamped on the ground beneath a pine.
 - Trees reshuffling when a chunk comes back into view.
 - Canopies you can see straight through from below. Fronds are double-sided for exactly
   that reason.
+- **Walking into a treetop.** Needles were never solid and must not have become solid
+  because they are now drawn — fronds go in a separate mesh with no collider at all.
+  If you bump into a canopy, that separation has failed.
+- Standing on a stump. A lone trunk is capped; a trunk with more trunk above it is not.
 - Frame rate in dense forest.
 
 ---

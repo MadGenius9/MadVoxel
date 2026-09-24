@@ -67,9 +67,23 @@ namespace MadVoxel.World.Terrain
             }
         }
 
-        /// <summary>Builds the foliage in a chunk into <paramref name="data"/>.</summary>
-        public static void Build(ushort[] padded, BlockMeta[] meta, ChunkMeshData data)
+        /// <summary>
+        /// Builds the foliage in a chunk.
+        ///
+        /// <paramref name="origin"/> is the chunk's world corner, and everything
+        /// random is keyed off it: a tree has to look the way it does because of where
+        /// it stands, not because of where it sits inside its chunk. Keyed on the
+        /// local index instead, every chunk grows the same trees at the same offsets
+        /// and a leaning trunk snaps straight at each chunk boundary.
+        ///
+        /// Trunks go into the main buffers, because a trunk is solid and the main mesh
+        /// is also the collider. Fronds go into the decoration buffers, because
+        /// needles never collided with anything and must not start now.
+        /// </summary>
+        public static void Build(ushort[] padded, BlockMeta[] meta, ChunkMeshData data, Vector3Int origin)
         {
+            var canopy = data.Decoration ?? data;
+
             for (int y = 0; y < S; y++)
             for (int z = 0; z < S; z++)
             for (int x = 0; x < S; x++)
@@ -79,8 +93,12 @@ namespace MadVoxel.World.Terrain
 
                 switch (meta[id].Foliage)
                 {
-                    case FoliageForm.Trunk: Trunk(data, id, x, y, z); break;
-                    case FoliageForm.Frond: Fronds(data, id, x, y, z); break;
+                    case FoliageForm.Trunk:
+                        Trunk(padded, meta, data, id, x, y, z, origin);
+                        break;
+                    case FoliageForm.Frond:
+                        Fronds(canopy, id, x, y, z, origin);
+                        break;
                 }
             }
         }
@@ -94,20 +112,33 @@ namespace MadVoxel.World.Terrain
         /// seen - and the two triangles saved are paid for a hundred thousand times in
         /// a forest.
         /// </summary>
-        static void Trunk(ChunkMeshData data, ushort block, int x, int y, int z)
+        static void Trunk(ushort[] padded, BlockMeta[] meta, ChunkMeshData data, ushort block,
+                          int x, int y, int z, Vector3Int origin)
         {
-            // A lean, fixed per column so a whole trunk leans together rather than
-            // zig-zagging up the tree.
-            float leanX = (Hash(x, 0, z, 1) - 0.5f) * 0.16f;
-            float leanZ = (Hash(x, 0, z, 2) - 0.5f) * 0.16f;
+            int wx = origin.x + x;
+            int wy = origin.y + y;
+            int wz = origin.z + z;
 
-            float radius = TrunkRadius * Mathf.Lerp(1f, 0.82f, Hash(x, 0, z, 3));
+            // A lean, fixed per column from its world position so a whole trunk leans
+            // as one tree - and, crucially, bounded. The drawn trunk is what a player
+            // aims at, and the cell they mine is derived from where their ray lands,
+            // so geometry that wanders out of its own block is geometry that cannot be
+            // chopped. Measured from the column's base rather than from the chunk's,
+            // which is why the lean no longer grows without limit up the tree.
+            float leanX = (Hash(wx, 0, wz, 1) - 0.5f) * 0.10f;
+            float leanZ = (Hash(wx, 0, wz, 2) - 0.5f) * 0.10f;
 
-            var centreLow = new Vector3(x + 0.5f + leanX * y, y, z + 0.5f + leanZ * y);
-            var centreHigh = new Vector3(x + 0.5f + leanX * (y + 1), y + 1f, z + 0.5f + leanZ * (y + 1));
+            int run = RunBelow(padded, meta, x, y, z);
+            float offsetLow = Mathf.Clamp(run, 0, 6);
+            float offsetHigh = Mathf.Clamp(run + 1, 0, 6);
+
+            float radius = TrunkRadius * Mathf.Lerp(1f, 0.82f, Hash(wx, 0, wz, 3));
+
+            var centreLow = new Vector3(x + 0.5f + leanX * offsetLow, y, z + 0.5f + leanZ * offsetLow);
+            var centreHigh = new Vector3(x + 0.5f + leanX * offsetHigh, y + 1f, z + 0.5f + leanZ * offsetHigh);
 
             var tris = data.TrianglesFor(block);
-            float twist = Hash(x, 0, z, 4) * Mathf.PI * 2f;
+            float twist = Hash(wx, 0, wz, 4) * Mathf.PI * 2f;
 
             for (int side = 0; side < TrunkSides; side++)
             {
@@ -131,10 +162,10 @@ namespace MadVoxel.World.Terrain
                 // texture does not restart at every block boundary.
                 float u0 = side / (float)TrunkSides;
                 float u1 = (side + 1) / (float)TrunkSides;
-                data.Uvs.Add(new Vector2(u0, y));
-                data.Uvs.Add(new Vector2(u1, y));
-                data.Uvs.Add(new Vector2(u1, y + 1f));
-                data.Uvs.Add(new Vector2(u0, y + 1f));
+                data.Uvs.Add(new Vector2(u0, wy));
+                data.Uvs.Add(new Vector2(u1, wy));
+                data.Uvs.Add(new Vector2(u1, wy + 1f));
+                data.Uvs.Add(new Vector2(u0, wy + 1f));
 
                 // Darker in the crevices between facets, which is what stops six sides
                 // reading as six flat panels.
@@ -145,6 +176,64 @@ namespace MadVoxel.World.Terrain
                 tris.Add(b); tris.Add(b + 2); tris.Add(b + 1);
                 tris.Add(b); tris.Add(b + 3); tris.Add(b + 2);
             }
+
+            // Capped only where the trunk actually ends. A stump is something a player
+            // stands on, and an open tube has no top to stand on - but capping every
+            // block would put a disc inside the tree at every metre.
+            if (!IsTrunkAt(padded, meta, x, y + 1, z)) Cap(data, tris, centreHigh, radius * TrunkTaper, true, twist);
+            if (!IsTrunkAt(padded, meta, x, y - 1, z)) Cap(data, tris, centreLow, radius, false, twist);
+        }
+
+        /// <summary>How many trunk blocks are stacked directly below this one.</summary>
+        static int RunBelow(ushort[] padded, BlockMeta[] meta, int x, int y, int z)
+        {
+            int run = 0;
+            for (int below = y - 1; below >= -1 && run < 8; below--)
+            {
+                if (!IsTrunkAt(padded, meta, x, below, z)) break;
+                run++;
+            }
+            return run;
+        }
+
+        static bool IsTrunkAt(ushort[] padded, BlockMeta[] meta, int x, int y, int z)
+        {
+            if (y < -1 || y > S) return false;
+
+            var id = Sample(padded, x, y, z);
+            return id < meta.Length && meta[id].Foliage == FoliageForm.Trunk;
+        }
+
+        static void Cap(ChunkMeshData data, System.Collections.Generic.List<int> tris,
+                        Vector3 centre, float radius, bool up, float twist)
+        {
+            int middle = data.Vertices.Count;
+            var normal = up ? Vector3.up : Vector3.down;
+
+            data.Vertices.Add(centre);
+            data.Normals.Add(normal);
+            data.Uvs.Add(new Vector2(0.5f, 0.5f));
+            data.Colors.Add(new Color32(235, 235, 235, 255));
+
+            for (int side = 0; side <= TrunkSides; side++)
+            {
+                float a = twist + side * Mathf.PI * 2f / TrunkSides;
+                var d = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a));
+
+                data.Vertices.Add(centre + d * radius);
+                data.Normals.Add(normal);
+                data.Uvs.Add(new Vector2(d.x * 0.5f + 0.5f, d.z * 0.5f + 0.5f));
+                data.Colors.Add(new Color32(235, 235, 235, 255));
+            }
+
+            for (int side = 0; side < TrunkSides; side++)
+            {
+                int a = middle + 1 + side;
+                int b = middle + 2 + side;
+
+                if (up) { tris.Add(middle); tris.Add(b); tris.Add(a); }
+                else { tris.Add(middle); tris.Add(a); tris.Add(b); }
+            }
         }
 
         /// <summary>
@@ -154,20 +243,24 @@ namespace MadVoxel.World.Terrain
         /// quads reads as a bush sitting on a branch. The droop is most of what makes
         /// a pine look like a pine from below, which is where a player stands.
         /// </summary>
-        static void Fronds(ChunkMeshData data, ushort block, int x, int y, int z)
+        static void Fronds(ChunkMeshData data, ushort block, int x, int y, int z, Vector3Int origin)
         {
+            int wx = origin.x + x;
+            int wy = origin.y + y;
+            int wz = origin.z + z;
+
             var tris = data.TrianglesFor(block);
 
             for (int f = 0; f < FrondsPerBlock; f++)
             {
-                float yaw = Hash(x, y, z, 10 + f) * Mathf.PI * 2f;
-                float droop = Mathf.Lerp(0.25f, 0.6f, Hash(x, y, z, 20 + f));
-                float length = Mathf.Lerp(0.55f, 0.95f, Hash(x, y, z, 30 + f));
+                float yaw = Hash(wx, wy, wz, 10 + f) * Mathf.PI * 2f;
+                float droop = Mathf.Lerp(0.18f, 0.38f, Hash(wx, wy, wz, 20 + f));
+                float length = Mathf.Lerp(0.4f, 0.62f, Hash(wx, wy, wz, 30 + f));
 
                 var centre = new Vector3(
-                    x + 0.3f + Hash(x, y, z, 40 + f) * 0.4f,
-                    y + 0.3f + Hash(x, y, z, 50 + f) * 0.4f,
-                    z + 0.3f + Hash(x, y, z, 60 + f) * 0.4f);
+                    x + 0.35f + Hash(wx, wy, wz, 40 + f) * 0.3f,
+                    y + 0.35f + Hash(wx, wy, wz, 50 + f) * 0.3f,
+                    z + 0.35f + Hash(wx, wy, wz, 60 + f) * 0.3f);
 
                 var outward = new Vector3(Mathf.Cos(yaw), 0f, Mathf.Sin(yaw));
                 var tip = centre + outward * length - Vector3.up * droop;
