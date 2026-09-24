@@ -68,6 +68,7 @@ namespace MadVoxel.World.Terrain
         {
             var data = new ChunkMeshData();
             SurfaceNets.Build(padded, meta, data);
+            FoliageMesher.Build(padded, meta, data);
             if (_mask == null || _mask.Length != S * S) _mask = new MaskEntry[S * S];
             var mask = _mask;
 
@@ -214,11 +215,11 @@ namespace MadVoxel.World.Terrain
             if (u == 0) px += du; else if (u == 1) py += du; else pz += du;
             if (v == 0) px += dv; else if (v == 1) py += dv; else pz += dv;
 
-            // Any opaque block occludes, smooth or not. Only face *culling* cares
-            // whether the neighbour is a cube - shading does not, and using the cube
-            // test here cost a wall its contact shading against the ground it stands
-            // in, which is the one seam where occlusion earns its keep.
-            return IsOpaque(meta, Sample(padded, px, py, pz));
+            // Ground occludes whether or not it is drawn as a cube; a tree does not
+            // occlude at all. Face *culling* asks a different question again - whether
+            // the neighbour is a cube - and conflating the two cost a wall its contact
+            // shading against the ground it stands in.
+            return Occludes(meta, Sample(padded, px, py, pz));
         }
 
         static bool IsOpaque(BlockMeta[] meta, ushort id)
@@ -226,10 +227,24 @@ namespace MadVoxel.World.Terrain
             return id < meta.Length && meta[id].Opaque;
         }
 
-        /// <summary>Opaque, and meshed as a cube rather than as smooth ground.</summary>
+        /// <summary>Opaque, and meshed as a cube rather than as ground or as a tree.</summary>
         static bool IsHardOpaque(BlockMeta[] meta, ushort id)
         {
-            return id < meta.Length && meta[id].Opaque && !meta[id].Smooth;
+            return id < meta.Length && meta[id].Opaque
+                && !meta[id].Smooth && meta[id].Foliage == FoliageForm.None;
+        }
+
+        /// <summary>
+        /// Does this block shade what is next to it?
+        ///
+        /// Ground does, because it is a solid mass however it is drawn. A tree does
+        /// not: a trunk is a column with air all round it and a canopy is mostly gaps,
+        /// so treating either as a wall would paint a hard square shadow onto the
+        /// ground under every pine in the world.
+        /// </summary>
+        static bool Occludes(BlockMeta[] meta, ushort id)
+        {
+            return id < meta.Length && meta[id].Opaque && meta[id].Foliage == FoliageForm.None;
         }
 
         static void AddQuad(ChunkMeshData data, MaskEntry entry, int axis,

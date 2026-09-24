@@ -22,6 +22,7 @@ namespace MadVoxel.Headless
             AmbientOcclusion(db);
             SmoothTerrain(db);
             SmoothAlignment(db);
+            Trees(db);
         }
 
         static void Pois(ContentDatabase db)
@@ -470,6 +471,99 @@ namespace MadVoxel.Headless
             Harness.Check(airMesh.IsEmpty, "a chunk of air above ground counts as empty");
         }
 
+        /// <summary>
+        /// That a tree draws as a tree and stays a block.
+        ///
+        /// The whole reason this is done in the mesher rather than by replacing trees
+        /// with props is that the blocks must not change - a log has to still be a
+        /// log, choppable and saved and the same answer to every rule that asks. So
+        /// what is checked here is both halves: that the geometry is no longer cubic,
+        /// and that nothing about the block itself moved.
+        /// </summary>
+        static void Trees(ContentDatabase db)
+        {
+            Harness.Section("voxel: trees draw as trees");
+
+            var meta = BlockMeta.Snapshot(db.blocks);
+            ushort log = db.blocks.IdOf(BlockIds.PineLog);
+            ushort needles = db.blocks.IdOf(BlockIds.PineNeedles);
+
+            Harness.Equal(meta[log].Foliage, FoliageForm.Trunk, "a log draws as a trunk");
+            Harness.Equal(meta[needles].Foliage, FoliageForm.Frond, "and needles as fronds");
+
+            // The block is untouched. This is the contract the whole approach rests on.
+            var logDef = db.blocks.ByStringId(BlockIds.PineLog);
+            Harness.Check(logDef.solid, "a log is still solid");
+            Harness.Check(logDef.dropItem != null, "still drops wood");
+            Harness.Check(logDef.hardness > 0f, "and can still be chopped");
+
+            // A trunk. Round, so almost nothing sits on the lattice, and it must not
+            // be axis-aligned the way a cube is.
+            var trunk = Padded();
+            for (int y = 0; y < 6; y++) Set(trunk, 8, y, 8, log);
+
+            var trunkMesh = ChunkMesher.Build(trunk, meta);
+            Harness.Check(trunkMesh.Vertices.Count > 0, "a trunk meshes");
+            Harness.Check(trunkMesh.Triangles.ContainsKey(log), "into the log's own sub-mesh");
+
+            int offLattice = 0;
+            for (int i = 0; i < trunkMesh.Vertices.Count; i++)
+            {
+                var v = trunkMesh.Vertices[i];
+                if (!OnLattice(v.x) || !OnLattice(v.z)) offLattice++;
+            }
+            Harness.Check(offLattice > trunkMesh.Vertices.Count / 2,
+                string.Format("and is round, not square ({0} of {1} vertices off the lattice)",
+                    offLattice, trunkMesh.Vertices.Count));
+
+            // Same trunk, meshed twice, has to be the same trunk - or a forest would
+            // reshuffle itself every time a chunk came back into view.
+            var again = ChunkMesher.Build(trunk, meta);
+            bool identical = again.Vertices.Count == trunkMesh.Vertices.Count;
+            for (int i = 0; identical && i < again.Vertices.Count; i++)
+            {
+                identical = again.Vertices[i] == trunkMesh.Vertices[i];
+            }
+            Harness.Check(identical, "and meshes identically every time");
+
+            // A canopy. Fronds droop, so some geometry has to hang below the block it
+            // belongs to - that is what stops a pine looking like a green box.
+            var canopy = Padded();
+            Set(canopy, 8, 8, 8, needles);
+
+            var canopyMesh = ChunkMesher.Build(canopy, meta);
+            Harness.Check(canopyMesh.Vertices.Count > 0, "a canopy block meshes");
+
+            float lowest = float.MaxValue;
+            for (int i = 0; i < canopyMesh.Vertices.Count; i++)
+            {
+                if (canopyMesh.Vertices[i].y < lowest) lowest = canopyMesh.Vertices[i].y;
+            }
+            Harness.Check(lowest < 8f,
+                string.Format("and its fronds hang below the block (lowest y={0:0.00})", lowest));
+
+            // A tree must not shade the ground under it like a wall would. Trunks have
+            // air all round them and canopies are mostly gaps, so treating either as
+            // solid would stamp a hard square shadow under every pine in the world.
+            ushort stone = db.blocks.IdOf(BlockIds.Stone);
+
+            var lit = Padded();
+            for (int x = -1; x <= 16; x++)
+                for (int z = -1; z <= 16; z++)
+                    Set(lit, x, 5, z, stone);
+
+            var bare = ChunkMesher.Build(lit, meta);
+
+            for (int y = 6; y < 12; y++) Set(lit, 8, y, 8, log);
+            var wooded = ChunkMesher.Build(lit, meta);
+
+            // Only the ground's own vertices. Measuring the whole mesh would pick up
+            // the trunk's facet shading, which is the trunk looking round rather than
+            // the ground being shadowed - two different things that happen to be dark.
+            Harness.Equal(DarkestOf(wooded, stone), DarkestOf(bare, stone),
+                "and a tree standing on ground does not shade it");
+        }
+
         /// <summary>Is this coordinate exactly on a block boundary?</summary>
         static bool OnLattice(float value)
         {
@@ -486,6 +580,21 @@ namespace MadVoxel.Headless
         {
             const int p = Chunk.Size + 2;
             padded[((y + 1) * p + (z + 1)) * p + (x + 1)] = id;
+        }
+
+        /// <summary>Darkest shade among the vertices one block's faces actually use.</summary>
+        static int DarkestOf(ChunkMeshData data, ushort blockId)
+        {
+            List<int> tris;
+            if (!data.Triangles.TryGetValue(blockId, out tris)) return -1;
+
+            int min = 255;
+            for (int i = 0; i < tris.Count; i++)
+            {
+                int shade = data.Colors[tris[i]].r;
+                if (shade < min) min = shade;
+            }
+            return min;
         }
 
         static int Darkest(ChunkMeshData data)

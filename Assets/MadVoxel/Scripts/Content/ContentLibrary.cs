@@ -267,6 +267,11 @@ namespace MadVoxel.Content
 
             for (int i = 0; i < naturalGround.Length; i++) map[naturalGround[i]].smoothTerrain = true;
 
+            // Trees draw as trees. The blocks are untouched - a log is still a log,
+            // still choppable, still worth wood - and only the geometry changes.
+            map[BlockIds.PineLog].foliage = FoliageForm.Trunk;
+            map[BlockIds.PineNeedles].foliage = FoliageForm.Frond;
+
             // Air must be index 0; the rest follow a stable, explicit order.
             string[] order =
             {

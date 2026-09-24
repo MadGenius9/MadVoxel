@@ -29,6 +29,28 @@ tanks, taps, sprinklers — could ever have worked before this.
 
 ---
 
+## 0a-trees. Are the trees trees? (1 minute)
+
+Pines were a square post under a cube of green. The blocks have not changed — a log is
+still a log, still choppable, still worth wood — but they draw as tapered trunks and
+drooping fronds now.
+
+1. Walk into a forest. Look up. Then chop a tree down.
+
+**Expected:** round leaning trunks, canopies that hang rather than sitting in a cube,
+and no hard square shadow stamped on the ground beneath a pine.
+
+**Watch for:**
+- Chopping behaving any differently than it used to. It must not — if wood, hit counts
+  or drops changed, something has leaked from rendering into gameplay and that is worse
+  than it looking wrong.
+- Trees reshuffling when a chunk comes back into view.
+- Canopies you can see straight through from below. Fronds are double-sided for exactly
+  that reason.
+- Frame rate in dense forest.
+
+---
+
 ## 0a-grass. Is there grass? (1 minute)
 
 The reference for this game's look is SurrounDead, and the thing doing most of the work

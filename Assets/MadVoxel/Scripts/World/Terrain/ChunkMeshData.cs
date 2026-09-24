@@ -82,6 +82,9 @@ namespace MadVoxel.World.Terrain
         /// <summary>Natural ground, meshed as a smooth surface instead of as cubes.</summary>
         public bool Smooth;
 
+        /// <summary>Trees, meshed as trunks and fronds instead of as cubes.</summary>
+        public FoliageForm Foliage;
+
         public static BlockMeta[] Snapshot(BlockRegistry registry)
         {
             registry.Build();
@@ -94,7 +97,8 @@ namespace MadVoxel.World.Terrain
                     Air = def == null || def.isAir,
                     Opaque = def != null && !def.isAir && def.opaque,
                     Solid = def != null && !def.isAir && def.solid,
-                    Smooth = def != null && !def.isAir && def.smoothTerrain
+                    Smooth = def != null && !def.isAir && def.smoothTerrain,
+                    Foliage = def != null && !def.isAir ? def.foliage : FoliageForm.None
                 };
             }
             return meta;

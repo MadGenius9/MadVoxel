@@ -192,7 +192,7 @@ executed. Worlds record which mods built them and warn on load if one is missing
 
   The reference the project is actually chasing is **SurrounDead**: a realistic,
   vegetated environment with faceted low-poly *characters*. Not flat-shaded stylised,
-  and not Rust's grit — a hybrid. Ground cover is in; trees are still blocks.
+  and not Rust's grit — a hybrid. Ground cover is in, and trees draw as trunks and fronds rather than as cubes.
 
 - **No ambient occlusion on terrain meshes.** Corners read flat, which is the single
   strongest reason the cube path reads as a toy. The mesh carries positions, normals and

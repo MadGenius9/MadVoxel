@@ -23,6 +23,11 @@ namespace MadVoxel.World.Terrain
         [Tooltip("Hides the neighbouring face. Glass and foliage are solid but not opaque.")]
         public bool opaque = true;
 
+        [Tooltip("Trees: drawn as a tapered trunk or as drooping fronds instead of as a cube. " +
+                 "The block itself is unchanged - still choppable, still saved, still the same " +
+                 "answer to every rule that asks about it. Only the geometry differs.")]
+        public FoliageForm foliage = FoliageForm.None;
+
         [Tooltip("Natural ground: rendered as a smoothed surface rather than as cubes. " +
                  "Anything the player builds should leave this off - the contrast between " +
                  "rounded terrain and hard-edged construction is what makes a wall read as built.")]
