@@ -3,6 +3,7 @@ using MadVoxel.Content;
 using MadVoxel.Farming.Crops;
 using MadVoxel.Inventory;
 using MadVoxel.World.Fields;
+using MadVoxel.World.Terrain;
 using UnityEngine;
 
 namespace MadVoxel.Headless
@@ -18,6 +19,7 @@ namespace MadVoxel.Headless
             CropContent(db);
             GardenGrowth(db);
             FieldStateMachine(db);
+            TillageBlocks(db);
             FieldYield(db);
             BulkDrawing(db);
         }
@@ -249,6 +251,38 @@ namespace MadVoxel.Headless
             int dx, dz;
             FieldGrid.Decode(FieldGrid.Key(-7, 19), out dx, out dz);
             Harness.Check(dx == -7 && dz == 19, "cell keys decode back to their coordinates");
+        }
+
+        /// <summary>
+        /// The two tillage blocks have to be tellable apart on sight. That is the only
+        /// job the cultivated one has - without it the second pass leaves no mark, and
+        /// the only record of which strips are done is the player's memory.
+        /// </summary>
+        static void TillageBlocks(ContentDatabase db)
+        {
+            Harness.Section("farming: plowed and cultivated ground look different");
+
+            var tilled = db.blocks.ByStringId(BlockIds.TilledSoil);
+            var cultivated = db.blocks.ByStringId(BlockIds.CultivatedSoil);
+
+            Harness.Check(tilled != null, "tilled soil exists");
+            Harness.Check(cultivated != null, "and so does cultivated soil");
+            if (tilled == null || cultivated == null) return;
+
+            // Far enough apart to read at a distance, in a palette where everything is
+            // a shade of dirt. Eyeballing a hex pair is exactly what nobody will do.
+            float delta = Mathf.Abs(tilled.tint.r - cultivated.tint.r)
+                        + Mathf.Abs(tilled.tint.g - cultivated.tint.g)
+                        + Mathf.Abs(tilled.tint.b - cultivated.tint.b);
+            Harness.Check(delta > 0.12f, "and their tints differ enough to tell apart");
+
+            Harness.Check(cultivated.dropItem != null, "breaking cultivated ground gives something back");
+            Harness.Check(cultivated.solid && cultivated.opaque, "and it is ground, not decoration");
+
+            // Air must stay at index 0 and every id must resolve, or a save written
+            // before this block existed comes back as the wrong terrain entirely.
+            Harness.Check(cultivated.RuntimeId > tilled.RuntimeId,
+                "cultivated soil was appended rather than slotted in, so older saves still decode");
         }
 
         static void FieldYield(ContentDatabase db)

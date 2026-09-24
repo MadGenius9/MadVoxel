@@ -15,6 +15,13 @@ namespace MadVoxel.World.Terrain
         public const string Gravel = "madvoxel:gravel";
         public const string Clay = "madvoxel:clay";
         public const string TilledSoil = "madvoxel:tilled_soil";
+
+        /// <summary>
+        /// The second pass. Visually distinct from tilled on purpose: without it you
+        /// cannot tell by looking which strips you have already cultivated, and have to
+        /// remember it instead.
+        /// </summary>
+        public const string CultivatedSoil = "madvoxel:cultivated_soil";
         public const string CoalOre = "madvoxel:coal_ore";
         public const string IronOre = "madvoxel:iron_ore";
         public const string PineLog = "madvoxel:pine_log";

@@ -71,7 +71,8 @@ namespace MadVoxel.World.Fields
 
             return def.stringId == BlockIds.Grass
                 || def.stringId == BlockIds.Dirt
-                || def.stringId == BlockIds.TilledSoil;
+                || def.stringId == BlockIds.TilledSoil
+                || def.stringId == BlockIds.CultivatedSoil;
         }
 
         /// <summary>
@@ -96,7 +97,15 @@ namespace MadVoxel.World.Fields
 
         public bool TryCultivate(Vector3Int cell)
         {
-            return Grid.Cultivate(cell.x, cell.z, NowHours);
+            if (!Grid.Cultivate(cell.x, cell.z, NowHours)) return false;
+
+            // The visible half, same as plowing. A cultivated strip that looked exactly
+            // like a plowed one meant the only record of the second pass was the
+            // player's memory of having made it.
+            var soil = _terrain.Registry.ByStringId(BlockIds.CultivatedSoil);
+            if (soil != null) _terrain.SetBlock(cell.x, cell.y, cell.z, soil.RuntimeId);
+
+            return true;
         }
 
         /// <summary>Has this cell been broken into a field yet?</summary>

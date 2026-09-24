@@ -191,6 +191,10 @@ Fertility used to fall forever with no way back. It should now be a loop.
 2. Craft **compost** — rot + fibre, or fibre + dirt if you have eaten everything.
 3. Right-click a *plowed* field cell with compost in hand.
 
+While you are in the field: **plowed and cultivated ground should now look different.**
+Cultivated is the lighter, drier one. Do a strip of each side by side — if you cannot
+tell them apart at ten metres the tints need widening.
+
 **Expected:** "Muck spread", one compost consumed. On wild ground it should say to break
 it first; on ground that is already rich, that it will not take any more.
 

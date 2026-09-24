@@ -157,6 +157,12 @@ namespace MadVoxel.Content
             var tilled = Block(BlockIds.TilledSoil, "Tilled Soil", SurfaceFamily.Dirt, new Color(0.26f, 0.19f, 0.13f), 0.45f, ToolType.Shovel, 0, 0.3f, 55f);
             map[BlockIds.TilledSoil] = tilled;
 
+            // The second pass. Lighter and drier than the clods a plough turns up,
+            // because the only question this block exists to answer is "have I
+            // cultivated this strip yet" - and it has to answer it from a distance.
+            var cultivated = Block(BlockIds.CultivatedSoil, "Cultivated Soil", SurfaceFamily.Dirt, new Color(0.34f, 0.26f, 0.18f), 0.4f, ToolType.Shovel, 0, 0.3f, 50f);
+            map[BlockIds.CultivatedSoil] = cultivated;
+
             map[BlockIds.Clay] = Block(BlockIds.Clay, "Clay", SurfaceFamily.Dirt, ColClay, 0.7f, ToolType.Shovel, 0, 0.8f, 70f);
             map[BlockIds.CoalOre] = Block(BlockIds.CoalOre, "Coal Seam", SurfaceFamily.Ore, ColCoal, 2.6f, ToolType.Pickaxe, 1, 4f, 220f);
             map[BlockIds.IronOre] = Block(BlockIds.IronOre, "Iron Ore", SurfaceFamily.Ore, ColIron, 3.2f, ToolType.Pickaxe, 1, 5f, 240f);
@@ -243,7 +249,11 @@ namespace MadVoxel.Content
                 BlockIds.PineLog, BlockIds.PineNeedles, BlockIds.ScrapHeap,
                 BlockIds.WildYucca, BlockIds.WildGrain, BlockIds.WildCorn,
                 BlockIds.WoodFrame, BlockIds.Planks, BlockIds.Cobblestone, BlockIds.IronBlock,
-                BlockIds.SteelBlock, BlockIds.Concrete, BlockIds.Glass
+                BlockIds.SteelBlock, BlockIds.Concrete, BlockIds.Glass,
+                // Appended rather than slotted next to tilled soil: runtime ids come
+                // from this order, and inserting one would renumber every block after
+                // it in a save written before this line existed.
+                BlockIds.CultivatedSoil
             };
 
             for (int i = 0; i < order.Length; i++) registry.blocks.Add(map[order[i]]);
@@ -510,6 +520,7 @@ namespace MadVoxel.Content
             Drop(blocks[BlockIds.Gravel], items[ItemIds.Stone], 1, 1);
             Drop(blocks[BlockIds.Clay], items[ItemIds.Clay], 1, 2);
             Drop(blocks[BlockIds.TilledSoil], items[ItemIds.Dirt], 1, 1);
+            Drop(blocks[BlockIds.CultivatedSoil], items[ItemIds.Dirt], 1, 1);
             Drop(blocks[BlockIds.CoalOre], items[ItemIds.Coal], 1, 3);
             Drop(blocks[BlockIds.IronOre], items[ItemIds.IronOre], 1, 3);
             Drop(blocks[BlockIds.PineLog], items[ItemIds.WoodLog], 1, 2);

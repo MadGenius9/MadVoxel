@@ -107,9 +107,9 @@ resolver and nine call sites — and changes nothing about the Phase 0 loop.
 | **Traders** | **Live.** A counter at each outpost, a Claim Slate price board, buy and sell from the bag, reputation tiers that unlock stock and improve rates, clock-derived restocking, and bulk produce sold by the litre straight out of a harvester. Saved per trader. | A trader NPC with a schedule, and the quest board. |
 | **Quests** | **Live.** Four contracts on the trader's board, taken and handed in at the counter, three at a time, tracked on the HUD. Kills and delivered litres tally; fetch and survive-nights progress is recomputed. Saved with the player. | A mining contract, and contracts that are generated rather than authored. |
 | **Vehicles** | **Live.** A tractor you craft, set down and drive, on a character controller so a dug ramp behaves; fuel burn that Economiser actually changes; a bed you can load and reach from the seat; damage, wrecking and save/reload where it was parked. The Scrap Buggy shares the rig. | Seats for more than one, and a machine that reacts to being rammed. |
-| **Field machines** | **Live.** Plough, cultivator, seed drill and harvester, hitched from the hand and raised or lowered on a key; a swept swath that cannot stripe a field; hopper accounting that refuses to sow what it cannot pay for; tipping litres into the grain bin; Agronomist's field yield. | A field irrigator. |
+| **Field machines** | **Live.** Plough, cultivator, seed drill, harvester and muck spreader, hitched from the hand and raised or lowered on a key; a swept swath that cannot stripe a field; hopper accounting that refuses to sow or spread what it cannot pay for; tipping litres into the grain bin; Agronomist's field yield. | A field irrigator. |
 | **Grain bin** | **Live.** Stores bulk by the litre, tipped into by a harvester, drawn back out as produce at the crop's own rate, with its own screen. | Selling straight from the bin — you still carry or drive it to a counter. |
-| **Field cover** | **Live.** The standing crop, meshed per 16 m patch, growing in eight visible steps and going gold on the clock. Remeshed only when something changes. | Wind, and a second tilled-soil block so cultivated ground reads differently from plowed. |
+| **Field cover** | **Live.** The standing crop, meshed per 16 m patch, growing in eight visible steps and going gold on the clock. Remeshed only when something changes. Cultivated ground has its own block, so the second pass leaves a mark. | Wind. |
 | **Electricity** | **Live.** Generator, battery and solar banks, relays, switches and splitters, lights, a fridge, a blade trap and a fence post, all on one graph with a wire tool, a predictable brown-out and a real fuel economy. | A dart trap, a turret, and the timer-relay puzzles this pass deliberately skipped. |
 | **Water** | **Live.** A dug well on a water-table block, electric pump, pipes, tanks, barrels, taps and plot sprinklers on one fluid graph, with breaks, freezes and drought. | A field irrigator on the FS-style cells, and surface ponds as a source. |
 | **Weather** | **Live.** Six states rolled per region, turning dials on the pump, the panels, the soil, barrels, morale and crops. | Seasons with their own economies. |
@@ -172,9 +172,8 @@ executed. Worlds record which mods built them and warn on load if one is missing
   undermined; overhanging *terrain* does not fall.
 - **POIs are block stamps**, not authored prefabs — no interiors, loot containers or
   trader NPCs yet.
-- **Cultivated ground looks like plowed ground.** The crop cover shows everything from
-  sowing onwards, but the second tillage pass has no visual of its own — you have to
-  remember whether you cultivated a strip. The block would need a second tilled variant.
+- **Cultivated ground now reads differently from plowed** — a second, lighter tilled
+  block, appended to the block order so older saves still decode.
 - **Fertiliser is in; irrigation is not.** Compost is made from spoiled food and fibre
   and spread by hand, one cell at a time, and the economics are pinned by tests. There
   is still no implement that spreads an acre, and the moisture field is written by
