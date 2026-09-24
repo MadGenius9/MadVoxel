@@ -22,6 +22,11 @@ namespace MadVoxel.World.Terrain
         public bool solid = true;
         [Tooltip("Hides the neighbouring face. Glass and foliage are solid but not opaque.")]
         public bool opaque = true;
+
+        [Tooltip("Natural ground: rendered as a smoothed surface rather than as cubes. " +
+                 "Anything the player builds should leave this off - the contrast between " +
+                 "rounded terrain and hard-edged construction is what makes a wall read as built.")]
+        public bool smoothTerrain;
         [Tooltip("Base seconds to mine with a bare hand at tool tier 0.")]
         public float hardness = 1.0f;
         [Tooltip("Tools below this tier cannot harvest the block at all.")]

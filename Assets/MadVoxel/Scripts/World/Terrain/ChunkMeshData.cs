@@ -58,6 +58,9 @@ namespace MadVoxel.World.Terrain
         public bool Opaque;
         public bool Solid;
 
+        /// <summary>Natural ground, meshed as a smooth surface instead of as cubes.</summary>
+        public bool Smooth;
+
         public static BlockMeta[] Snapshot(BlockRegistry registry)
         {
             registry.Build();
@@ -69,7 +72,8 @@ namespace MadVoxel.World.Terrain
                 {
                     Air = def == null || def.isAir,
                     Opaque = def != null && !def.isAir && def.opaque,
-                    Solid = def != null && !def.isAir && def.solid
+                    Solid = def != null && !def.isAir && def.solid,
+                    Smooth = def != null && !def.isAir && def.smoothTerrain
                 };
             }
             return meta;

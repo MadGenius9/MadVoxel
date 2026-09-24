@@ -247,6 +247,26 @@ namespace MadVoxel.Content
             var registry = ScriptableObject.CreateInstance<BlockRegistry>();
             registry.name = "BlockRegistry";
 
+            // Which blocks are ground and which are construction.
+            //
+            // Ground is rounded off; anything built keeps its edges. The contrast is
+            // the effect - a foundation set into a rolling hillside reads as built
+            // precisely because the hillside does not read that way.
+            //
+            // Worked soil is deliberately on the hard side of the line. A field is a
+            // grid the player has flattened and measured, the crop cover is drawn on
+            // flat block tops, and rolling farmland would look like a mistake and
+            // break the alignment besides.
+            string[] naturalGround =
+            {
+                BlockIds.Bedrock, BlockIds.Stone, BlockIds.Dirt, BlockIds.Grass,
+                BlockIds.Sand, BlockIds.Gravel, BlockIds.Clay,
+                BlockIds.CoalOre, BlockIds.IronOre, BlockIds.TungstenOre,
+                BlockIds.WaterTable
+            };
+
+            for (int i = 0; i < naturalGround.Length; i++) map[naturalGround[i]].smoothTerrain = true;
+
             // Air must be index 0; the rest follow a stable, explicit order.
             string[] order =
             {

@@ -56,9 +56,18 @@ namespace MadVoxel.World.Terrain
             return padded[((y + 1) * P + (z + 1)) * P + (x + 1)];
         }
 
+        /// <summary>
+        /// Meshes a chunk: smooth ground first, then everything built, into one set of
+        /// buffers with a sub-mesh per block type.
+        ///
+        /// The two halves never argue over a face, because each treats the other's
+        /// blocks as empty space. That is also what makes the seam look right - a
+        /// foundation set into a hillside keeps its edges while the hill does not.
+        /// </summary>
         public static ChunkMeshData Build(ushort[] padded, BlockMeta[] meta)
         {
             var data = new ChunkMeshData();
+            SurfaceNets.Build(padded, meta, data);
             if (_mask == null || _mask.Length != S * S) _mask = new MaskEntry[S * S];
             var mask = _mask;
 
@@ -85,8 +94,12 @@ namespace MadVoxel.World.Terrain
                             ushort a = Sample(padded, x[0], x[1], x[2]);
                             ushort b = Sample(padded, x[0] + q[0], x[1] + q[1], x[2] + q[2]);
 
-                            bool oa = IsOpaque(meta, a);
-                            bool ob = IsOpaque(meta, b);
+                            // Smooth blocks belong to the other mesher, and here they
+                            // count as nothing at all - so a built wall standing in dirt
+                            // grows the faces that meet it rather than having them
+                            // culled against ground that is no longer a cube.
+                            bool oa = IsHardOpaque(meta, a);
+                            bool ob = IsHardOpaque(meta, b);
 
                             if (oa == ob)
                             {
@@ -201,12 +214,18 @@ namespace MadVoxel.World.Terrain
             if (u == 0) px += du; else if (u == 1) py += du; else pz += du;
             if (v == 0) px += dv; else if (v == 1) py += dv; else pz += dv;
 
-            return IsOpaque(meta, Sample(padded, px, py, pz));
+            return IsHardOpaque(meta, Sample(padded, px, py, pz));
         }
 
         static bool IsOpaque(BlockMeta[] meta, ushort id)
         {
             return id < meta.Length && meta[id].Opaque;
+        }
+
+        /// <summary>Opaque, and meshed as a cube rather than as smooth ground.</summary>
+        static bool IsHardOpaque(BlockMeta[] meta, ushort id)
+        {
+            return id < meta.Length && meta[id].Opaque && !meta[id].Smooth;
         }
 
         static void AddQuad(ChunkMeshData data, MaskEntry entry, int axis,

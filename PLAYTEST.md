@@ -29,6 +29,34 @@ tanks, taps, sprinklers — could ever have worked before this.
 
 ---
 
+## 0aa. Is the ground still a staircase? (2 minutes)
+
+The biggest visual change in the project so far, and the least verified. Natural ground
+— dirt, grass, stone, sand, gravel, clay, ores, the water table — is now rendered as a
+smoothed surface instead of as cubes. Anything built keeps hard edges, deliberately: the
+contrast is the effect.
+
+1. Walk over a hillside. Dig into it.
+2. Then set a foundation down and look at where it meets the ground.
+
+**Expected:** rolling ground with no visible steps, and a foundation with crisp edges
+sitting in it. Dug holes are still whole-block sized — the shape is smooth, the
+*quantity* dug is not — because this runs over block occupancy rather than a density
+field. That is the remaining half of the 7DTD treatment and it can be added later
+without redoing any of this.
+
+**Watch for:**
+- **Falling through the world, or standing on invisible steps.** The collider is the
+  same mesh, so collision is smooth now too. This is the change most likely to break
+  movement, and I could not test it.
+- Terrain with holes in it, or seams between chunks.
+- Farm fields going lumpy. Tilled and cultivated soil are deliberately *not* smoothed —
+  a field is a grid you flattened, and the crop cover is drawn on flat block tops.
+- Built walls looking inflated or soft. Their normals are exact and untouched; if they
+  look rounded, the two meshers are treading on each other.
+
+---
+
 ## 0b. Does the world have corners? (1 minute)
 
 Terrain meshes now carry baked ambient occlusion, and a hand-written shader

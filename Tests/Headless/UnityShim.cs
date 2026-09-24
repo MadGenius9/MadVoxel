@@ -252,6 +252,8 @@ namespace UnityEngine
         }
         public static float Pow(float a, float b) { return (float)Math.Pow(a, b); }
         public static float Sqrt(float f) { return (float)Math.Sqrt(f); }
+        public static float Round(float f) { return (float)Math.Round(f, MidpointRounding.AwayFromZero); }
+        public static float Floor(float f) { return (float)Math.Floor(f); }
         public static float Min(float a, float b) { return Math.Min(a, b); }
         public static int Min(int a, int b) { return Math.Min(a, b); }
         public static float Max(float a, float b) { return Math.Max(a, b); }

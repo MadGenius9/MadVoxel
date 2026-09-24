@@ -180,13 +180,12 @@ executed. Worlds record which mods built them and warn on load if one is missing
   look, 7 Days to Die terrain* — and the build currently reads closer to Minecraft than
   to either, for two separate reasons that need two separate fixes:
 
-  1. **Terrain is hard cubes everywhere.** 7DTD stores a density per voxel and renders
-     natural ground as a smoothed isosurface, keeping hard edges only for player-built
-     blocks — which is why a dug crater there looks like a crater and here looks like a
-     staircase. `Chunk` stores only a block id, so occupancy is binary and there is
-     nothing for a smooth mesher to read. Closing this means a density field, a second
-     mesher (surface nets is the pragmatic pick), and touching chunk storage, the save
-     format, collision and digging. It is real work and it is in scope.
+  1. **Terrain shape is done; the digging granularity is not.** Natural ground is now
+     meshed with surface nets and built blocks stay cubes, which is 7DTD's visual split
+     and most of the look. What is still missing is the density field: 7DTD stores a
+     density per voxel, so a crater there has a lip where this one has a whole-block
+     edge. Adding it touches chunk storage, the save format and every caller that digs
+     — and none of the smoothing has to be redone for it.
   2. **Props and characters are boxes.** Deliberately — `PrimitiveBuilder` is a
      placeholder and swapping real meshes in means replacing those calls and nothing
      else. But Rust-grade models are the one thing that cannot be generated from code;

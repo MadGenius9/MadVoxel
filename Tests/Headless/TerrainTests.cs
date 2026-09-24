@@ -20,6 +20,7 @@ namespace MadVoxel.Headless
             Pois(db);
             OreBands(db);
             AmbientOcclusion(db);
+            SmoothTerrain(db);
         }
 
         static void Pois(ContentDatabase db)
@@ -256,15 +257,18 @@ namespace MadVoxel.Headless
             Harness.Check(Darkest(cornerMesh) < Brightest(cornerMesh),
                 "a floor meeting a wall is shaded, not flat");
 
-            // A flat plain has nothing to occlude anything, so it must stay even -
-            // otherwise the whole world would be dirty rather than only its corners.
+            // A flat plain has nothing to occlude anything, so it must stay evenly and
+            // fully lit - otherwise the whole world is tinted rather than only its
+            // corners. Filled right across the padding, because a slab that stops
+            // inside the sampled area has a rim, and a rim is a real edge.
             var plain = Padded();
-            for (int x = 0; x < 16; x++)
-                for (int z = 0; z < 16; z++)
+            for (int x = -1; x <= 16; x++)
+                for (int z = -1; z <= 16; z++)
                     Set(plain, x, 6, z, stone);
 
             var plainMesh = ChunkMesher.Build(plain, meta);
             Harness.Equal(Darkest(plainMesh), Brightest(plainMesh), "open ground is evenly lit");
+            Harness.Equal(Brightest(plainMesh), 255, "and lit fully, not tinted");
 
             // And the darkest shade is never black: a buried corner in a survival game
             // is still lit by something, and crushing it reads as a hole in the render.
@@ -275,6 +279,123 @@ namespace MadVoxel.Headless
             // carrying a single shade.
             Harness.Check(cornerMesh.Vertices.Count > loneMesh.Vertices.Count,
                 "a shaded surface is not merged flat");
+        }
+
+        /// <summary>
+        /// That natural ground comes out smooth and built blocks do not.
+        ///
+        /// The whole effect is the contrast, so both halves have to be checked: a
+        /// world where everything is rounded looks like clay, and one where everything
+        /// is cubes looks like the thing this is trying not to look like. What cannot
+        /// be checked here is whether it is pretty - only that a slope stops being a
+        /// staircase, which is a question about vertex positions.
+        /// </summary>
+        static void SmoothTerrain(ContentDatabase db)
+        {
+            Harness.Section("voxel: natural ground is smoothed, construction is not");
+
+            var meta = BlockMeta.Snapshot(db.blocks);
+            ushort stone = db.blocks.IdOf(BlockIds.Stone);
+            ushort planks = db.blocks.IdOf(BlockIds.Planks);
+
+            Harness.Check(meta[stone].Smooth, "stone is ground");
+            Harness.Check(!meta[planks].Smooth, "planks are not");
+
+            // A staircase of stone. Cube-meshed it is all axis-aligned quads; smoothed
+            // it has to produce vertices that sit off the lattice.
+            var steps = Padded();
+            for (int x = 0; x < 12; x++)
+                for (int z = 0; z < 12; z++)
+                    for (int y = 0; y <= 2 + x / 3; y++)
+                        Set(steps, x, y, z, stone);
+
+            var stepMesh = ChunkMesher.Build(steps, meta);
+            Harness.Check(stepMesh.Vertices.Count > 0, "a slope meshes");
+
+            int offLattice = 0;
+            for (int i = 0; i < stepMesh.Vertices.Count; i++)
+            {
+                var vert = stepMesh.Vertices[i];
+                if (!OnLattice(vert.x) || !OnLattice(vert.y) || !OnLattice(vert.z)) offLattice++;
+            }
+
+            Harness.Check(offLattice > 0,
+                string.Format("{0} of {1} vertices sit off the block lattice - the slope is not a staircase",
+                    offLattice, stepMesh.Vertices.Count));
+
+            // Normals have to be real. They are computed here rather than recalculated
+            // from the triangles, because the cube half shares these buffers and its
+            // normals are already exact - averaging them would inflate every built
+            // wall in the chunk. A field of identical up-vectors is what a placeholder
+            // looks like, and it would light the whole slope as though it were flat.
+            int upright = 0;
+            int unit = 0;
+            for (int i = 0; i < stepMesh.Normals.Count; i++)
+            {
+                var n = stepMesh.Normals[i];
+                if (Mathf.Abs(n.magnitude - 1f) < 0.01f) unit++;
+                if (n.y > 0.999f) upright++;
+            }
+
+            Harness.Equal(unit, stepMesh.Normals.Count, "every smooth normal is a unit vector");
+            Harness.Check(upright < stepMesh.Normals.Count / 2,
+                string.Format("and a slope's normals lean ({0} of {1} point straight up)",
+                    upright, stepMesh.Normals.Count));
+
+            // Built blocks keep their edges. Every vertex of a plank structure must
+            // land exactly on the lattice, or a wall would sag.
+            var built = Padded();
+            for (int x = 2; x < 8; x++)
+                for (int y = 2; y < 6; y++)
+                    Set(built, x, y, 4, planks);
+
+            var builtMesh = ChunkMesher.Build(built, meta);
+            Harness.Check(builtMesh.Vertices.Count > 0, "a wall meshes");
+
+            int sagging = 0;
+            for (int i = 0; i < builtMesh.Vertices.Count; i++)
+            {
+                var vert = builtMesh.Vertices[i];
+                if (!OnLattice(vert.x) || !OnLattice(vert.y) || !OnLattice(vert.z)) sagging++;
+            }
+
+            Harness.Equal(sagging, 0, "and every vertex of a built wall is exactly on the lattice");
+
+            // The two halves must not fight over a face. A wall standing in dirt keeps
+            // the faces that meet the ground, because the ground is no longer a cube
+            // that could cull them.
+            var both = Padded();
+            for (int x = -1; x <= 16; x++)
+                for (int z = -1; z <= 16; z++)
+                    for (int y = 0; y < 5; y++)
+                        Set(both, x, y, z, stone);
+
+            for (int x = 4; x < 10; x++)
+                for (int y = 5; y < 9; y++)
+                    Set(both, x, y, 8, planks);
+
+            var mixed = ChunkMesher.Build(both, meta);
+            Harness.Check(mixed.Triangles.ContainsKey(stone), "the ground is in the mesh");
+            Harness.Check(mixed.Triangles.ContainsKey(planks), "and so is the wall");
+            Harness.Check(mixed.Triangles[planks].Count > 0, "with faces of its own");
+
+            // Buried construction is a fair test of the same thing from the other side.
+            var buried = Padded();
+            for (int x = -1; x <= 16; x++)
+                for (int z = -1; z <= 16; z++)
+                    for (int y = 0; y < 8; y++)
+                        Set(buried, x, y, z, stone);
+            Set(buried, 8, 4, 8, planks);
+
+            var buriedMesh = ChunkMesher.Build(buried, meta);
+            Harness.Check(buriedMesh.Triangles.ContainsKey(planks),
+                "a block walled into the ground still draws, since smooth ground cannot cull a cube");
+        }
+
+        /// <summary>Is this coordinate exactly on a block boundary?</summary>
+        static bool OnLattice(float value)
+        {
+            return Mathf.Abs(value - Mathf.Round(value)) < 0.0001f;
         }
 
         static ushort[] Padded()
