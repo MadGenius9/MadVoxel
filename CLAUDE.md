@@ -166,6 +166,12 @@ counter within 14 m, else a grain bin within 8 m · shift-click trades ten at a 
 - **Builds strip shaders.** Every material is made via `Shader.Find` at runtime, so a
   build needs URP Lit/Unlit in *Always Included Shaders* or everything goes magenta.
   `Configure Project` handles it; verify if a build looks wrong.
+- **A found shader is not a usable shader.** With the URP package installed,
+  `Shader.Find("Universal Render Pipeline/Lit")` succeeds whether or not a pipeline
+  asset is assigned — and a URP shader under the built-in pipeline renders as the error
+  colour on every surface, silently. `MaterialLibrary` therefore chooses by
+  `GraphicsSettings.currentRenderPipeline`, not by what `Shader.Find` returns. This
+  shipped magenta once; the old fallback chain could never fire.
 - **Every UI number is a guess** at a 1920×1080 canvas. Nobody has seen it lay out.
 - **A held item must not swallow input it does not own.** The bow consumed the whole
   input update rather than the primary button, which left `E` and right-click dead on

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace MadVoxel.Core
 {
@@ -23,31 +24,84 @@ namespace MadVoxel.Core
         static Shader _litShader;
         static Shader _unlitShader;
 
+        /// <summary>
+        /// Whether a scriptable render pipeline is actually driving rendering.
+        ///
+        /// This is the question that matters, and asking the wrong one turned the whole
+        /// game magenta. The old code tried the URP shader first and fell back to
+        /// Standard "if it was not found" - but with the URP package installed the
+        /// shader is always found, whether or not a pipeline asset is assigned. A found
+        /// URP shader under the built-in pipeline does not fall back. It renders as the
+        /// error colour, on every surface, with nothing in the console.
+        ///
+        /// So the test is the pipeline, not the shader.
+        /// </summary>
+        public static bool UsingScriptablePipeline
+        {
+            get
+            {
+                return GraphicsSettings.currentRenderPipeline != null
+                    || GraphicsSettings.defaultRenderPipeline != null;
+            }
+        }
+
         public static Shader LitShader
         {
             get
             {
-                if (_litShader == null)
-                {
-                    _litShader = Shader.Find("Universal Render Pipeline/Lit");
-                    if (_litShader == null) _litShader = Shader.Find("Standard");
-                    if (_litShader == null) _litShader = Shader.Find("Diffuse");
-                }
+                if (_litShader == null) _litShader = FindLit();
                 return _litShader;
             }
+        }
+
+        static Shader FindLit()
+        {
+            if (UsingScriptablePipeline)
+            {
+                var urp = Shader.Find("Universal Render Pipeline/Lit");
+                if (urp != null) return urp;
+            }
+
+            // Built-in, or a pipeline whose Lit shader is not URP's. Standard renders
+            // everywhere the built-in pipeline does, which is the honest fallback.
+            var standard = Shader.Find("Standard");
+            if (standard != null) return standard;
+
+            return Shader.Find("Diffuse");
         }
 
         public static Shader UnlitShader
         {
             get
             {
-                if (_unlitShader == null)
-                {
-                    _unlitShader = Shader.Find("Universal Render Pipeline/Unlit");
-                    if (_unlitShader == null) _unlitShader = Shader.Find("Unlit/Color");
-                }
+                if (_unlitShader == null) _unlitShader = FindUnlit();
                 return _unlitShader;
             }
+        }
+
+        static Shader FindUnlit()
+        {
+            if (UsingScriptablePipeline)
+            {
+                var urp = Shader.Find("Universal Render Pipeline/Unlit");
+                if (urp != null) return urp;
+            }
+
+            return Shader.Find("Unlit/Color");
+        }
+
+        /// <summary>
+        /// Drops the cached shaders and materials.
+        ///
+        /// Assigning a pipeline asset while the editor is open changes which shaders
+        /// are correct, and a cache from before that point is a screen full of magenta
+        /// that survives pressing Play again.
+        /// </summary>
+        public static void Forget()
+        {
+            _litShader = null;
+            _unlitShader = null;
+            Cache.Clear();
         }
 
         public static Material Get(SurfaceFamily family, Color tint, float smoothness = 0.12f, float metallic = 0f, bool transparent = false)

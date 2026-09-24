@@ -158,11 +158,25 @@ namespace MadVoxel.EditorTools
                 return;
             }
 
-            Debug.LogWarning(
-                "MadVoxel: no Scriptable Render Pipeline asset is assigned, so the project is running on the Built-in pipeline. " +
-                "The game still works (materials fall back to the Standard shader), but for the intended URP look create " +
-                "'URP Asset (with Universal Renderer)' via Assets > Create > Rendering, then assign it in " +
-                "Project Settings > Graphics > Default Render Pipeline and in Project Settings > Quality.");
+            // A warning in a console nobody is reading loses to a dialog, and this is
+            // the one piece of setup whose absence is unmistakable on screen and
+            // completely silent in the log.
+            const string Message =
+                "No render pipeline asset is assigned, so the project is running on the Built-in pipeline.\n\n" +
+                "The game runs and is fully playable this way - materials use the Standard shader - " +
+                "but it will not look the way it is meant to.\n\n" +
+                "For the intended URP look:\n" +
+                "1. Assets > Create > Rendering > URP Asset (with Universal Renderer)\n" +
+                "2. Project Settings > Graphics > Default Render Pipeline: assign it\n" +
+                "3. Project Settings > Quality: assign it there too";
+
+            Debug.LogWarning("MadVoxel: " + Message.Replace("\n", " "));
+
+            if (EditorUtility.DisplayDialog("MadVoxel - no render pipeline assigned",
+                    Message, "Open Graphics Settings", "Later"))
+            {
+                SettingsService.OpenProjectSettings("Project/Graphics");
+            }
         }
     }
 }

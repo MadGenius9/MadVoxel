@@ -165,6 +165,16 @@ point of the screen.
 
 ---
 
+## If the whole screen is magenta
+
+No render pipeline asset is assigned, so URP shaders are running under the built-in
+pipeline. **Assets → Create → Rendering → URP Asset (with Universal Renderer)**, then set
+it as **Default Render Pipeline** in Project Settings → Graphics (and in Quality). The
+game is playable without it — it falls back to the Standard shader — but it will not look
+the way it is meant to.
+
+---
+
 ## Known to be guesses
 
 - **Every UI number.** All layout is a considered guess at 1920×1080. Nobody has seen any
