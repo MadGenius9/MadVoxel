@@ -39,6 +39,7 @@ namespace MadVoxel.UI
         Graphic[] _hitMarkerParts;
         float _hitMarkerUntil;
         bool _hitMarkerWasKill;
+        bool _hitMarkerWasHeadshot;
 
         Image _vignette;
         float _flashUntil;
@@ -47,6 +48,7 @@ namespace MadVoxel.UI
         Text[] _numbers;
         float[] _numberUntil;
         Vector2[] _numberDrift;
+        bool[] _numberIsLoud;
         int _nextNumber;
 
         public void Init(PlayerStats stats)
@@ -63,7 +65,7 @@ namespace MadVoxel.UI
             BuildHitMarker();
             BuildDamageNumbers();
 
-            PlayerInteraction.HitLanded += OnHitLanded;
+            Combat.CombatEvents.HitLanded += OnHitLanded;
             if (_stats != null) _stats.Damaged += OnPlayerDamaged;
         }
 
@@ -71,7 +73,7 @@ namespace MadVoxel.UI
         {
             // Static event, so this is not optional: a stale subscriber would keep a
             // destroyed view alive and start throwing on the next world load.
-            PlayerInteraction.HitLanded -= OnHitLanded;
+            Combat.CombatEvents.HitLanded -= OnHitLanded;
             if (_stats != null) _stats.Damaged -= OnPlayerDamaged;
         }
 
@@ -159,6 +161,7 @@ namespace MadVoxel.UI
             _numbers = new Text[DamageNumberCount];
             _numberUntil = new float[DamageNumberCount];
             _numberDrift = new Vector2[DamageNumberCount];
+            _numberIsLoud = new bool[DamageNumberCount];
 
             for (int i = 0; i < DamageNumberCount; i++)
             {
@@ -173,10 +176,13 @@ namespace MadVoxel.UI
 
         // ----------------------------------------------------------------- events
 
-        void OnHitLanded(IDamageable victim, float damage, bool killed)
+        void OnHitLanded(Combat.HitReport hit)
         {
-            _hitMarkerUntil = Time.time + (killed ? HitMarkerSeconds * 2f : HitMarkerSeconds);
-            _hitMarkerWasKill = killed;
+            bool headshot = hit.Zone == Combat.HitZone.Head;
+
+            _hitMarkerUntil = Time.time + (hit.Killed || headshot ? HitMarkerSeconds * 2f : HitMarkerSeconds);
+            _hitMarkerWasKill = hit.Killed;
+            _hitMarkerWasHeadshot = headshot;
             _hitMarker.gameObject.SetActive(true);
 
             // A number only where it is the truth. Bodies take the damage they are
@@ -184,7 +190,10 @@ namespace MadVoxel.UI
             // it, so a figure floating over a wall would overstate the blow by the
             // whole resistance factor. The marker and the impact still land; only the
             // number, which would be a lie, is withheld.
-            if (victim is IMeleeTarget) ShowDamage(Mathf.Max(1, Mathf.RoundToInt(damage)), killed);
+            if (hit.Victim is IMeleeTarget)
+            {
+                ShowDamage(Mathf.Max(1, Mathf.RoundToInt(hit.Damage)), hit.Killed, hit.Zone);
+            }
         }
 
         void OnPlayerDamaged(DamageInfo info)
@@ -214,14 +223,20 @@ namespace MadVoxel.UI
                 || kind == DamageKind.Fall;
         }
 
-        void ShowDamage(int amount, bool killed)
+        void ShowDamage(int amount, bool killed, Combat.HitZone zone)
         {
             int slot = _nextNumber;
             _nextNumber = (_nextNumber + 1) % DamageNumberCount;
 
+            string tag = Combat.HitZones.Label(zone);
+            bool loud = killed || zone == Combat.HitZone.Head;
+
             var label = _numbers[slot];
-            label.text = killed ? amount + "  KILL" : amount.ToString();
-            label.fontSize = killed ? 38 : 30;
+            label.text = killed ? amount + "  KILL"
+                       : tag.Length > 0 ? amount + "  " + tag
+                       : amount.ToString();
+            label.fontSize = loud ? 38 : 30;
+            _numberIsLoud[slot] = loud;
             label.gameObject.SetActive(true);
 
             _numberUntil[slot] = Time.time + DamageNumberSeconds;
@@ -244,7 +259,9 @@ namespace MadVoxel.UI
         {
             if (!_hitMarker.gameObject.activeSelf) return;
 
-            float duration = _hitMarkerWasKill ? HitMarkerSeconds * 2f : HitMarkerSeconds;
+            float duration = _hitMarkerWasKill || _hitMarkerWasHeadshot
+                ? HitMarkerSeconds * 2f
+                : HitMarkerSeconds;
             float remaining = _hitMarkerUntil - Time.time;
             if (remaining <= 0f)
             {
@@ -257,7 +274,9 @@ namespace MadVoxel.UI
             // Punches out and fades, which reads as impact rather than as a widget.
             _hitMarker.localScale = Vector3.one * Mathf.Lerp(1.35f, 1f, t);
 
-            Color colour = _hitMarkerWasKill ? ClaimSlate.OxideRust : Color.white;
+            Color colour = _hitMarkerWasKill ? ClaimSlate.OxideRust
+                         : _hitMarkerWasHeadshot ? ClaimSlate.SodiumGold
+                         : Color.white;
             colour.a = t;
             for (int i = 0; i < _hitMarkerParts.Length; i++) _hitMarkerParts[i].color = colour;
         }
@@ -285,7 +304,7 @@ namespace MadVoxel.UI
 
                 // Holds full strength for the first third, then goes. A number that
                 // starts fading immediately is one the player never quite reads.
-                var colour = ClaimSlate.SodiumGold;
+                var colour = _numberIsLoud[i] ? ClaimSlate.OxideRust : ClaimSlate.SodiumGold;
                 colour.a = Mathf.Clamp01((1f - t) * 1.5f);
                 _numbers[i].color = colour;
             }

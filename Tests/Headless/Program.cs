@@ -44,6 +44,7 @@ namespace MadVoxel.Headless
             MeleeTests.Run();
             SoundTests.Run();
             SoilTests.Run();
+            HitZoneTests.Run();
             SaveSchemaTests.Run();
             RecruitTests.Run(ContentTests.Database);
             PowerTests.Run();

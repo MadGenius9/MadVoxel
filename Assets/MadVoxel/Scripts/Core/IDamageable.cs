@@ -63,6 +63,15 @@ namespace MadVoxel.Core
         /// clip a shoulder that the physics capsule does not actually cover.
         /// </summary>
         float BodyRadius { get; }
+
+        /// <summary>
+        /// Metres from the feet to the top of the head, and the world height those
+        /// feet are at. Both are needed to say where on a body a shot landed, and
+        /// neither can be read off a collider: the whole body is one capsule, and the
+        /// drawn head has no collider of its own to hit.
+        /// </summary>
+        float BodyHeight { get; }
+        float FootY { get; }
     }
 
     /// <summary>Anything the player can press E on.</summary>

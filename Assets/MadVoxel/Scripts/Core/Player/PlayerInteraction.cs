@@ -978,18 +978,23 @@ namespace MadVoxel.Core.Player
         }
 
         /// <summary>
-        /// Raised on every landed melee blow: the victim, and what it cost them.
+        /// Tells the HUD a swing connected.
         ///
-        /// The HUD listens. Until something did, a connecting swing produced no
-        /// evidence whatsoever that it had connected, which is the single worst thing
-        /// a melee game can do to a player.
+        /// Melee carries no hit zone. A swing is a cone - it finds the player a target
+        /// rather than a point - so there is no honest way to say where on a body it
+        /// landed, and handing out a headshot bonus at random is worse than not having
+        /// one. Precision is the bow's advantage, and this is where that is decided.
         /// </summary>
-        public static event System.Action<IDamageable, float, bool> HitLanded;
-
         void LandedHit(IDamageable victim, float damage)
         {
-            if (HitLanded == null) return;
-            HitLanded(victim, damage, !victim.IsAlive);
+            Combat.CombatEvents.ReportHit(new Combat.HitReport
+            {
+                Victim = victim,
+                Damage = damage,
+                Zone = Combat.HitZone.None,
+                Killed = !victim.IsAlive,
+                Point = ImpactPoint(victim)
+            });
         }
 
         // ------------------------------------------------------------------ placing

@@ -50,6 +50,7 @@
     <Compile Include="MeleeTests.cs" />
     <Compile Include="SoundTests.cs" />
     <Compile Include="SoilTests.cs" />
+    <Compile Include="HitZoneTests.cs" />
   </ItemGroup>
 
   <ItemGroup Label="Game sources under test">
@@ -79,6 +80,7 @@
     <Compile Include="../../Assets/MadVoxel/Scripts/Inventory/ItemDefinition.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Combat/Ballistics.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Combat/MeleeArc.cs" />
+    <Compile Include="../../Assets/MadVoxel/Scripts/Combat/HitZones.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Audio/SoundSynth.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Audio/SoundBank.cs" />
     <Compile Include="../../Assets/MadVoxel/Scripts/Inventory/ItemStack.cs" />

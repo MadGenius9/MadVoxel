@@ -120,9 +120,21 @@ namespace MadVoxel.Combat
                 var damageable = hit.collider.GetComponentInParent<IDamageable>();
                 if (damageable != null && damageable.IsAlive)
                 {
+                    // Where on the body, and what that is worth. A wall has no zones,
+                    // so it takes the shot at face value.
+                    var body = damageable as IMeleeTarget;
+                    var zone = HitZone.None;
+                    float damage = _damage;
+
+                    if (body != null)
+                    {
+                        zone = HitZones.Classify(hit.point.y, body.FootY, body.BodyHeight);
+                        damage *= HitZones.Multiplier(zone);
+                    }
+
                     damageable.ApplyDamage(new DamageInfo
                     {
-                        Amount = _damage,
+                        Amount = damage,
                         Kind = DamageKind.Melee,
                         Point = hit.point,
                         Direction = direction,
@@ -130,7 +142,18 @@ namespace MadVoxel.Combat
                         ToolTier = _tier
                     });
 
-                    Audio.GameAudio.PlayAt(Audio.Sound.ArrowHit, hit.point);
+                    Audio.GameAudio.PlayAt(Audio.Sound.ArrowHit, hit.point,
+                        zone == HitZone.Head ? 0.02f : 0.08f,
+                        zone == HitZone.Head ? 1f : 0.7f);
+
+                    CombatEvents.ReportHit(new HitReport
+                    {
+                        Victim = damageable,
+                        Damage = damage,
+                        Zone = zone,
+                        Killed = !damageable.IsAlive,
+                        Point = hit.point
+                    });
 
                     // An arrow that hit something is in the something.
                     Destroy(gameObject);

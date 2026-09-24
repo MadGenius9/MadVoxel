@@ -88,6 +88,23 @@ can be walked over and picked up.
 
 ---
 
+## 2c. Headshots (3 minutes)
+
+Melee has no hit zones and should not — a swing is a cone, so there is no honest point
+to measure. The bow is where aim pays.
+
+1. Shoot a shambler in the chest, then in the head.
+2. Then shoot a **brute**, which is 2.15 m rather than 1.8 m.
+
+**Expected:** a head shot pops a gold marker, prints "HEADSHOT" and does two and a half
+times the damage. A leg shot does two thirds.
+
+**Watch for:** the boundary being wrong on the brute. Zones are a fraction of body
+height, not a fixed metre, so a brute's head should be higher up in world space than a
+shambler's — if shooting a brute in the chest reads as a headshot, the fraction is off.
+
+---
+
 ## 3. The furnace (5 minutes)
 
 1. Workbench → **Furnace** (40 stone, 20 clay, 4 iron ingots — the ingots come from a

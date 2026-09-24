@@ -90,6 +90,12 @@ namespace MadVoxel.AI
         /// </summary>
         public float BodyRadius { get { return 0.5f; } }
 
+        /// <summary>Its own height, so a brute's head is not where a shambler's was.</summary>
+        public float BodyHeight { get { return Definition != null ? Definition.height : 1.8f; } }
+
+        /// <summary>The transform sits on the floor, which is exactly what this wants.</summary>
+        public float FootY { get { return transform.position.y; } }
+
         public void Init(ZombieDefinition def, TerrainWorld voxels, StructureWorld structures,
                          BlockDamageTracker blockDamage, LandClaimRegistry claims,
                          Transform player, Core.Player.PlayerStats playerStats)
