@@ -1,6 +1,6 @@
 # MadVoxel — working notes for Claude
 
-Unity 6 (URP) single-player survival sandbox. Rust's snap building, 7 Days to Die's
+Unity 6.6 (`6000.6.2f1`, URP) single-player survival sandbox. Rust's snap building, 7 Days to Die's
 diggable terrain and stations, FS-style farming, a small colony. Product string is
 **MadGenius**.
 

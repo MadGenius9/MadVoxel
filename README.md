@@ -16,7 +16,7 @@ See [`DESIGN.md`](DESIGN.md) for the core loop, and [`MODDING.md`](MODDING.md) t
 
 ## Requirements
 
-- **Unity 6** (developed against `6000.0.32f1`; any Unity 6 release should upgrade cleanly)
+- **Unity 6.6** (`6000.6.2f1`; earlier Unity 6 releases upgrade cleanly either way)
 - The Universal Render Pipeline package (pinned in `Packages/manifest.json`)
 
 No external art, audio or plugin dependencies. Every material, texture, prop and UI
